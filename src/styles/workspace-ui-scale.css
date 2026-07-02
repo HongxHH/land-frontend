@@ -1,0 +1,141 @@
+/**
+ * 项目信息页各业务 Tab 统一 UI 缩放（工具栏、表单、按钮、面板标题）。
+ * 表格行高见 project-tab-tables.css（project-tab-el-table）与 admin-mgmt-page.css（admin-mgmt-table）。
+ * Tab 内容区高度见 workspace-tab-layout.css（workspace-tab-fill）。
+ */
+.workspace-ui-scale {
+  --workspace-ui-font-size: 14px;
+  --workspace-table-font-size: 15px;
+  --workspace-control-height: 36px;
+}
+
+.workspace-ui-scale .el-button {
+  font-size: var(--workspace-ui-font-size);
+}
+
+.workspace-ui-scale .el-button--small {
+  min-height: 32px;
+  padding: 8px 14px;
+  font-size: var(--workspace-ui-font-size);
+}
+
+.workspace-ui-scale .pr-btn,
+.workspace-ui-scale .ch-btn,
+.workspace-ui-scale .biz-btn,
+.workspace-ui-scale .query-btn,
+.workspace-ui-scale .primary-cta,
+.workspace-ui-scale .ghost-cta {
+  min-height: var(--workspace-control-height);
+  font-size: var(--workspace-ui-font-size);
+  font-weight: 600;
+}
+
+.workspace-ui-scale .op-btn {
+  min-height: 32px;
+  padding: 8px 14px;
+  font-size: var(--workspace-ui-font-size);
+}
+
+.workspace-ui-scale .el-input__wrapper,
+.workspace-ui-scale .el-select__wrapper,
+.workspace-ui-scale .el-textarea__inner {
+  font-size: var(--workspace-ui-font-size);
+}
+
+.workspace-ui-scale .el-input:not(.el-input--large) .el-input__wrapper,
+.workspace-ui-scale .el-select .el-select__wrapper {
+  min-height: var(--workspace-control-height);
+}
+
+.workspace-ui-scale .el-form-item__label {
+  font-size: var(--workspace-ui-font-size);
+}
+
+.workspace-ui-scale .el-pagination {
+  font-size: var(--workspace-ui-font-size);
+}
+
+.workspace-ui-scale .el-tag {
+  --el-tag-font-size: 13px;
+  height: 28px;
+  padding: 0 10px;
+}
+
+.workspace-ui-scale .contracts-hero__title,
+.workspace-ui-scale .planning-hero__title,
+.workspace-ui-scale .panel-header h3,
+.workspace-ui-scale .table-title {
+  font-size: 22px;
+}
+
+.workspace-ui-scale .contracts-hero__eyebrow,
+.workspace-ui-scale .planning-hero__eyebrow,
+.workspace-ui-scale .panel-header p {
+  font-size: 14px;
+}
+
+.workspace-ui-scale .contract-stat-tile__value,
+.workspace-ui-scale .planning-stat-tile__value {
+  font-size: 22px;
+}
+
+.workspace-ui-scale .contract-stat-tile__label,
+.workspace-ui-scale .planning-stat-tile__label {
+  font-size: 13px;
+}
+
+.workspace-ui-scale .project-name {
+  font-size: 18px;
+}
+
+.workspace-ui-scale .project-hint {
+  font-size: 14px;
+}
+
+/* 房产实测汇总表 */
+.workspace-ui-scale .summary-hero__title {
+  font-size: 20px;
+}
+
+.workspace-ui-scale .summary-hero__eyebrow {
+  font-size: 12px;
+}
+
+.workspace-ui-scale .summary-hero__search-hint {
+  font-size: 13px;
+  padding: 4px 9px;
+}
+
+.workspace-ui-scale .stat-tile {
+  padding: 8px 10px;
+}
+
+.workspace-ui-scale .stat-tile__value {
+  font-size: 18px;
+}
+
+.workspace-ui-scale .stat-tile__label {
+  font-size: 12px;
+}
+
+.workspace-ui-scale .stat-tile__unit {
+  font-size: 12px;
+}
+
+.workspace-ui-scale .summary-hero__search-input :deep(.el-input__wrapper) {
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.workspace-ui-scale .comparison-head__title {
+  font-size: 18px;
+}
+
+.workspace-ui-scale .comparison-card__title,
+.workspace-ui-scale .comparison-cross__title {
+  font-size: 16px;
+}
+
+.workspace-ui-scale .comparison-cross__hint {
+  font-size: 14px;
+}

@@ -1,0 +1,206 @@
+/**
+ * 项目详情页「合同/规划复核/项目方汇总/实测汇总」等 Tab 内数据表统一：表头色、固定列视觉、适中行距。
+ * 在 el-table 上添加 class: project-tab-el-table
+ */
+.el-table.project-tab-el-table {
+  --project-tab-table-font: 15px;
+  --project-tab-table-header-bg: #f1f6fc;
+  --project-tab-table-header-color: #445468;
+  --project-tab-table-row-hover: #f0f7ff;
+}
+
+.el-table.project-tab-el-table th.el-table__cell {
+  padding: 14px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--project-tab-table-header-color);
+  background: var(--project-tab-table-header-bg) !important;
+}
+
+.el-table.project-tab-el-table td.el-table__cell {
+  padding: 16px 12px;
+  font-size: var(--project-tab-table-font);
+}
+
+.el-table.project-tab-el-table .cell {
+  line-height: 1.45;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.el-table.project-tab-el-table th.el-table__cell.is-right .cell,
+.el-table.project-tab-el-table td.el-table__cell.is-right .cell {
+  text-align: center;
+}
+
+.el-table.project-tab-el-table .el-tag {
+  --el-tag-font-size: 13px;
+  height: 28px;
+  padding: 0 10px;
+}
+
+.el-table.project-tab-el-table .el-button {
+  min-height: 32px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.el-table.project-tab-el-table .el-select .el-select__wrapper {
+  min-height: 34px;
+  font-size: 14px;
+}
+
+/*
+ * show-overflow-tooltip 会在表体 .cell 上写 inline width，导致与表头列宽不一致。
+ */
+.el-table.project-tab-el-table td.el-table__cell>.cell.el-tooltip {
+  width: 100% !important;
+  max-width: 100%;
+}
+
+/* 操作列：保证按钮单行展示且不被固定列裁切 */
+.el-table.project-tab-el-table th.col-actions .cell,
+.el-table.project-tab-el-table td.col-actions .cell {
+  padding-left: 8px;
+  padding-right: 8px;
+  overflow: visible;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.el-table.project-tab-el-table .tab-table-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.el-table.project-tab-el-table .tab-table-row-actions .el-button+.el-button {
+  margin-left: 0;
+}
+
+/* 若个别表格仍使用 size="small"，与默认行高保持一致 */
+.el-table.project-tab-el-table.el-table--small th.el-table__cell {
+  padding: 14px 12px;
+  font-size: 15px;
+}
+
+.el-table.project-tab-el-table.el-table--small td.el-table__cell {
+  padding: 16px 12px;
+  font-size: 15px;
+}
+
+.el-table.project-tab-el-table .el-table__body tr:hover>td.el-table__cell {
+  background: var(--project-tab-table-row-hover) !important;
+}
+
+/* 固定列与表头底色一致，避免滚动时发灰 */
+.el-table.project-tab-el-table .el-table__fixed-right-patch,
+.el-table.project-tab-el-table .el-table__fixed-left-patch {
+  background: var(--project-tab-table-header-bg);
+}
+
+.el-table.project-tab-el-table td.el-table__fixed-right,
+.el-table.project-tab-el-table td.el-table__fixed-left {
+  background: #fff;
+}
+
+.el-table.project-tab-el-table tr:hover td.el-table__fixed-right,
+.el-table.project-tab-el-table tr:hover td.el-table__fixed-left {
+  background: var(--project-tab-table-row-hover) !important;
+}
+
+/*
+ * 固定列 + align=center 时，仅靠 text-align 对按钮 / inline-flex 组容易视觉不居中。
+ * 对固定左/右列使用 flex，保证「操作」列标题与单元格内容水平、垂直居中。
+ */
+.el-table.project-tab-el-table th.el-table__cell.is-center.el-table-fixed-column--left .cell,
+.el-table.project-tab-el-table th.el-table__cell.is-center.el-table-fixed-column--right .cell,
+.el-table.project-tab-el-table td.el-table__cell.is-center.el-table-fixed-column--left .cell,
+.el-table.project-tab-el-table td.el-table__cell.is-center.el-table-fixed-column--right .cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/** 带标题栏的项目面板（与项目方汇总 Tab 的 titlebar 对齐） */
+.project-tab-panel {
+  border: 1px solid #dfe5ee;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.project-tab-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e4ebf4;
+  background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.project-tab-panel__head--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.project-tab-panel__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #24364b;
+}
+
+.project-tab-panel__sub {
+  font-size: 14px;
+  color: #77879b;
+}
+
+.project-tab-panel__meta {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.project-tab-panel__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.project-tab-panel__body {
+  padding: 0 12px 12px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-tab-panel__body--flush {
+  padding: 0;
+}
+
+.project-tab-panel__pager {
+  padding: 10px 14px 12px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #eef2f7;
+  background: #fafbfd;
+  font-size: 14px;
+}

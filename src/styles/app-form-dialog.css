@@ -1,0 +1,110 @@
+/* 标准表单弹窗：与 ProjectList「新建项目」等 el-dialog 默认观感一致 */
+.app-form-dialog.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.app-form-dialog .el-dialog__header {
+  margin-right: 0;
+}
+
+.app-form-dialog .el-form-item__label {
+  color: var(--el-text-color-regular);
+}
+
+.app-form-dialog .upload-phase,
+.app-form-dialog .upload-phase.el-input-number {
+  width: 100%;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-dropzone {
+  width: 100%;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-dropzone .el-upload-dragger {
+  width: 100%;
+  padding: 24px 16px;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-dropzone.is-compact .el-upload-dragger {
+  padding: 12px 16px;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-drop-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-icon {
+  font-size: 48px;
+  color: var(--el-text-color-secondary);
+}
+
+.app-form-dialog.upload-archive-dialog .upload-drop-title {
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+}
+
+.app-form-dialog.upload-archive-dialog .upload-drop-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-drop-compact-icon {
+  font-size: 20px;
+  color: var(--el-text-color-secondary);
+  flex-shrink: 0;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-drop-compact-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-drop-compact-title {
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.app-form-dialog.upload-archive-dialog .upload-drop-compact-sub {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.app-form-dialog.upload-archive-dialog .upload-file-list-wrap {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(240px, 40vh);
+  overflow: auto;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-phase-label {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.app-form-dialog.upload-archive-dialog .upload-progress {
+  margin-top: 8px;
+}
+
+.app-form-dialog.upload-archive-dialog .upload-progress-bytes,
+.app-form-dialog.upload-archive-dialog .upload-progress-tip {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.app-form-dialog.upload-archive-dialog .upload-speed,
+.app-form-dialog.upload-archive-dialog .upload-eta {
+  color: var(--el-text-color-secondary);
+}

@@ -1,0 +1,11 @@
+:root {
+  --home-card-radius: 12px;
+  --home-soft-border: #dbe4ef;
+  --home-soft-shadow: 0 14px 36px -24px rgba(15, 23, 42, 0.2);
+  --home-panel-grad-start: #fbfdff;
+  --home-panel-grad-end: #f5f9ff;
+  --home-header-grad-start: #f8fbff;
+  --home-header-grad-end: #f1f6fc;
+  --home-tab-text: #516173;
+  --home-tab-active: #1f4e79;
+}

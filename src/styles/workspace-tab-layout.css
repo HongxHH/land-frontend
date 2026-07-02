@@ -1,0 +1,17 @@
+/**
+ * 项目信息页各 Tab 内容区统一高度：由父级 flex 链撑满，不再使用 calc(100vh - Npx)。
+ */
+.workspace-tab-fill {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-tab-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

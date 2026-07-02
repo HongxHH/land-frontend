@@ -1,0 +1,97 @@
+/**
+ * 系统管理页（土地类型管理、用户权限管理等）表格与工具栏放大样式，与归档文件查询对齐。
+ */
+.admin-mgmt-page {
+  --admin-ui-font-size: 14px;
+  --admin-table-font-size: 15px;
+  --admin-table-head-font-size: 15px;
+  --admin-table-cell-padding-y: 16px;
+  --admin-table-head-padding-y: 14px;
+  --admin-control-height: 36px;
+}
+
+.admin-mgmt-page .admin-mgmt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-mgmt-page .admin-mgmt-toolbar .el-input__wrapper,
+.admin-mgmt-page .admin-mgmt-toolbar .el-select__wrapper {
+  min-height: var(--admin-control-height);
+  font-size: var(--admin-ui-font-size);
+}
+
+.admin-mgmt-page .admin-mgmt-toolbar .el-input__inner,
+.admin-mgmt-page .admin-mgmt-toolbar .el-select__selected-item {
+  font-size: var(--admin-ui-font-size);
+}
+
+.admin-mgmt-page .admin-mgmt-toolbar .el-button {
+  min-height: var(--admin-control-height);
+  padding: 8px 16px;
+  font-size: var(--admin-ui-font-size);
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.admin-mgmt-page .admin-mgmt-pager {
+  font-size: var(--admin-ui-font-size);
+}
+
+.admin-mgmt-page .admin-mgmt-pager .el-pagination .el-select .el-select__wrapper {
+  min-height: 32px;
+  font-size: var(--admin-ui-font-size);
+}
+
+.el-table.admin-mgmt-table {
+  font-size: var(--admin-table-font-size);
+}
+
+.el-table.admin-mgmt-table th.el-table__cell {
+  background: #f1f6fc;
+  color: #445468;
+  font-weight: 600;
+  font-size: var(--admin-table-head-font-size);
+  padding-top: var(--admin-table-head-padding-y);
+  padding-bottom: var(--admin-table-head-padding-y);
+}
+
+.el-table.admin-mgmt-table td.el-table__cell {
+  font-size: var(--admin-table-font-size);
+  padding-top: var(--admin-table-cell-padding-y);
+  padding-bottom: var(--admin-table-cell-padding-y);
+}
+
+.el-table.admin-mgmt-table .cell {
+  line-height: 1.45;
+}
+
+.el-table.admin-mgmt-table .el-tag {
+  --el-tag-font-size: 13px;
+  height: 28px;
+  padding: 0 10px;
+}
+
+.el-table.admin-mgmt-table .el-button {
+  min-height: 32px;
+  padding: 8px 14px;
+  font-size: var(--admin-ui-font-size);
+}
+
+.el-table.admin-mgmt-table .el-select .el-select__wrapper {
+  min-height: 34px;
+  font-size: var(--admin-ui-font-size);
+}
+
+.el-table.admin-mgmt-table .el-table__row:hover>td.el-table__cell {
+  background: #f0f7ff !important;
+}
+
+.el-table.admin-mgmt-table.el-table--small th.el-table__cell,
+.el-table.admin-mgmt-table.el-table--small td.el-table__cell {
+  font-size: var(--admin-table-font-size);
+  padding-top: var(--admin-table-cell-padding-y);
+  padding-bottom: var(--admin-table-cell-padding-y);
+}

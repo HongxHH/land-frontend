@@ -1,0 +1,111 @@
+/**
+ * 审核类界面：左预览 / 右数据 通用分栏布局（与 useAuditSplitPanel 配合）
+ */
+.audit-split-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.audit-split-layout__left {
+  min-width: 240px;
+  max-width: 85%;
+}
+
+/** 审核左栏：工具条 + 预览画布（与 AuditDocumentPreviewPanel 配合） */
+.audit-preview-shell {
+  border: 1px solid #dfe5ee;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.audit-split-layout__right {
+  flex: 1 1 auto;
+  min-width: 280px;
+  min-height: 0;
+}
+
+.audit-splitter {
+  flex: 0 0 10px;
+  margin: 0 2px;
+  align-self: stretch;
+  cursor: col-resize;
+  border-radius: 4px;
+  background: #e2e8f0;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 4;
+  touch-action: none;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+/* 扩大可拖拽热区，避免 10px 窄条难以抓取 */
+.audit-splitter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  right: -8px;
+  cursor: col-resize;
+}
+
+.audit-splitter::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 36px;
+  border-radius: 2px;
+  background: #94a3b8;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.audit-splitter:hover {
+  background: #cbd5e1;
+}
+
+.audit-splitter:hover::after {
+  background: #64748b;
+}
+
+body.audit-split-panel-dragging {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.audit-split-panel-dragging .audit-splitter {
+  background: #64748b;
+}
+
+body.audit-split-panel-dragging iframe {
+  pointer-events: none !important;
+}
+
+@media (max-width: 1280px) {
+  .audit-split-layout--responsive {
+    flex-direction: column;
+  }
+
+  .audit-split-layout--responsive .audit-splitter {
+    display: none;
+  }
+
+  .audit-split-layout--responsive .audit-split-layout__left {
+    width: 100% !important;
+    max-width: none;
+  }
+}
