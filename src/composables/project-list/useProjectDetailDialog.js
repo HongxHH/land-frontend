@@ -30,6 +30,7 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
   })
   const reportBasicInfoForm = reactive({
     id: '',
+    buildingName: '',
     propertyCertificateNumber: '',
     propertyAreaConfirmationNoticeNumber: ''
   })
@@ -59,6 +60,8 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
     detailDialogVisible.value = true
     currentDetailRow.value = row ? { ...row } : null
     reportBasicInfoForm.id = String(row.id || '')
+    reportBasicInfoForm.buildingName =
+      row?.projectName && row.projectName !== '未知楼栋' ? row.projectName : ''
     reportBasicInfoForm.propertyCertificateNumber = row?.certNo && row.certNo !== '-' ? row.certNo : ''
     reportBasicInfoForm.propertyAreaConfirmationNoticeNumber =
       row?.areaConfirmationNoticeNo && row.areaConfirmationNoticeNo !== '-' ? row.areaConfirmationNoticeNo : ''
@@ -77,6 +80,7 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
         const reportRecord = reportRes?.data?.data?.records?.[0]
         if (reportRes?.data?.code === 200 && reportRecord) {
           reportBasicInfoForm.id = String(reportRecord.id || row.id || '')
+          reportBasicInfoForm.buildingName = reportRecord.buildingName || reportBasicInfoForm.buildingName
           reportBasicInfoForm.propertyCertificateNumber = reportRecord.propertyCertificateNumber || ''
           reportBasicInfoForm.propertyAreaConfirmationNoticeNumber =
             reportRecord.propertyAreaConfirmationNoticeNumber || ''
@@ -129,10 +133,17 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
       return
     }
 
+    const buildingName = (reportBasicInfoForm.buildingName || '').trim()
+    if (!buildingName) {
+      ElMessage.warning('请输入工程名称')
+      return
+    }
+
     reportBasicInfoSaving.value = true
     try {
       const payload = {
         id: Number(reportBasicInfoForm.id),
+        buildingName,
         propertyCertificateNumber: (reportBasicInfoForm.propertyCertificateNumber || '').trim(),
         propertyAreaConfirmationNoticeNumber: (reportBasicInfoForm.propertyAreaConfirmationNoticeNumber || '').trim()
       }
@@ -144,12 +155,14 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
 
       const target = rawTableData.value.find((item) => String(item.id) === String(reportBasicInfoForm.id))
       if (target) {
+        target.projectName = payload.buildingName
         target.certNo = payload.propertyCertificateNumber || '-'
         target.areaConfirmationNoticeNo = payload.propertyAreaConfirmationNoticeNumber || '-'
       }
       if (currentDetailRow.value) {
         currentDetailRow.value = {
           ...currentDetailRow.value,
+          projectName: payload.buildingName,
           certNo: payload.propertyCertificateNumber || '-',
           areaConfirmationNoticeNo: payload.propertyAreaConfirmationNoticeNumber || '-'
         }

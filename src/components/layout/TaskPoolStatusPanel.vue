@@ -1,25 +1,6 @@
 <template>
-  <div class="floating-task-status">
-    <button
-      v-if="!visible"
-      class="task-fab"
-      type="button"
-      title="任务线程池状态"
-      @click="visible = true"
-    >
-      <span class="fab-core">
-        <el-icon class="fab-icon"><Cpu /></el-icon>
-      </span>
-    </button>
-
-    <el-drawer
-      v-model="visible"
-      :size="drawerWidthPx"
-      append-to-body
-      class="task-drawer"
-      title="任务线程池状态"
-    >
-      <div class="task-body">
+  <div class="task-pool-panel">
+    <div class="task-body" :class="{ 'is-page': layout === 'page' }">
         <section class="summary-card">
           <div class="metric-grid">
             <div class="pool-tuner" role="group" aria-label="线程池并发容量调整">
@@ -333,8 +314,7 @@
             <div class="system-val" v-else />
           </div>
         </div>
-      </div>
-    </el-drawer>
+    </div>
 
     <el-dialog v-model="detailVisible" title="任务阶段详情" width="680px" destroy-on-close append-to-body>
       <TaskParseFlowDetailPanel
@@ -348,7 +328,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Cpu, Refresh } from '@element-plus/icons-vue'
+import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import TaskParseFlowDetailPanel from '@/components/layout/TaskParseFlowDetailPanel.vue'
 import {
@@ -360,7 +340,20 @@ import {
   updateTaskPoolSize
 } from '@/services/file.service'
 
-const visible = ref(false)
+const props = defineProps({
+  /** 页面可见时开启轮询（路由页恒为 true；抽屉场景可传 false） */
+  active: {
+    type: Boolean,
+    default: true
+  },
+  /** stack=纵向堆叠；page=左侧配置/系统、右侧任务列表 */
+  layout: {
+    type: String,
+    default: 'stack',
+    validator: (v) => v === 'stack' || v === 'page'
+  }
+})
+
 const loading = ref(false)
 const updatingPoolSize = ref(false)
 const lastUpdateAt = ref(0)
@@ -381,7 +374,7 @@ let detailPollTimer = null
 let refreshAllInFlight = false
 let refreshDetailInFlight = false
 const refreshIntervalMs = 5000
-const detailPollIntervalMs = 3000
+const detailPollIntervalMs = 2000
 const pageVisible = ref(typeof document === 'undefined' ? true : document.visibilityState === 'visible')
 const statusLoaded = ref(false)
 const poolForm = ref({
@@ -393,14 +386,6 @@ const detailLoading = ref(false)
 const detailTask = ref(null)
 
 const runningTasks = computed(() => (Array.isArray(statusData.value?.runningTasks) ? statusData.value.runningTasks : []))
-
-/** 抽屉宽度：略宽便于双列任务卡；打开时按视口计算 */
-const drawerWidthPx = ref(600)
-const recalcDrawerWidth = () => {
-  if (typeof window === 'undefined') return
-  const w = window.innerWidth || 1200
-  drawerWidthPx.value = Math.min(680, Math.max(520, Math.round(w * 0.38)))
-}
 
 const taskStatusRank = (status) => {
   const s = String(status || '').toUpperCase()
@@ -654,11 +639,8 @@ const stopMainPolling = () => {
 }
 
 const startMainPolling = () => {
-  if (!visible.value || !pageVisible.value || timer) return
-  timer = window.setInterval(() => {
-    if (refreshAllInFlight) return
-    refreshAll()
-  }, refreshIntervalMs)
+  if (!props.active || !pageVisible.value || timer) return
+  timer = window.setInterval(refreshAll, refreshIntervalMs)
 }
 
 const stopDetailPolling = () => {
@@ -671,7 +653,6 @@ const stopDetailPolling = () => {
 const startDetailPolling = () => {
   if (!detailVisible.value || !pageVisible.value || detailPollTimer) return
   detailPollTimer = window.setInterval(() => {
-    if (refreshDetailInFlight) return
     refreshTaskDetail()
   }, detailPollIntervalMs)
 }
@@ -683,7 +664,7 @@ const handleVisibilityChange = () => {
     stopDetailPolling()
     return
   }
-  if (visible.value) {
+  if (props.active) {
     refreshAll()
     startMainPolling()
     if (detailVisible.value) {
@@ -700,20 +681,23 @@ watch(detailVisible, (open) => {
   }
 })
 
-watch(visible, async (open) => {
-  if (open) {
-    recalcDrawerWidth()
-    if (!statusLoaded.value) {
-      await refreshAll()
+watch(
+  () => props.active,
+  async (isActive) => {
+    if (isActive) {
+      if (!statusLoaded.value) {
+        await refreshAll()
+      }
+      if (pageVisible.value) {
+        startMainPolling()
+      }
+      return
     }
-    if (pageVisible.value) {
-      startMainPolling()
-    }
-    return
-  }
-  stopMainPolling()
-  stopDetailPolling()
-})
+    stopMainPolling()
+    stopDetailPolling()
+  },
+  { immediate: true }
+)
 
 const submitPoolSizeUpdate = async () => {
   const core = Number(poolForm.value.corePoolSize)
@@ -786,13 +770,10 @@ const formatBytes = (bytes) => {
 }
 
 onMounted(() => {
-  recalcDrawerWidth()
-  window.addEventListener('resize', recalcDrawerWidth)
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', recalcDrawerWidth)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   stopMainPolling()
   stopDetailPolling()
@@ -801,6 +782,13 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;1,9..40,400&family=Syne:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+.task-pool-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 .task-body {
   --semantic-success-border: rgba(13, 148, 136, 0.35);
@@ -823,60 +811,47 @@ onBeforeUnmount(() => {
   overflow-y: auto;
 }
 
-:deep(.task-drawer .el-drawer__body) {
-  padding: 16px 18px;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f7fd 100%);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+.task-body.is-page {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'summary running'
+    'system running';
+  gap: 14px;
+  align-items: stretch;
   overflow: hidden;
 }
 
-:deep(.task-drawer .el-drawer__header) {
-  margin-bottom: 0;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+.task-body.is-page .summary-card {
+  grid-area: summary;
 }
 
-:deep(.task-drawer .el-drawer__title) {
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: 0.02em;
-  color: #0f172a;
+.task-body.is-page .running-card {
+  grid-area: running;
+  min-height: 0;
 }
 
-.task-fab {
-  position: fixed;
-  right: 24px;
-  bottom: 164px;
-  z-index: 2100;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 1px solid #8ea2bf;
-  background: linear-gradient(145deg, #f7fbff 0%, #dce8f7 100%);
-  color: #2d4463;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 10px 20px rgba(36, 55, 82, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.task-body.is-page .system-card {
+  grid-area: system;
+  align-self: start;
 }
 
-.task-fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(36, 55, 82, 0.28);
-}
+@media (max-width: 1100px) {
+  .task-body.is-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'summary'
+      'running'
+      'system';
+    overflow-y: auto;
+  }
 
-.fab-core {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.fab-icon {
-  font-size: 24px;
+  .task-body.is-page .running-card {
+    min-height: 360px;
+    max-height: min(52vh, 560px);
+  }
 }
 
 .summary-card {
@@ -1239,8 +1214,9 @@ onBeforeUnmount(() => {
     0 12px 30px -22px rgba(15, 23, 42, 0.28);
   display: flex;
   flex-direction: column;
-  min-height: 360px;
-  max-height: min(58vh, 520px);
+  min-height: 280px;
+  max-height: none;
+  flex: 1 1 auto;
   overflow: hidden;
   animation: running-card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }

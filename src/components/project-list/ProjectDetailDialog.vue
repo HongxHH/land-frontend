@@ -61,7 +61,18 @@
       <div class="basic-info-panel__body">
         <el-form class="basic-info-form" label-position="top">
           <el-row :gutter="16">
-            <el-col :span="12">
+            <el-col :span="8">
+              <el-form-item label="工程名称">
+                <el-input
+                  :model-value="reportBasicInfoForm.buildingName"
+                  maxlength="80"
+                  clearable
+                  placeholder="请输入工程名称"
+                  @update:model-value="(v) => emit('update:buildingName', v)"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
               <el-form-item label="不动产权证编号">
                 <el-input
                   :model-value="reportBasicInfoForm.propertyCertificateNumber"
@@ -72,7 +83,7 @@
                 />
               </el-form-item>
             </el-col>
-            <el-col :span="12">
+            <el-col :span="8">
               <el-form-item label="合同 / 批文编号">
                 <el-input
                   :model-value="reportBasicInfoForm.propertyAreaConfirmationNoticeNumber"
@@ -179,6 +190,7 @@ const emit = defineEmits([
   'update:modelValue',
   'jump-audit',
   'save-basic-info',
+  'update:buildingName',
   'update:propertyCertificateNumber',
   'update:propertyAreaConfirmationNoticeNumber'
 ])

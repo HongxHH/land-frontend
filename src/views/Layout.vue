@@ -40,6 +40,10 @@
             <el-icon><UserFilled /></el-icon>
             <span>用户权限管理</span>
           </el-menu-item>
+          <el-menu-item v-if="canAccessTaskPoolMonitor()" index="/task-pool">
+            <el-icon><Cpu /></el-icon>
+            <span>任务线程池监控</span>
+          </el-menu-item>
         </el-menu-item-group>
       </el-menu>
     </el-aside>
@@ -53,18 +57,22 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <el-dropdown>
-            <span class="el-dropdown-link">
-              您好，{{ userDisplayName }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-            </span>
+          <el-dropdown trigger="click" placement="bottom-end" popper-class="layout-user-dropdown" @command="handleUserCommand">
+            <el-button class="user-menu-trigger" text>
+              <span class="user-menu-trigger__greet">您好，{{ userDisplayName }}</span>
+              <el-icon class="user-menu-trigger__arrow"><ArrowDown /></el-icon>
+            </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="handleLogout">退出系统</el-dropdown-item>
+                <el-dropdown-item command="profile">个人信息</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出系统</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
       </el-header>
+
+      <UserProfileDialog v-model="profileDialogVisible" @saved="onProfileSaved" />
 
       <el-main class="main-content">
         <keep-alive>
@@ -72,35 +80,73 @@
         </keep-alive>
         <router-view v-if="!$route.meta.keepAlive" />
       </el-main>
-      <FloatingTaskPoolStatus v-if="route.path === '/projects'" />
     </el-container>
   </el-container>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
-import { DataAnalysis, ArrowDown, Odometer, UserFilled, MapLocation, Fold, Expand } from '@element-plus/icons-vue'
-import FloatingTaskPoolStatus from '@/components/layout/FloatingTaskPoolStatus.vue'
+import { DataAnalysis, ArrowDown, Odometer, UserFilled, MapLocation, Fold, Expand, Cpu } from '@element-plus/icons-vue'
+import UserProfileDialog from '@/components/layout/UserProfileDialog.vue'
 import { clearAuth } from '@/utils/auth-token'
-import { canAccessUserManagement, getUserDisplayName } from '@/utils/auth-session.js'
+import {
+  canAccessTaskPoolMonitor,
+  canAccessUserManagement,
+  getUserDisplayName,
+  getUserSession,
+  setUserSession
+} from '@/utils/auth-session.js'
 
-const route = useRoute()
 const router = useRouter()
 const ASIDE_COLLAPSE_KEY = 'layout_aside_collapsed'
 const isAsideCollapsed = ref(false)
+const userDisplayName = ref(getUserDisplayName())
+const profileDialogVisible = ref(false)
 const asideWidth = computed(() => (isAsideCollapsed.value ? '88px' : '280px'))
-const userDisplayName = computed(() => getUserDisplayName())
 
 const toggleAside = () => {
   isAsideCollapsed.value = !isAsideCollapsed.value
   localStorage.setItem(ASIDE_COLLAPSE_KEY, isAsideCollapsed.value ? '1' : '0')
 }
 
-onMounted(() => {
+onMounted(async () => {
   isAsideCollapsed.value = localStorage.getItem(ASIDE_COLLAPSE_KEY) === '1'
+  userDisplayName.value = getUserDisplayName()
+  await hydrateUserProfile()
 })
+
+async function hydrateUserProfile() {
+  const cached = getUserSession()
+  if (cached?.username || cached?.realName) {
+    userDisplayName.value = getUserDisplayName()
+  }
+  try {
+    const { data } = await axios.get('/api/auth/me')
+    if (Number(data?.code) === 200 && data?.data) {
+      setUserSession(data.data)
+      userDisplayName.value = getUserDisplayName()
+    }
+  } catch {
+    /* 401 等由 axios 拦截器处理 */
+  }
+}
+
+const handleUserCommand = (command) => {
+  if (command === 'profile') {
+    profileDialogVisible.value = true
+  } else if (command === 'logout') {
+    handleLogout()
+  }
+}
+
+function onProfileSaved(user) {
+  if (user) {
+    setUserSession(user)
+    userDisplayName.value = getUserDisplayName()
+  }
+}
 
 const handleLogout = async () => {
   try {
@@ -217,6 +263,8 @@ const handleLogout = async () => {
 }
 
 .header {
+  position: relative;
+  z-index: 20;
   height: 60px;
   background: #ffffff;
   border-bottom: 1px solid #d7dde6;
@@ -227,12 +275,35 @@ const handleLogout = async () => {
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
-.el-dropdown-link {
-  cursor: pointer;
-  display: flex;
+.header-right {
+  flex-shrink: 0;
+}
+
+.user-menu-trigger {
+  display: inline-flex;
   align-items: center;
-  color: #3a4656;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 10px !important;
+  border-radius: 8px;
+  color: #3a4656 !important;
   font-weight: 600;
+}
+
+.user-menu-trigger:hover,
+.user-menu-trigger:focus-visible {
+  background: rgba(47, 75, 110, 0.08) !important;
+}
+
+.user-menu-trigger__greet {
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.user-menu-trigger__arrow {
+  font-size: 14px;
+  color: #64748b;
 }
 
 .main-content {

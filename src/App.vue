@@ -33,6 +33,10 @@ body {
   background: var(--biz-page-bg);
 }
 
+.layout-user-dropdown {
+  z-index: 4000 !important;
+}
+
 #print-target {
   display: none;
   position: absolute;

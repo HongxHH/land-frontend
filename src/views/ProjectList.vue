@@ -4,6 +4,7 @@
       v-model="filterProject"
       :project-options="projectOptions"
       :current-project-id="currentProjectInfo.id"
+      :current-project-name="currentProjectInfo.name"
       :options-loading="projectOptionsLoading"
       :search-projects="searchProjects"
       @search="handleGlobalSearch"
@@ -210,6 +211,7 @@
       :report-basic-info-saving="reportBasicInfoSaving"
       @jump-audit="handleJumpAuditFromDetail"
       @save-basic-info="saveReportBasicInfo"
+      @update:building-name="(v) => (reportBasicInfoForm.buildingName = v)"
       @update:property-certificate-number="(v) => (reportBasicInfoForm.propertyCertificateNumber = v)"
       @update:property-area-confirmation-notice-number="(v) => (reportBasicInfoForm.propertyAreaConfirmationNoticeNumber = v)"
     />
@@ -395,10 +397,35 @@ const initialReturnTab = ref(
 const archiveTabRef = ref(null)
 const workspaceAuditStackRef = ref(null)
 
+const AUDIT_STACK_WAIT_MS = 8000
+const AUDIT_STACK_POLL_MS = 32
+
+async function waitForWorkspaceAuditStack() {
+  const deadline = Date.now() + AUDIT_STACK_WAIT_MS
+  while (Date.now() < deadline) {
+    if (
+      currentProjectInfo.id &&
+      typeof workspaceAuditStackRef.value?.openAuditByFileRecordId === 'function'
+    ) {
+      return workspaceAuditStackRef.value
+    }
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, AUDIT_STACK_POLL_MS))
+  }
+  if (
+    currentProjectInfo.id &&
+    typeof workspaceAuditStackRef.value?.openAuditByFileRecordId === 'function'
+  ) {
+    return workspaceAuditStackRef.value
+  }
+  return null
+}
+
 /** keep-alive 下离开路由时暂停 Tab 内轮询 / STOMP 等 */
 const pageRouteActive = ref(true)
 onActivated(() => {
   pageRouteActive.value = true
+  void tryConsumeDeepLinkOpenAudit()
 })
 onDeactivated(() => {
   pageRouteActive.value = false
@@ -538,26 +565,65 @@ const handlePendingAuditConsumed = () => {
   }
 }
 
+let deepLinkAuditOpening = false
+
+const handleOpenAuditByFileRecordId = async (payload) => {
+  const fileRecordId =
+    typeof payload === 'object' && payload != null
+      ? payload.fileRecordId
+      : payload
+  const focusUsageName =
+    typeof payload === 'object' && payload != null ? payload.usageName : ''
+  const fid = String(fileRecordId || '').trim()
+  if (!fid) {
+    ElMessage.warning('缺少文件信息，无法打开审核')
+    return false
+  }
+  const stack = await waitForWorkspaceAuditStack()
+  if (!stack) {
+    ElMessage.warning('审核组件尚未就绪，请稍后再试')
+    return false
+  }
+  await stack.openAuditByFileRecordId(fid, {
+    force: true,
+    skipArchiveNavigation: true,
+    focusUsageName: String(focusUsageName || '').trim()
+  })
+  return true
+}
+
+const tryConsumeDeepLinkOpenAudit = async () => {
+  const fid = String(route.query.openAuditFileId || '').trim()
+  const expectPid = String(route.query.projectId || '').trim()
+  if (!fid || !expectPid) return
+  if (String(filterProject.value) !== expectPid) return
+  if (!currentProjectInfo.id || String(currentProjectInfo.id) !== expectPid) return
+  if (deepLinkAuditOpening) return
+  deepLinkAuditOpening = true
+  try {
+    const ok = await handleOpenAuditByFileRecordId(fid)
+    if (ok) {
+      const q = { ...route.query }
+      delete q.openAuditFileId
+      await router.replace({ query: q })
+    }
+  } finally {
+    deepLinkAuditOpening = false
+  }
+}
+
 watch(
   () => ({
     openFid: route.query.openAuditFileId,
     qPid: route.query.projectId,
     filterPid: filterProject.value,
-    cid: currentProjectInfo.id
+    cid: currentProjectInfo.id,
+    stackReady: Boolean(workspaceAuditStackRef.value?.openAuditByFileRecordId)
   }),
-  async ({ openFid, qPid, filterPid, cid }) => {
-    const fid = String(openFid || '')
-    if (!fid) return
-    const expectPid = String(qPid || '')
-    if (!expectPid || String(filterPid) !== expectPid) return
-    if (!cid || String(cid) !== expectPid) return
-    await nextTick()
-    await handleOpenAuditByFileRecordId(fid)
-    const q = { ...route.query }
-    delete q.openAuditFileId
-    await router.replace({ query: q })
+  () => {
+    void tryConsumeDeepLinkOpenAudit()
   },
-  { flush: 'post' }
+  { flush: 'post', immediate: true }
 )
 
 const {
@@ -582,32 +648,6 @@ const resolveAuditFileRecordId = (row) => {
 }
 
 const canJumpAuditFromDetail = computed(() => !!resolveAuditFileRecordId(currentDetailRow.value))
-
-const handleOpenAuditByFileRecordId = async (payload) => {
-  const fileRecordId =
-    typeof payload === 'object' && payload != null
-      ? payload.fileRecordId
-      : payload
-  const focusUsageName =
-    typeof payload === 'object' && payload != null ? payload.usageName : ''
-  const fid = String(fileRecordId || '').trim()
-  if (!fid) {
-    ElMessage.warning('缺少文件信息，无法打开审核')
-    return
-  }
-  if (!workspaceAuditStackRef.value?.openAuditByFileRecordId) {
-    await nextTick()
-  }
-  if (!workspaceAuditStackRef.value?.openAuditByFileRecordId) {
-    ElMessage.warning('审核组件尚未就绪，请稍后再试')
-    return
-  }
-  await workspaceAuditStackRef.value.openAuditByFileRecordId(fid, {
-    force: true,
-    skipArchiveNavigation: true,
-    focusUsageName: String(focusUsageName || '').trim()
-  })
-}
 
 const handleArchiveRowAudit = (row) => {
   workspaceAuditStackRef.value?.handleAudit(row)
@@ -862,20 +902,18 @@ watch(filterProject, (newVal, oldVal) => {
       const oldCdKey = `refresh_cd_${oldVal}`;
       localStorage.removeItem(oldCdKey);
     }
-  } else {
-    // 1. 清空本地缓存
+  } else if (!currentProjectInfo.id) {
+    // 仅在没有已加载项目时，才视为退出工作区（清空输入框不应触发）
     localStorage.removeItem('projectFilterStatus')
     localStorage.removeItem(PROJECT_FILTER_DISPLAY_META)
   resetSummaryMetrics();
  
-    // 3. 重置项目基本信息（关键：清空ID让刷新按钮禁用）
     Object.assign(currentProjectInfo, {
       id: '',
       name: '请选择项目',
       code: '-',
       status: '-'
     });
-    // 4. 重置冷却状态（项目都清了，冷却没用了）
     resetRefreshCdStatus();
   }
 })

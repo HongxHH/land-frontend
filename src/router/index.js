@@ -50,6 +50,12 @@ const routes = [
         name: 'FieldManagement',
         component: () => import('../views/FieldManagement.vue'),
         meta: { title: '土地类型管理' }
+      },
+      {
+        path: 'task-pool',
+        name: 'TaskPoolMonitor',
+        component: () => import('../views/TaskPoolMonitor.vue'),
+        meta: { title: '任务线程池监控', requiresDeveloper: true }
       }
     ]
   },

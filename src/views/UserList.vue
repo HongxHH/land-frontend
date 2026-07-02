@@ -49,10 +49,14 @@
       <el-table-column label="状态" width="100" align="center" header-align="center">
         <template #default="{ row }">
           <el-switch
+            v-if="canManageUsers"
             :model-value="row.isActive === 1"
             :disabled="togglingId === row.id"
             @change="(v) => onToggleActive(row, v)"
           />
+          <el-tag v-else :type="row.isActive === 1 ? 'success' : 'info'" size="small">
+            {{ row.isActive === 1 ? '启用' : '禁用' }}
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="最后登录" width="170" align="center" header-align="center">
@@ -60,7 +64,7 @@
           {{ formatTime(row.lastLogin) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="120" fixed="right" align="center" header-align="center">
+      <el-table-column v-if="canManageUsers" label="操作" width="120" fixed="right" align="center" header-align="center">
         <template #default="{ row }">
           <el-button link type="danger" @click="onDelete(row)">删除</el-button>
         </template>
@@ -88,6 +92,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { USER_TYPE_OPTIONS, userTypeLabel } from '@/constants/userTypes'
+import { canManageUsers as canManageUsersFn } from '@/utils/auth-session.js'
 import { listUsersPage } from '@/services/user.service'
 
 const loading = ref(false)
@@ -99,6 +104,8 @@ const keyword = ref('')
 const togglingId = ref(null)
 const me = ref(null)
 const assigningTypeId = ref(null)
+
+const canManageUsers = computed(() => canManageUsersFn())
 
 const canAssignUserTypes = computed(() => {
   const t = me.value?.userType

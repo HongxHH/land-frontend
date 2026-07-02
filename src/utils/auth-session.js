@@ -33,15 +33,28 @@ export function clearUserSession() {
   sessionStorage.removeItem(USER_SESSION_KEY)
 }
 
-/** @returns {string} 优先真实姓名，否则用户名 */
+/** 顶栏问候语：优先 realName，其次 username */
 export function getUserDisplayName() {
   const session = getUserSession()
-  const name = session?.realName?.trim() || session?.username?.trim()
-  return name || '用户'
+  const realName = String(session?.realName || '').trim()
+  if (realName) return realName
+  const username = String(session?.username || '').trim()
+  return username || '用户'
 }
 
-/** 与后端 SysUserController @SaCheckRole(SUPER_ADMIN|ADMIN) 对齐 */
+/** 与后端 SysUserController @SaCheckRole(SUPER_ADMIN|ADMIN|DEVELOPER) 对齐；写操作仍仅管理员 */
 export function canAccessUserManagement() {
   const userType = getUserSession()?.userType
+  return userType === 'SUPER_ADMIN' || userType === 'ADMIN' || userType === 'DEVELOPER'
+}
+
+/** 可修改用户权限类型、启用/禁用、删除等写操作 */
+export function canManageUsers() {
+  const userType = getUserSession()?.userType
   return userType === 'SUPER_ADMIN' || userType === 'ADMIN'
+}
+
+/** 与任务监控页 / 相关 API @SaCheckRole(DEVELOPER) 对齐 */
+export function canAccessTaskPoolMonitor() {
+  return getUserSession()?.userType === 'DEVELOPER'
 }

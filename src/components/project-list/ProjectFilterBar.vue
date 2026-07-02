@@ -11,19 +11,18 @@
             class="project-display"
             :class="{
               loading: optionsLoading,
-              selected: !!selectedProjectName && !optionsLoading,
-              empty: !selectedProjectName && !optionsLoading
+              selected: !!activeProjectName && !optionsLoading,
+              empty: !activeProjectName && !optionsLoading
             }"
           >
             <template v-if="optionsLoading">
               <span class="project-name loading-text">正在同步项目列表…</span>
             </template>
-            <template v-else-if="selectedProjectName">
-              <span class="project-name" :title="selectedProjectName">{{ selectedProjectName }}</span>
+            <template v-else-if="activeProjectName">
+              <span class="project-name" :title="activeProjectName">{{ activeProjectName }}</span>
             </template>
             <template v-else>
               <span class="project-name empty-title">请选择项目</span>
-              <span class="project-hint">在右侧搜索框输入名称或编号进行筛选</span>
             </template>
           </div>
         </div>
@@ -113,6 +112,11 @@ const props = defineProps({
     type: [String, Number],
     default: ''
   },
+  /** 已加载（查询档案后）的项目名称，与 currentProjectId 配套 */
+  currentProjectName: {
+    type: String,
+    default: ''
+  },
   /** 首屏拉取项目列表时提示，避免长时间无文案 */
   optionsLoading: {
     type: Boolean,
@@ -130,16 +134,25 @@ const emit = defineEmits(['update:modelValue', 'search', 'create-project', 'requ
 const projectSearchText = ref('')
 const suppressInputEmit = ref(false)
 
-const selectedProjectName = computed(() => {
-  const target = props.projectOptions?.find((item) => String(item.id) === String(props.modelValue || ''))
+function resolveProjectNameById(projectId) {
+  const target = props.projectOptions?.find((item) => String(item.id) === String(projectId || ''))
   return target?.name || ''
+}
+
+/** 左侧展示：仅反映已点击「查询档案」后的当前项目 */
+const activeProjectName = computed(() => {
+  const activeId = String(props.currentProjectId || '')
+  if (!activeId) return ''
+  const cachedName = String(props.currentProjectName || '').trim()
+  if (cachedName && cachedName !== '请选择项目') return cachedName
+  return resolveProjectNameById(activeId)
 })
 
 watch(
   () => props.modelValue,
   () => {
     suppressInputEmit.value = true
-    projectSearchText.value = selectedProjectName.value || ''
+    projectSearchText.value = resolveProjectNameById(props.modelValue) || ''
     Promise.resolve().then(() => {
       suppressInputEmit.value = false
     })
@@ -224,8 +237,14 @@ function handleSelectProject(item) {
 }
 
 function handleClearProject() {
+  suppressInputEmit.value = true
   projectSearchText.value = ''
-  emit('update:modelValue', '')
+  if (!props.currentProjectId) {
+    emit('update:modelValue', '')
+  }
+  Promise.resolve().then(() => {
+    suppressInputEmit.value = false
+  })
 }
 
 function handleRequestOptions() {
@@ -236,7 +255,10 @@ watch(
   () => projectSearchText.value,
   (v) => {
     if (suppressInputEmit.value) return
-    if (!String(v || '').trim()) emit('update:modelValue', '')
+    if (!String(v || '').trim()) {
+      if (props.currentProjectId) return
+      emit('update:modelValue', '')
+    }
   }
 )
 
@@ -337,6 +359,11 @@ function formatShortTime(val) {
   gap: 4px;
 }
 
+.project-display.empty {
+  flex-direction: row;
+  align-items: center;
+}
+
 .project-name {
   font-size: 18px;
   font-weight: 700;
@@ -360,15 +387,20 @@ function formatShortTime(val) {
 }
 
 .project-display.empty .project-name.empty-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #94a3b8;
-}
-
-.project-hint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(148, 163, 184, 0.55);
+  background: rgba(248, 250, 252, 0.92);
   font-size: 14px;
-  line-height: 1.4;
-  color: #94a3b8;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
 }
 
 .filter-toolbar {
