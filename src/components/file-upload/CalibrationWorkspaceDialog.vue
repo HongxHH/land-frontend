@@ -120,6 +120,22 @@
                 >
                   {{ auditSummaryDisplay.isVerifiedText }}
                 </el-tag>
+                <el-tooltip
+                  :content="auditPassDisabledReason"
+                  :disabled="!auditPassDisabledReason"
+                  placement="bottom"
+                >
+                  <el-button
+                    class="audit-pass-button"
+                    type="success"
+                    size="small"
+                    :loading="auditPassSubmitting"
+                    :disabled="auditPassDisabled"
+                    @click="handleAuditPassClick"
+                  >
+                    审核通过
+                  </el-button>
+                </el-tooltip>
               </div>
             </div>
 
@@ -1073,6 +1089,34 @@ watch(
 const hasPendingConfirmArea = computed(
   () => toNumber(props.auditSummaryData?.pendingConfirmArea) > AREA_COMPARE_TOLERANCE
 )
+
+const auditPassSubmitting = ref(false)
+const auditPassDisabledReason = computed(() => {
+  if (typeof props.handleAuditPass !== 'function') return '当前入口不支持提交审核'
+  if (props.currentFile?.status === 'AUDIT_PASS' || props.currentFile?.fileState === 'AUDIT_PASS') return '文件已审核通过'
+  if (props.calibrationLoading || props.roomInfoLoading) return '数据加载中，请稍后'
+  if (!isAuditPassed.value) return '校验未通过，不能审核通过'
+  if (hasPendingUnknownUsage.value || missingUsageCount.value > 0) return '仍有未知或缺失用途需要确认'
+  if (hasPendingConfirmArea.value) return '仍有待确认面积需要处理'
+  return ''
+})
+const auditPassDisabled = computed(() => auditPassSubmitting.value || Boolean(auditPassDisabledReason.value))
+
+const handleAuditPassClick = async () => {
+  if (auditPassDisabledReason.value) {
+    ElMessage.warning(auditPassDisabledReason.value)
+    return
+  }
+  auditPassSubmitting.value = true
+  try {
+    await props.handleAuditPass()
+  } catch (error) {
+    console.error('审核通过处理失败:', error)
+    ElMessage.error('审核通过提交失败，请稍后重试')
+  } finally {
+    auditPassSubmitting.value = false
+  }
+}
 
 const createRoomDialogVisible = ref(false)
 const createRoomFormRef = ref(null)
