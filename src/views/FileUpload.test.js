@@ -11,6 +11,8 @@ const pageState = vi.hoisted(() => ({
   handleSaveData: vi.fn()
 }))
 
+vi.mock('element-plus/dist/locale/zh-cn.mjs', () => ({ default: {} }))
+
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
   useRouter: () => ({ replace: vi.fn(() => Promise.resolve()) })
