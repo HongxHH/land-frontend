@@ -12,11 +12,36 @@
       <el-button :icon="Refresh" @click="loadList">刷新</el-button>
     </div>
 
-    <el-table v-loading="loading" class="admin-mgmt-table user-list-table" :data="rows" stripe border style="width: 100%">
+    <el-table
+      v-loading="loading"
+      class="admin-mgmt-table user-list-table"
+      :data="rows"
+      stripe
+      border
+      style="width: 100%"
+    >
       <el-table-column prop="id" label="ID" width="90" align="center" header-align="center" />
-      <el-table-column prop="username" label="用户名" width="140" align="center" header-align="center" />
-      <el-table-column prop="realName" label="姓名" width="120" align="center" header-align="center" />
-      <el-table-column label="权限类型" width="1" min-width="160" align="center" header-align="center">
+      <el-table-column
+        prop="username"
+        label="用户名"
+        width="140"
+        align="center"
+        header-align="center"
+      />
+      <el-table-column
+        prop="realName"
+        label="姓名"
+        width="120"
+        align="center"
+        header-align="center"
+      />
+      <el-table-column
+        label="权限类型"
+        width="1"
+        min-width="160"
+        align="center"
+        header-align="center"
+      >
         <template #default="{ row }">
           <el-select
             v-if="showUserTypeEditor(row)"
@@ -33,10 +58,19 @@
               :value="opt.value"
             />
           </el-select>
-          <el-tag v-else :type="tagType(row.userType)" size="small">{{ userTypeLabel(row.userType) }}</el-tag>
+          <el-tag v-else :type="tagType(row.userType)" size="small">{{
+            userTypeLabel(row.userType)
+          }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="phone" label="手机" width="1" min-width="160" align="center" header-align="center" />
+      <el-table-column
+        prop="phone"
+        label="手机"
+        width="1"
+        min-width="160"
+        align="center"
+        header-align="center"
+      />
       <el-table-column
         prop="email"
         label="邮箱"
@@ -80,7 +114,14 @@
           {{ formatTime(row.lastLogin) }}
         </template>
       </el-table-column>
-      <el-table-column v-if="canManageUsers" label="操作" width="120" fixed="right" align="center" header-align="center">
+      <el-table-column
+        v-if="canManageUsers"
+        label="操作"
+        width="120"
+        fixed="right"
+        align="center"
+        header-align="center"
+      >
         <template #default="{ row }">
           <el-button link type="danger" @click="onDelete(row)">删除</el-button>
         </template>
@@ -110,7 +151,12 @@
       <p v-if="passwordTarget" class="password-dialog-tip">
         为用户「{{ passwordTarget.username }}」（{{ passwordTarget.realName || '—' }}）设置新密码
       </p>
-      <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="88px">
+      <el-form
+        ref="passwordFormRef"
+        :model="passwordForm"
+        :rules="passwordRules"
+        label-width="88px"
+      >
         <el-form-item label="新密码" prop="password">
           <el-input
             v-model="passwordForm.password"
@@ -133,7 +179,9 @@
       </el-form>
       <template #footer>
         <el-button @click="passwordDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="savingPassword" @click="submitPasswordReset">确定</el-button>
+        <el-button type="primary" :loading="savingPassword" @click="submitPasswordReset"
+          >确定</el-button
+        >
       </template>
     </el-dialog>
   </el-card>
@@ -163,13 +211,13 @@ const passwordFormRef = ref(null)
 const savingPassword = ref(false)
 const passwordForm = reactive({
   password: '',
-  password2: ''
+  password2: '',
 })
 
 const passwordRules = {
   password: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度 6-20 位', trigger: 'blur' }
+    { min: 6, max: 20, message: '密码长度 6-20 位', trigger: 'blur' },
   ],
   password2: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
@@ -178,9 +226,9 @@ const passwordRules = {
         if (v !== passwordForm.password) cb(new Error('两次密码不一致'))
         else cb()
       },
-      trigger: 'blur'
-    }
-  ]
+      trigger: 'blur',
+    },
+  ],
 }
 
 /** 以 /api/auth/me 为准，避免 sessionStorage 中 userType 过期导致按钮不显示 */
@@ -231,7 +279,7 @@ async function loadList() {
   try {
     const params = {
       pageNum: pageNum.value,
-      pageSize: pageSize.value
+      pageSize: pageSize.value,
     }
     const k = keyword.value.trim()
     if (k) params.username = k
@@ -308,7 +356,7 @@ async function submitPasswordReset() {
   }
   try {
     await ElMessageBox.confirm(`确定重置用户「${passwordTarget.value.username}」的密码？`, '确认', {
-      type: 'warning'
+      type: 'warning',
     })
   } catch {
     return

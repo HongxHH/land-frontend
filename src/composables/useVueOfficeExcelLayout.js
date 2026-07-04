@@ -59,6 +59,6 @@ export function useVueOfficeExcelLayout(containerRef, isActive) {
 
   return {
     triggerSpreadsheetLayout,
-    syncExcelLayout
+    syncExcelLayout,
   }
 }

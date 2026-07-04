@@ -17,5 +17,5 @@ export const VueOfficeExcelAsync = defineAsyncComponent({
     return mod.default
   },
   delay: 80,
-  timeout: 60000
+  timeout: 60000,
 })

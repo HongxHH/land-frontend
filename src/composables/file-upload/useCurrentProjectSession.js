@@ -8,7 +8,7 @@ export function useCurrentProjectSession({
   fileTableData,
   stopPolling,
   calibrationPdfUrl,
-  clearUploadSelection
+  clearUploadSelection,
 }) {
   onMounted(async () => {
     await fetchProjectList()

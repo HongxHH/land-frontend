@@ -117,6 +117,6 @@ export function useSummaryTableHorizontalScroll(tableRef, tableDataRef) {
     canScrollLeft,
     canScrollRight,
     scrollTableBy,
-    measure
+    measure,
   }
 }

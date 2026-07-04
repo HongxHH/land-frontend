@@ -6,7 +6,7 @@ export function useParseActions({ startPolling }) {
     ElMessageBox.confirm(`确认对文件 "${row.name}" 开始智能解析吗？`, '启动解析', {
       confirmButtonText: '立即开始',
       cancelButtonText: '取消',
-      type: 'primary'
+      type: 'primary',
     })
       .then(() => {
         parseFileById(row.rawId)
@@ -28,11 +28,15 @@ export function useParseActions({ startPolling }) {
   }
 
   const cancelProcessing = (row) => {
-    ElMessageBox.confirm(`确认取消文件 "${row.name}" 的解析任务吗？取消后可重新发起解析。`, '取消解析', {
-      confirmButtonText: '确认取消',
-      cancelButtonText: '再等等',
-      type: 'warning'
-    })
+    ElMessageBox.confirm(
+      `确认取消文件 "${row.name}" 的解析任务吗？取消后可重新发起解析。`,
+      '取消解析',
+      {
+        confirmButtonText: '确认取消',
+        cancelButtonText: '再等等',
+        type: 'warning',
+      }
+    )
       .then(async () => {
         try {
           await cancelParseByFileId(row.rawId, 'user_cancel')
@@ -48,6 +52,6 @@ export function useParseActions({ startPolling }) {
 
   return {
     startProcessing,
-    cancelProcessing
+    cancelProcessing,
   }
 }

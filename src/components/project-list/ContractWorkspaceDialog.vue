@@ -13,7 +13,11 @@
         ref="auditLayoutRef"
         class="audit-split-layout audit-split-layout--responsive contract-workspace-split"
       >
-        <section class="pdf-panel audit-split-layout__left" :style="leftPanelStyle" v-loading="pdfLoading">
+        <section
+          class="pdf-panel audit-split-layout__left"
+          :style="leftPanelStyle"
+          v-loading="pdfLoading"
+        >
           <div class="pdf-panel-toolbar">
             <el-select
               :model-value="selectedFileId"
@@ -26,7 +30,12 @@
               :title="fileName || undefined"
               @update:model-value="(v) => emit('update:selectedFileId', v)"
             >
-              <el-option v-for="item in fileOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option
+                v-for="item in fileOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
             </el-select>
           </div>
           <iframe v-if="pdfUrl" class="pdf-frame" :src="pdfUrl" title="合同预览" />
@@ -57,7 +66,13 @@
               <span class="v">{{ form.transferee || '-' }}</span>
             </div>
           </div>
-          <el-form :ref="setFormRef" :model="form" :rules="rules" label-position="top" class="contract-form contract-form-scroll">
+          <el-form
+            :ref="setFormRef"
+            :model="form"
+            :rules="rules"
+            label-position="top"
+            class="contract-form contract-form-scroll"
+          >
             <el-form-item label="合同编号" prop="contractNumber">
               <el-input
                 :model-value="form.contractNumber"
@@ -116,7 +131,7 @@ const props = defineProps({
   fileName: { type: String, default: '' },
   fileOptions: { type: Array, default: () => [] },
   fileOptionsLoading: { type: Boolean, default: false },
-  selectedFileId: { type: [String, Number], default: '' }
+  selectedFileId: { type: [String, Number], default: '' },
 })
 
 const emit = defineEmits(['update:modelValue', 'update:form', 'submit', 'update:selectedFileId'])
@@ -125,14 +140,14 @@ const setFormField = createFormFieldPatcher(props, emit, 'form')
 
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const { auditLayoutRef, leftPanelStyle, onSplitterMouseDown } = useAuditSplitPanel({
   defaultLeftPercent: 55,
   onSplitEnd: () => {
     window.dispatchEvent(new Event('resize'))
-  }
+  },
 })
 </script>
 

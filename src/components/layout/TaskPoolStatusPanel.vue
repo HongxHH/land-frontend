@@ -11,7 +11,9 @@
           </div>
           <div class="pool-tuner__fields">
             <label class="pool-field">
-              <span class="pool-field__label">核心线程 <em>生效 {{ coreThreads || '—' }}</em></span>
+              <span class="pool-field__label"
+                >核心线程 <em>生效 {{ coreThreads || '—' }}</em></span
+              >
               <el-input-number
                 v-model="poolForm.corePoolSize"
                 :min="1"
@@ -22,7 +24,9 @@
               />
             </label>
             <label class="pool-field">
-              <span class="pool-field__label">最大线程 <em>生效 {{ maxThreads || '—' }}</em></span>
+              <span class="pool-field__label"
+                >最大线程 <em>生效 {{ maxThreads || '—' }}</em></span
+              >
               <el-input-number
                 v-model="poolForm.maximumPoolSize"
                 :min="Math.max(1, Number(poolForm.corePoolSize) || 1)"
@@ -33,15 +37,27 @@
             </label>
           </div>
           <div class="pool-tuner__actions">
-            <el-button size="small" :disabled="!poolDirty" @click="resetPoolDraftToLive">恢复</el-button>
-            <el-button size="small" type="primary" :loading="updatingPoolSize" :disabled="!poolDirty" @click="submitPoolSizeUpdate">
+            <el-button size="small" :disabled="!poolDirty" @click="resetPoolDraftToLive"
+              >恢复</el-button
+            >
+            <el-button
+              size="small"
+              type="primary"
+              :loading="updatingPoolSize"
+              :disabled="!poolDirty"
+              @click="submitPoolSizeUpdate"
+            >
               应用配置
             </el-button>
           </div>
         </div>
         <div class="metric-row">
-          <div class="metric-item"><span>线程池</span><strong>{{ poolSize }}</strong></div>
-          <div class="metric-item"><span>已完成</span><strong>{{ completedCount }}</strong></div>
+          <div class="metric-item">
+            <span>线程池</span><strong>{{ poolSize }}</strong>
+          </div>
+          <div class="metric-item">
+            <span>已完成</span><strong>{{ completedCount }}</strong>
+          </div>
         </div>
       </section>
 
@@ -54,7 +70,9 @@
             <el-tag size="small" type="danger" effect="plain">高 {{ highPriorityCount }}</el-tag>
             <el-tag size="small" type="warning" effect="plain">中 {{ normalPriorityCount }}</el-tag>
             <span class="running-card__update">{{ lastUpdateText }}</span>
-            <el-button size="small" :icon="Refresh" :loading="loading" @click="refreshAll">刷新</el-button>
+            <el-button size="small" :icon="Refresh" :loading="loading" @click="refreshAll"
+              >刷新</el-button
+            >
           </div>
         </header>
         <el-empty v-if="!runningTasks.length" description="当前暂无任务" :image-size="56" />
@@ -67,11 +85,17 @@
           >
             <div class="running-item__main">
               <div class="running-item__title-row">
-                <span class="task-name" :title="task.taskName || ''">{{ task.taskName || '-' }}</span>
-                <span class="task-status" :class="taskStatusPillClass(task.status)">{{ task.status || '-' }}</span>
+                <span class="task-name" :title="task.taskName || ''">{{
+                  task.taskName || '-'
+                }}</span>
+                <span class="task-status" :class="taskStatusPillClass(task.status)">{{
+                  task.status || '-'
+                }}</span>
               </div>
               <div v-if="task.taskType === 'FILE_PARSE'" class="running-item__progress">
-                <span class="stage-name">{{ task.currentStageName || task.currentStageCode || '等待开始' }}</span>
+                <span class="stage-name">{{
+                  task.currentStageName || task.currentStageCode || '等待开始'
+                }}</span>
                 <el-progress
                   :percentage="Number(task.progress || 0)"
                   :stroke-width="6"
@@ -105,7 +129,9 @@
               </el-tooltip>
               <div class="running-item__meta">
                 <span>项目 {{ task.projectId ?? '-' }}</span>
-                <span v-if="task.fileName || task.fileId != null">文件 {{ task.fileName || task.fileId }}</span>
+                <span v-if="task.fileName || task.fileId != null"
+                  >文件 {{ task.fileName || task.fileId }}</span
+                >
                 <span>{{ task.priority || '-' }}</span>
                 <span>等待 {{ formatDuration(task.waitingDurationMs) }}</span>
                 <span>运行 {{ formatDuration(task.runningDurationMs) }}</span>
@@ -113,7 +139,9 @@
               </div>
             </div>
             <div class="running-item__actions">
-              <el-button size="small" text type="primary" @click="openTaskDetail(task)">详情</el-button>
+              <el-button size="small" text type="primary" @click="openTaskDetail(task)"
+                >详情</el-button
+              >
               <el-button
                 v-if="task.cancellable"
                 size="small"
@@ -132,31 +160,62 @@
         <h2 class="system-card__title">系统运行状态</h2>
         <div class="system-row">
           <span class="system-label">系统 CPU</span>
-          <el-progress :percentage="systemCpuPercent" :color="loadColor(systemCpuPercent)" :stroke-width="6" :show-text="false" />
+          <el-progress
+            :percentage="systemCpuPercent"
+            :color="loadColor(systemCpuPercent)"
+            :stroke-width="6"
+            :show-text="false"
+          />
           <span class="system-val">{{ systemCpuText }}</span>
         </div>
         <div class="system-row">
           <span class="system-label">JVM 堆内存</span>
-          <el-progress :percentage="memoryPercent" :color="loadColor(memoryPercent)" :stroke-width="6" :show-text="false" />
-          <span class="system-val">{{ formatBytes(memoryUsed) }} / {{ formatBytes(memoryMax) }}</span>
+          <el-progress
+            :percentage="memoryPercent"
+            :color="loadColor(memoryPercent)"
+            :stroke-width="6"
+            :show-text="false"
+          />
+          <span class="system-val"
+            >{{ formatBytes(memoryUsed) }} / {{ formatBytes(memoryMax) }}</span
+          >
         </div>
         <div class="system-row">
           <span class="system-label">线程数</span>
-          <span class="system-val system-val--solo">{{ systemStatus.thread?.liveThreadCount ?? '-' }}</span>
+          <span class="system-val system-val--solo">{{
+            systemStatus.thread?.liveThreadCount ?? '-'
+          }}</span>
         </div>
         <div class="system-row">
           <span class="system-label">GPU</span>
           <template v-if="gpuSupported && gpuUtil != null">
-            <el-progress :percentage="gpuPercent" :color="loadColor(gpuPercent)" :stroke-width="6" :show-text="false" />
+            <el-progress
+              :percentage="gpuPercent"
+              :color="loadColor(gpuPercent)"
+              :stroke-width="6"
+              :show-text="false"
+            />
             <span class="system-val">{{ gpuPercent }}%</span>
           </template>
-          <span v-else class="system-val system-val--solo">{{ systemStatus.gpu?.message || '不可用' }}</span>
+          <span v-else class="system-val system-val--solo">{{
+            systemStatus.gpu?.message || '不可用'
+          }}</span>
         </div>
       </div>
     </div>
 
-    <el-dialog v-model="detailVisible" title="任务阶段详情" width="680px" destroy-on-close append-to-body>
-      <TaskParseFlowDetailPanel :detail="detailTask" :loading="detailLoading" @refresh="refreshTaskDetail" />
+    <el-dialog
+      v-model="detailVisible"
+      title="任务阶段详情"
+      width="680px"
+      destroy-on-close
+      append-to-body
+    >
+      <TaskParseFlowDetailPanel
+        :detail="detailTask"
+        :loading="detailLoading"
+        @refresh="refreshTaskDetail"
+      />
     </el-dialog>
   </div>
 </template>
@@ -172,14 +231,14 @@ import {
   getSystemRuntimeStatus,
   getTaskDetailByTaskId,
   getTaskPoolStatus,
-  updateTaskPoolSize
+  updateTaskPoolSize,
 } from '@/services/file.service'
 
 const props = defineProps({
   active: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const loading = ref(false)
@@ -188,14 +247,14 @@ const lastUpdateAt = ref(0)
 const statusData = ref({
   threadPoolStatus: {},
   runningTasks: [],
-  queueTasks: {}
+  queueTasks: {},
 })
 const systemStatus = ref({
   system: {},
   memory: {},
   thread: {},
   dataSource: {},
-  gpu: {}
+  gpu: {},
 })
 let timer = null
 let detailPollTimer = null
@@ -203,17 +262,21 @@ let refreshAllInFlight = false
 let refreshDetailInFlight = false
 const refreshIntervalMs = 5000
 const detailPollIntervalMs = 2000
-const pageVisible = ref(typeof document === 'undefined' ? true : document.visibilityState === 'visible')
+const pageVisible = ref(
+  typeof document === 'undefined' ? true : document.visibilityState === 'visible'
+)
 const statusLoaded = ref(false)
 const poolForm = ref({
   corePoolSize: 1,
-  maximumPoolSize: 1
+  maximumPoolSize: 1,
 })
 const detailVisible = ref(false)
 const detailLoading = ref(false)
 const detailTask = ref(null)
 
-const runningTasks = computed(() => (Array.isArray(statusData.value?.runningTasks) ? statusData.value.runningTasks : []))
+const runningTasks = computed(() =>
+  Array.isArray(statusData.value?.runningTasks) ? statusData.value.runningTasks : []
+)
 
 const taskStatusRank = (status) => {
   const s = String(status || '').toUpperCase()
@@ -234,14 +297,24 @@ const sortedRunningTasks = computed(() => {
   return list
 })
 
-const listRunningCount = computed(() => runningTasks.value.filter((t) => String(t?.status || '').toUpperCase() === 'RUNNING').length)
-const listQueuedCount = computed(() => runningTasks.value.filter((t) => String(t?.status || '').toUpperCase() === 'QUEUED').length)
-const highPriorityCount = computed(() => Number(statusData.value?.queueTasks?.highPriorityCount || 0))
-const normalPriorityCount = computed(() => Number(statusData.value?.queueTasks?.normalPriorityCount || 0))
+const listRunningCount = computed(
+  () => runningTasks.value.filter((t) => String(t?.status || '').toUpperCase() === 'RUNNING').length
+)
+const listQueuedCount = computed(
+  () => runningTasks.value.filter((t) => String(t?.status || '').toUpperCase() === 'QUEUED').length
+)
+const highPriorityCount = computed(() =>
+  Number(statusData.value?.queueTasks?.highPriorityCount || 0)
+)
+const normalPriorityCount = computed(() =>
+  Number(statusData.value?.queueTasks?.normalPriorityCount || 0)
+)
 const coreThreads = computed(() => Number(statusData.value?.threadPoolStatus?.corePoolSize || 0))
 const maxThreads = computed(() => Number(statusData.value?.threadPoolStatus?.maximumPoolSize || 0))
 const poolSize = computed(() => Number(statusData.value?.threadPoolStatus?.poolSize || 0))
-const completedCount = computed(() => Number(statusData.value?.threadPoolStatus?.completedTaskCount || 0))
+const completedCount = computed(() =>
+  Number(statusData.value?.threadPoolStatus?.completedTaskCount || 0)
+)
 const systemCpu = computed(() => Number(systemStatus.value?.system?.cpuLoadPercent || 0))
 const memoryUsed = computed(() => Number(systemStatus.value?.memory?.heapUsedBytes || 0))
 const memoryMax = computed(() => Number(systemStatus.value?.memory?.heapMaxBytes || 0))
@@ -315,7 +388,7 @@ const fetchStatus = async () => {
       statusData.value = res?.data?.data || {
         threadPoolStatus: {},
         runningTasks: [],
-        queueTasks: {}
+        queueTasks: {},
       }
       const currentCore = Number(statusData.value?.threadPoolStatus?.corePoolSize || 1)
       const currentMax = Number(statusData.value?.threadPoolStatus?.maximumPoolSize || 1)
@@ -340,7 +413,7 @@ const fetchSystemStatus = async () => {
         memory: {},
         thread: {},
         dataSource: {},
-        gpu: {}
+        gpu: {},
       }
     }
   } catch (error) {

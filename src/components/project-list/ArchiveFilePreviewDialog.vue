@@ -15,12 +15,19 @@
           {{ fileMeta?.originalName || '归档文件' }}
         </div>
         <div class="archive-preview-actions">
-          <el-tag v-if="fileMeta?.fileType" size="small" effect="plain">{{ fileMeta.fileType }}</el-tag>
-          <el-button size="small" :disabled="!fileMeta?.gridfsId" @click="emit('download')">下载原文件</el-button>
+          <el-tag v-if="fileMeta?.fileType" size="small" effect="plain">{{
+            fileMeta.fileType
+          }}</el-tag>
+          <el-button size="small" :disabled="!fileMeta?.gridfsId" @click="emit('download')"
+            >下载原文件</el-button
+          >
         </div>
       </div>
 
-      <div class="archive-preview-body" :class="{ 'archive-preview-body--excel': mode === 'excel' }">
+      <div
+        class="archive-preview-body"
+        :class="{ 'archive-preview-body--excel': mode === 'excel' }"
+      >
         <iframe
           v-if="mode === 'pdf' && pdfUrl"
           class="archive-preview-frame"
@@ -38,7 +45,11 @@
           <el-empty v-else description="Excel 预览加载中或暂不可用" />
         </div>
         <div v-else-if="mode === 'image' && imageUrl" class="archive-preview-image-wrap">
-          <img :src="imageUrl" :alt="fileMeta?.originalName || '图片预览'" class="archive-preview-image" />
+          <img
+            :src="imageUrl"
+            :alt="fileMeta?.originalName || '图片预览'"
+            class="archive-preview-image"
+          />
         </div>
         <el-empty
           v-else-if="mode === 'unsupported'"
@@ -62,14 +73,20 @@ const props = defineProps({
   fileMeta: { type: Object, default: null },
   pdfUrl: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
-  excelSrc: { type: [Object, ArrayBuffer, null], default: null }
+  excelSrc: { type: [Object, ArrayBuffer, null], default: null },
 })
 
-const emit = defineEmits(['update:modelValue', 'closed', 'download', 'excel-rendered', 'excel-error'])
+const emit = defineEmits([
+  'update:modelValue',
+  'closed',
+  'download',
+  'excel-rendered',
+  'excel-error',
+])
 
 const dialogVisible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const excelViewRef = ref(null)

@@ -5,17 +5,17 @@ import {
   isUploadAbortError,
   resolveUploadFileUid,
   runConcurrentUploads,
-  UPLOAD_FILE_STATUS
+  UPLOAD_FILE_STATUS,
 } from '@/composables/file-upload/useConcurrentFileUpload.js'
 import {
   collectFilesFromDataTransferAsync,
   collectFilesFromInput,
-  extractRootFolderNameFromFiles
+  extractRootFolderNameFromFiles,
 } from '@/utils/localFolderCollector.js'
 import {
   getSelectedUploadEntries,
   groupScannedEntries,
-  scanLocalFolderFiles
+  scanLocalFolderFiles,
 } from '@/utils/localFolderFileMatcher.js'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
 
@@ -123,7 +123,7 @@ export function useSmartFolderImport() {
       name: entry.displayName,
       raw: entry.file,
       fileContextType: entry.fileContextType,
-      relativePath: entry.relativePath
+      relativePath: entry.relativePath,
     }))
   }
 
@@ -156,7 +156,7 @@ export function useSmartFolderImport() {
         loaded: 0,
         total: Number(item.raw?.size || 0),
         fileId: null,
-        error: null
+        error: null,
       })
     }
     syncAggregateProgress(uploadItems)
@@ -167,7 +167,7 @@ export function useSmartFolderImport() {
         buildParams: (fileItem) => {
           const params = {
             projectId: numericProjectId,
-            fileContextType: fileItem.fileContextType
+            fileContextType: fileItem.fileContextType,
           }
           if (fileItem.fileContextType === 'SURVEY_REPORT') {
             params.phase = surveyPhase.value
@@ -176,12 +176,17 @@ export function useSmartFolderImport() {
         },
         concurrency: 4,
         signal: ac.signal,
-        onFileState: (uid, state) => applyFileState(uid, state, uploadItems)
+        onFileState: (uid, state) => applyFileState(uid, state, uploadItems),
       })
 
       if (result.cancelled) {
         ElMessage.info('已取消上传')
-        return { success: false, successCount: result.successCount, errorCount: result.errorCount, cancelled: true }
+        return {
+          success: false,
+          successCount: result.successCount,
+          errorCount: result.errorCount,
+          cancelled: true,
+        }
       }
 
       if (result.successCount > 0) {
@@ -197,7 +202,7 @@ export function useSmartFolderImport() {
       return {
         success: result.successCount > 0 && result.errorCount === 0,
         successCount: result.successCount,
-        errorCount: result.errorCount
+        errorCount: result.errorCount,
       }
     } catch (error) {
       if (!isUploadAbortError(error)) {
@@ -241,6 +246,6 @@ export function useSmartFolderImport() {
     uploadToProject,
     cancelUpload,
     getGroupLabel,
-    buildUploadItems
+    buildUploadItems,
   }
 }

@@ -2,11 +2,12 @@ import axios from 'axios'
 import { clearAuth, getToken, SA_TOKEN_HEADER_NAME } from '@/utils/auth-token'
 
 function redirectToLogin() {
-  clearAuth()
   const path = window.location?.pathname || ''
+  // 登录/注册页上的 401（如登录后预热未读消息）不应清掉刚写入的 token
   if (path.includes('/login') || path.includes('/register')) {
     return
   }
+  clearAuth()
   window.location.href = '/login'
 }
 

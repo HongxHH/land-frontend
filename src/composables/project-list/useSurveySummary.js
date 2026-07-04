@@ -1,14 +1,17 @@
 ﻿import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
-import { getParsedSurveyReportsByProject, queryProjectAreaComparison } from '@/services/project.service'
+import {
+  getParsedSurveyReportsByProject,
+  queryProjectAreaComparison,
+} from '@/services/project.service'
 import { getApiErrorMessage } from '@/utils/apiErrorMessage'
 import { queryFiles } from '@/services/file.service'
 import {
   aggregateProjectUnknownUsagesJson,
   buildUsageNameFileRecordMap,
   mergeUnknownUsagePolicyRows,
-  projectHasPendingUnknownUsageRows
+  projectHasPendingUnknownUsageRows,
 } from '@/composables/file-upload/surveyUsagePending'
 import { SUMMARY_COMPARISON_GROUP_KEYS } from '@/composables/project-list/summaryComparisonGroupMeta.js'
 
@@ -23,7 +26,7 @@ const COMPARISON_GROUP_KEYS = SUMMARY_COMPARISON_GROUP_KEYS
 const createEmptyTripleLines = () => ({
   totalBuilding: { contractAgreedArea: null, buildableArea: null, difference: null },
   commercial: { contractAgreedArea: null, buildableArea: null, difference: null },
-  residential: { contractAgreedArea: null, buildableArea: null, difference: null }
+  residential: { contractAgreedArea: null, buildableArea: null, difference: null },
 })
 
 const createEmptyAreaComparison = () => ({
@@ -36,8 +39,8 @@ const createEmptyAreaComparison = () => ({
     systemCalculatedAvailable: false,
     projectPartyDeclaredAvailable: false,
     planningCalculatedAvailable: false,
-    capacityIndicatorCalculatedAvailable: false
-  }
+    capacityIndicatorCalculatedAvailable: false,
+  },
 })
 
 export function useSurveySummary() {
@@ -48,20 +51,26 @@ export function useSurveySummary() {
   let surveyAbortController = null
 
   const isAbortError = (error) =>
-    error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError' || error?.name === 'AbortError'
+    error?.code === 'ERR_CANCELED' ||
+    error?.name === 'CanceledError' ||
+    error?.name === 'AbortError'
   const areaComparison = ref(createEmptyAreaComparison())
   const selectedComparisonGroups = ref([...COMPARISON_GROUP_KEYS])
   const uploadedSurveyReportTotal = ref(0)
   const surveyLoading = ref(false)
 
   const surveyStats = computed(() => {
-    const verifiedCount = rawTableData.value.filter((item) => normalizeVerifiedFlag(item.isVerified) === 1).length
-    const unverifiedCount = rawTableData.value.filter((item) => normalizeVerifiedFlag(item.isVerified) === 0).length
+    const verifiedCount = rawTableData.value.filter(
+      (item) => normalizeVerifiedFlag(item.isVerified) === 1
+    ).length
+    const unverifiedCount = rawTableData.value.filter(
+      (item) => normalizeVerifiedFlag(item.isVerified) === 0
+    ).length
     return {
       total: Number(uploadedSurveyReportTotal.value || 0),
       success: rawTableData.value.length,
       verified: verifiedCount,
-      unverified: unverifiedCount
+      unverified: unverifiedCount,
     }
   })
 
@@ -82,7 +91,7 @@ export function useSurveySummary() {
       console.error('未知用途加载失败:', error)
     }
     unknownUsages.value = mergeUnknownUsagePolicyRows(aggregatedJson, apiRows, {
-      fileRecordIdByUsage: buildUsageNameFileRecordMap(tableRows)
+      fileRecordIdByUsage: buildUsageNameFileRecordMap(tableRows),
     })
   }
 
@@ -93,7 +102,7 @@ export function useSurveySummary() {
         pageNum: 1,
         pageSize: 1,
         projectId: Number(projectId),
-        fileContextType: 'SURVEY_REPORT'
+        fileContextType: 'SURVEY_REPORT',
       })
       const total = Number(res?.data?.data?.total || 0)
       return Number.isFinite(total) ? total : 0
@@ -124,7 +133,7 @@ export function useSurveySummary() {
       const [surveyRes, uploadedTotal, comparisonRes] = await Promise.all([
         getParsedSurveyReportsByProject(projectId, { signal }),
         fetchUploadedSurveyReportTotal(projectId),
-        queryProjectAreaComparison(projectId, { signal })
+        queryProjectAreaComparison(projectId, { signal }),
       ])
       if (currentSeq !== requestSeq.value) return true
 
@@ -177,7 +186,7 @@ export function useSurveySummary() {
         roomInfoBuildingAreaSum: item.roomInfoBuildingAreaSum || 0,
         roomInfoInnerAreaSum: item.roomInfoInnerAreaSum || 0,
         roomInfoBalconyAreaSum: item.roomInfoBalconyAreaSum || 0,
-        roomInfoSharedAreaSum: item.roomInfoSharedAreaSum || 0
+        roomInfoSharedAreaSum: item.roomInfoSharedAreaSum || 0,
       }))
 
       await refreshUnknownUsagePolicyRows(projectId, rawTableData.value)
@@ -215,6 +224,6 @@ export function useSurveySummary() {
     surveyStats,
     surveyLoading,
     fetchSurveyReports,
-    resetSummaryMetrics
+    resetSummaryMetrics,
   }
 }

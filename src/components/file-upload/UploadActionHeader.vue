@@ -7,7 +7,7 @@
           :model-value="modelValue"
           size="large"
           class="macaron-select"
-          style="width: 320px;"
+          style="width: 320px"
           placeholder="请输入关键词搜索项目"
           filterable
           clearable
@@ -47,12 +47,12 @@
 defineProps({
   modelValue: {
     type: [String, Number],
-    default: ''
+    default: '',
   },
   projectOptions: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'create-project', 'open-upload'])

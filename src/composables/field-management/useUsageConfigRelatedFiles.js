@@ -10,13 +10,13 @@ export function useUsageConfigRelatedFiles() {
   const keyword = ref('')
   const summary = reactive({
     totalFiles: 0,
-    totalMatchedRooms: 0
+    totalMatchedRooms: 0,
   })
   const pagination = reactive({
     current: 1,
     size: 10,
     total: 0,
-    pages: 0
+    pages: 0,
   })
 
   const resetState = () => {
@@ -40,8 +40,8 @@ export function useUsageConfigRelatedFiles() {
           pageNum: pagination.current,
           pageSize: pagination.size,
           keyword: keyword.value.trim() || undefined,
-          _t: Date.now()
-        }
+          _t: Date.now(),
+        },
       })
       if (res.data.code !== 200) {
         ElMessage.error(res.data.msg || '查询关联文件失败')
@@ -109,6 +109,6 @@ export function useUsageConfigRelatedFiles() {
     fetchRelatedFiles,
     handleSearch,
     handlePageChange,
-    handleSizeChange
+    handleSizeChange,
   }
 }

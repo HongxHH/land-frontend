@@ -3,7 +3,7 @@
     class="smart-folder-import"
     :class="{
       'smart-folder-import--embedded': embedded,
-      'smart-folder-import--uploading': uploadLoading
+      'smart-folder-import--uploading': uploadLoading,
     }"
   >
     <div
@@ -27,7 +27,12 @@
       <div v-if="!hasScanResult" class="smart-folder-import__drop-inner">
         <el-icon class="smart-folder-import__icon"><FolderOpened /></el-icon>
         <div class="smart-folder-import__title">拖拽项目文件夹到这里</div>
-        <el-button type="primary" plain :disabled="scanLoading || uploadLoading" @click="pickFolder">
+        <el-button
+          type="primary"
+          plain
+          :disabled="scanLoading || uploadLoading"
+          @click="pickFolder"
+        >
           选择项目文件夹
         </el-button>
       </div>
@@ -65,8 +70,12 @@
           :class="{ 'is-empty': group.entries.length === 0 }"
         >
           <header class="smart-folder-import__group-header">
-            <span class="smart-folder-import__group-title">{{ group.label }} ({{ group.entries.length }})</span>
-            <span v-if="group.selectedCount === 0" class="smart-folder-import__group-note">未找到</span>
+            <span class="smart-folder-import__group-title"
+              >{{ group.label }} ({{ group.entries.length }})</span
+            >
+            <span v-if="group.selectedCount === 0" class="smart-folder-import__group-note"
+              >未找到</span
+            >
           </header>
 
           <div v-if="group.entries.length" class="smart-folder-import__list">
@@ -79,9 +88,15 @@
               >
                 <template #title>
                   <div class="smart-folder-import__dir-header">
-                    <el-icon class="smart-folder-import__dir-icon" aria-hidden="true"><FolderOpened /></el-icon>
-                    <span class="smart-folder-import__dir-path" :title="dirGroup.directory">{{ dirGroup.directory }}</span>
-                    <span class="smart-folder-import__dir-count">{{ dirGroup.entries.length }} 个</span>
+                    <el-icon class="smart-folder-import__dir-icon" aria-hidden="true"
+                      ><FolderOpened
+                    /></el-icon>
+                    <span class="smart-folder-import__dir-path" :title="dirGroup.directory">{{
+                      dirGroup.directory
+                    }}</span>
+                    <span class="smart-folder-import__dir-count"
+                      >{{ dirGroup.entries.length }} 个</span
+                    >
                     <span
                       v-if="dirGroup.selectedCount < dirGroup.entries.length"
                       class="smart-folder-import__dir-selected"
@@ -102,7 +117,9 @@
                       @update:model-value="emit('toggle-selected', entry.id, $event)"
                     />
                     <div class="smart-folder-import__row-main">
-                      <div class="smart-folder-import__row-name" :title="entry.relativePath">{{ entry.displayName }}</div>
+                      <div class="smart-folder-import__row-name" :title="entry.relativePath">
+                        {{ entry.displayName }}
+                      </div>
                     </div>
                     <span
                       v-if="uploadLoading && uploadItemMap[entry.id]"
@@ -141,9 +158,15 @@
             >
               <template #title>
                 <div class="smart-folder-import__dir-header">
-                  <el-icon class="smart-folder-import__dir-icon" aria-hidden="true"><FolderOpened /></el-icon>
-                  <span class="smart-folder-import__dir-path" :title="dirGroup.directory">{{ dirGroup.directory }}</span>
-                  <span class="smart-folder-import__dir-count">{{ dirGroup.entries.length }} 个</span>
+                  <el-icon class="smart-folder-import__dir-icon" aria-hidden="true"
+                    ><FolderOpened
+                  /></el-icon>
+                  <span class="smart-folder-import__dir-path" :title="dirGroup.directory">{{
+                    dirGroup.directory
+                  }}</span>
+                  <span class="smart-folder-import__dir-count"
+                    >{{ dirGroup.entries.length }} 个</span
+                  >
                   <span
                     v-if="dirGroup.selectedCount < dirGroup.entries.length"
                     class="smart-folder-import__dir-selected"
@@ -164,7 +187,9 @@
                     @update:model-value="emit('toggle-selected', entry.id, $event)"
                   />
                   <div class="smart-folder-import__row-main">
-                    <div class="smart-folder-import__row-name" :title="entry.relativePath">{{ entry.displayName }}</div>
+                    <div class="smart-folder-import__row-name" :title="entry.relativePath">
+                      {{ entry.displayName }}
+                    </div>
                   </div>
                   <el-select
                     :model-value="entry.fileContextType || ''"
@@ -210,7 +235,10 @@
 import { computed, ref, watch } from 'vue'
 import { FolderOpened } from '@element-plus/icons-vue'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
-import { SMART_IMPORT_CONTEXT_TYPES as contextTypeOptionsSource, groupEntriesByDirectory } from '@/utils/localFolderFileMatcher.js'
+import {
+  SMART_IMPORT_CONTEXT_TYPES as contextTypeOptionsSource,
+  groupEntriesByDirectory,
+} from '@/utils/localFolderFileMatcher.js'
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -223,7 +251,7 @@ const props = defineProps({
   scanLoading: { type: Boolean, default: false },
   uploadProgress: { type: Number, default: 0 },
   getFileUploadState: { type: Function, default: () => null },
-  uploadItems: { type: Array, default: () => [] }
+  uploadItems: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits([
@@ -231,7 +259,7 @@ const emit = defineEmits([
   'folder-input-change',
   'folder-drop',
   'toggle-selected',
-  'change-context-type'
+  'change-context-type',
 ])
 
 const folderInputRef = ref(null)
@@ -248,7 +276,7 @@ const GROUP_ORDER = [
   'PLANNING_REVIEW',
   'CAPACITY_INDICATOR',
   'PROJECT_PARTY_SURVEY_SUMMARY',
-  'UNMATCHED'
+  'UNMATCHED',
 ]
 
 const displayGroups = computed(() => {
@@ -259,14 +287,18 @@ const displayGroups = computed(() => {
       label: key === 'UNMATCHED' ? '未识别' : getFileContextLabel(key),
       entries,
       directoryGroups: groupEntriesByDirectory(entries),
-      selectedCount: entries.filter((item) => item.selected).length
+      selectedCount: entries.filter((item) => item.selected).length,
     }
   })
 })
 
-const matchedDisplayGroups = computed(() => displayGroups.value.filter((group) => group.key !== 'UNMATCHED'))
+const matchedDisplayGroups = computed(() =>
+  displayGroups.value.filter((group) => group.key !== 'UNMATCHED')
+)
 
-const unmatchedDisplayGroup = computed(() => displayGroups.value.find((group) => group.key === 'UNMATCHED') ?? null)
+const unmatchedDisplayGroup = computed(
+  () => displayGroups.value.find((group) => group.key === 'UNMATCHED') ?? null
+)
 
 const allDirCollapseKeys = computed(() => {
   const keys = []
@@ -319,7 +351,7 @@ const UPLOAD_STATUS_LABELS = {
   processing: '入库中',
   done: '已完成',
   error: '失败',
-  cancelled: '已取消'
+  cancelled: '已取消',
 }
 
 const uploadStatusLabel = (entryId) => {
@@ -598,7 +630,8 @@ defineExpose({ pickFolder })
   color: #64748b;
 }
 
-.smart-folder-import__dir-collapse :deep(.el-collapse-item.is-active .smart-folder-import__dir-header) {
+.smart-folder-import__dir-collapse
+  :deep(.el-collapse-item.is-active .smart-folder-import__dir-header) {
   border-bottom: 1px solid rgba(226, 232, 240, 0.95);
 }
 

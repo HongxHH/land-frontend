@@ -7,7 +7,7 @@ export const USAGE_CATEGORY_OPTIONS = [
   { label: '物管', value: 'MANAGEMENT', floorAreaType: 'BUILDABLE' },
   { label: '其他计容', value: 'OTHER_BUILDABLE', floorAreaType: 'BUILDABLE' },
   { label: '社区用房', value: 'COMMUNITY', floorAreaType: 'NON_BUILDABLE' },
-  { label: '其他公用', value: 'OTHER_PUBLIC', floorAreaType: 'NON_BUILDABLE' }
+  { label: '其他公用', value: 'OTHER_PUBLIC', floorAreaType: 'NON_BUILDABLE' },
 ]
 
 export const USAGE_CATEGORY_LABEL_MAP = Object.fromEntries(
@@ -25,7 +25,7 @@ export const USAGE_CATEGORY_NON_BUILDABLE_OPTIONS = USAGE_CATEGORY_OPTIONS.filte
 export const FLOOR_AREA_TYPE_LABEL_MAP = {
   BUILDABLE: '计容',
   NON_BUILDABLE: '不计容',
-  UNKNOWN: '未知'
+  UNKNOWN: '未知',
 }
 
 /** 未知用途表单 targetCategory → 后端用途类别 */
@@ -35,7 +35,7 @@ export const TARGET_CATEGORY_MAP = {
   calcPropMgmt: { usageCategory: 'MANAGEMENT', floorAreaType: 'BUILDABLE' },
   calcOther: { usageCategory: 'OTHER_BUILDABLE', floorAreaType: 'BUILDABLE' },
   nonCalcCommunity: { usageCategory: 'COMMUNITY', floorAreaType: 'NON_BUILDABLE' },
-  nonCalcOther: { usageCategory: 'OTHER_PUBLIC', floorAreaType: 'NON_BUILDABLE' }
+  nonCalcOther: { usageCategory: 'OTHER_PUBLIC', floorAreaType: 'NON_BUILDABLE' },
 }
 
 export const TARGET_CATEGORY_LABEL_MAP = {
@@ -44,7 +44,7 @@ export const TARGET_CATEGORY_LABEL_MAP = {
   calcPropMgmt: '物管',
   calcOther: '其他计容',
   nonCalcCommunity: '社区用房',
-  nonCalcOther: '其他公用'
+  nonCalcOther: '其他公用',
 }
 
 const USAGE_CATEGORY_TEXT_TO_CODE_MAP = Object.fromEntries(
@@ -55,7 +55,7 @@ USAGE_CATEGORY_TEXT_TO_CODE_MAP['未知'] = 'UNKNOWN'
 const FLOOR_AREA_TYPE_TEXT_TO_CODE_MAP = {
   计容: 'BUILDABLE',
   不计容: 'NON_BUILDABLE',
-  未知: 'UNKNOWN'
+  未知: 'UNKNOWN',
 }
 
 export function usageCategoryLabel(code, fallback = '—') {
@@ -92,7 +92,10 @@ export function floorAreaTypeTagType(code) {
 }
 
 export function resolveFloorAreaTypeByCategory(usageCategory) {
-  return USAGE_CATEGORY_OPTIONS.find((item) => item.value === usageCategory)?.floorAreaType || 'BUILDABLE'
+  return (
+    USAGE_CATEGORY_OPTIONS.find((item) => item.value === usageCategory)?.floorAreaType ||
+    'BUILDABLE'
+  )
 }
 
 /** 中文标签或英文枚举 → 标准英文 code */

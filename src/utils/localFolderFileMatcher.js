@@ -20,7 +20,7 @@ export const SMART_IMPORT_CONTEXT_TYPES = [
   'SURVEY_REPORT',
   'PLANNING_REVIEW',
   'CAPACITY_INDICATOR',
-  'PROJECT_PARTY_SURVEY_SUMMARY'
+  'PROJECT_PARTY_SURVEY_SUMMARY',
 ]
 
 const SCANNABLE_EXTENSIONS = new Set(['.pdf', '.xls', '.xlsx'])
@@ -34,7 +34,7 @@ const SURVEY_REPORT_FILENAME_EXCLUDES = [
   /楼盘表确认/,
   /确认书$/,
   /分层平面图/,
-  /房屋分层/
+  /房屋分层/,
 ]
 
 /** 实测报告：文件名关键词（不含宽泛的「楼盘表」「地下室」整词） */
@@ -52,7 +52,7 @@ const SURVEY_REPORT_FILENAME_INCLUDES = [
   /[A-Z]\d+(?:-[A-Z]?\d+)?栋/,
   /\d+栋楼盘表/,
   /楼盘表.*\d+栋/,
-  /^(垃圾站|幼儿园)$/
+  /^(垃圾站|幼儿园)$/,
 ]
 
 /** 父目录含下列片段时，目录内 PDF 默认识别为实测报告（文件名未命中其他类型且未被排除） */
@@ -61,7 +61,7 @@ const SURVEY_REPORT_DIR_PATTERNS = [
   /实测成果/,
   /测绘成果报告/,
   /实测绘成果/,
-  /二次实测/
+  /二次实测/,
 ]
 
 /** @type {Array<{ type: SmartImportContextType, extensions: string[], include: RegExp[], exclude?: RegExp[] }>} */
@@ -70,29 +70,31 @@ const MATCH_RULES = [
     type: 'PROJECT_PARTY_SURVEY_SUMMARY',
     extensions: ['.xls', '.xlsx'],
     include: [/房产实测信息汇总/, /实测汇总/, /实测信息汇总/],
-    exclude: [/模板/]
+    exclude: [/模板/],
   },
   {
     type: 'CAPACITY_INDICATOR',
     extensions: ['.pdf'],
-    include: [/容量指标核查/, /容量指标/]
+    include: [/容量指标核查/, /容量指标/],
   },
   {
     type: 'PLANNING_REVIEW',
     extensions: ['.pdf'],
     include: [/规划复核/, /面积复核/, /国土复核/],
-    exclude: [/实测报告/, /出让合同/, /汇总/]
+    exclude: [/实测报告/, /出让合同/, /汇总/],
   },
   {
     type: 'CONTRACT',
     extensions: ['.pdf'],
     include: [/出让合同/, /国有建设用地/, /国土出让/, /土地出让/, /国土合同/, /补充合同/],
-    exclude: [/实测/, /测绘/, /汇总/, /复核/, /容量指标/]
-  }
+    exclude: [/实测/, /测绘/, /汇总/, /复核/, /容量指标/],
+  },
 ]
 
 export function getBaseName(filePath) {
-  const normalized = String(filePath || '').trim().replace(/\\/g, '/')
+  const normalized = String(filePath || '')
+    .trim()
+    .replace(/\\/g, '/')
   const parts = normalized.split('/')
   return parts[parts.length - 1] || normalized
 }
@@ -124,7 +126,9 @@ function nameWithoutExtension(filePath) {
 }
 
 export function getDirectoryPath(filePath) {
-  const normalized = String(filePath || '').trim().replace(/\\/g, '/')
+  const normalized = String(filePath || '')
+    .trim()
+    .replace(/\\/g, '/')
   const slashIndex = normalized.lastIndexOf('/')
   if (slashIndex <= 0) return ''
   return normalized.slice(0, slashIndex)
@@ -152,7 +156,7 @@ export function groupEntriesByDirectory(entries) {
     .map(([directory, dirEntries]) => ({
       directory,
       entries: dirEntries,
-      selectedCount: dirEntries.filter((item) => item.selected).length
+      selectedCount: dirEntries.filter((item) => item.selected).length,
     }))
 }
 
@@ -212,7 +216,7 @@ function toScannedEntry(file) {
     displayName: getBaseName(relativePath),
     fileContextType,
     selected: fileContextType != null,
-    lastModified: Number(file.lastModified || 0)
+    lastModified: Number(file.lastModified || 0),
   }
 }
 
@@ -235,7 +239,7 @@ export function groupScannedEntries(entries) {
     PLANNING_REVIEW: [],
     CAPACITY_INDICATOR: [],
     PROJECT_PARTY_SURVEY_SUMMARY: [],
-    UNMATCHED: []
+    UNMATCHED: [],
   }
 
   for (const entry of entries) {

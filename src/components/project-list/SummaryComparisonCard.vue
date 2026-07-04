@@ -28,7 +28,12 @@
             :show-header="true"
           >
             <el-table-column prop="label" label="维度" min-width="130" />
-            <el-table-column prop="contractAgreedArea" label="合同约定面积" min-width="140" align="right" />
+            <el-table-column
+              prop="contractAgreedArea"
+              label="合同约定面积"
+              min-width="140"
+              align="right"
+            />
             <el-table-column prop="buildableArea" label="计容面积" min-width="120" align="right" />
             <el-table-column prop="difference" label="差值" min-width="120" align="right" />
           </el-table>
@@ -41,7 +46,11 @@
           <div class="comparison-cross__titles">
             <h4 class="comparison-cross__title">计容面积差值（实测 − 项目方）</h4>
           </div>
-          <el-tag size="small" effect="plain" :type="crossBuildableDiff.available ? 'success' : 'info'">
+          <el-tag
+            size="small"
+            effect="plain"
+            :type="crossBuildableDiff.available ? 'success' : 'info'"
+          >
             {{ crossBuildableDiff.available ? '可计算' : '暂无两侧计容' }}
           </el-tag>
         </header>
@@ -54,7 +63,9 @@
           <el-table-column prop="label" label="维度" min-width="120" />
           <el-table-column prop="diff" label="差值（㎡）" min-width="140" align="right">
             <template #default="{ row }">
-              <span :class="{ 'comparison-cross__diff--muted': row.diff === '-' }">{{ row.diff }}</span>
+              <span :class="{ 'comparison-cross__diff--muted': row.diff === '-' }">{{
+                row.diff
+              }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -75,13 +86,13 @@ const props = defineProps({
       projectPartyDeclared: {},
       planningCalculated: {},
       capacityIndicatorCalculated: {},
-      dataCompleteness: {}
-    })
+      dataCompleteness: {},
+    }),
   },
   selectedGroups: {
     type: Array,
-    default: () => SUMMARY_COMPARISON_GROUP_META.map((item) => item.key)
-  }
+    default: () => SUMMARY_COMPARISON_GROUP_META.map((item) => item.key),
+  },
 })
 
 const emit = defineEmits(['update:selectedGroups'])
@@ -97,7 +108,7 @@ const formatArea = (value) => {
 const TRIPLE_KEYS = [
   { lineKey: 'totalBuilding', label: '建筑面积' },
   { lineKey: 'commercial', label: '商业面积' },
-  { lineKey: 'residential', label: '住宅面积' }
+  { lineKey: 'residential', label: '住宅面积' },
 ]
 
 const parseAreaNumber = (value) => {
@@ -123,7 +134,7 @@ const crossBuildableDiff = computed(() => {
 
 const checkedGroupKeys = computed({
   get: () => props.selectedGroups,
-  set: (value) => emit('update:selectedGroups', value)
+  set: (value) => emit('update:selectedGroups', value),
 })
 
 const buildRows = (tripleLine) => [
@@ -131,20 +142,20 @@ const buildRows = (tripleLine) => [
     label: '建筑面积',
     contractAgreedArea: formatArea(tripleLine?.totalBuilding?.contractAgreedArea),
     buildableArea: formatArea(tripleLine?.totalBuilding?.buildableArea),
-    difference: formatArea(tripleLine?.totalBuilding?.difference)
+    difference: formatArea(tripleLine?.totalBuilding?.difference),
   },
   {
     label: '商业面积',
     contractAgreedArea: formatArea(tripleLine?.commercial?.contractAgreedArea),
     buildableArea: formatArea(tripleLine?.commercial?.buildableArea),
-    difference: formatArea(tripleLine?.commercial?.difference)
+    difference: formatArea(tripleLine?.commercial?.difference),
   },
   {
     label: '住宅面积',
     contractAgreedArea: formatArea(tripleLine?.residential?.contractAgreedArea),
     buildableArea: formatArea(tripleLine?.residential?.buildableArea),
-    difference: formatArea(tripleLine?.residential?.difference)
-  }
+    difference: formatArea(tripleLine?.residential?.difference),
+  },
 ]
 
 const displayGroups = computed(() =>
@@ -154,7 +165,7 @@ const displayGroups = computed(() =>
       key: meta.key,
       title: meta.title,
       available: Boolean(props.areaComparison?.dataCompleteness?.[meta.availableField]),
-      rows: buildRows(props.areaComparison?.[meta.key])
+      rows: buildRows(props.areaComparison?.[meta.key]),
     }))
 )
 </script>

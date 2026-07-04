@@ -6,7 +6,9 @@
           <div class="detail-name">{{ detail.taskName || '文件解析任务' }}</div>
           <div class="detail-id">{{ detail.fileName || '未命名文件' }}</div>
           <div class="detail-meta">
-            <span v-if="detail.fileContextType" class="detail-ctx">类型 {{ detail.fileContextType }}</span>
+            <span v-if="detail.fileContextType" class="detail-ctx"
+              >类型 {{ detail.fileContextType }}</span
+            >
             <el-tag v-if="detail.status" size="small" effect="plain">{{ detail.status }}</el-tag>
             <span v-if="retryMetaText" class="detail-ctx">{{ retryMetaText }}</span>
             <span v-if="detail.retryReason" class="detail-ctx" :title="detail.retryReason">
@@ -19,7 +21,9 @@
         </div>
         <div class="detail-actions">
           <span v-if="syncPillVisible" class="sync-pill">同步中</span>
-          <el-button v-if="showRefresh" size="small" type="primary" plain @click="emit('refresh')">刷新</el-button>
+          <el-button v-if="showRefresh" size="small" type="primary" plain @click="emit('refresh')"
+            >刷新</el-button
+          >
         </div>
       </div>
 
@@ -33,10 +37,20 @@
           <span class="pipeline-idx">
             {{ idx + 1 }}
             <span class="pipeline-idx-badge" aria-hidden="true">
-              <el-icon v-if="isSuccess(step.status)" class="pipeline-idx-ico is-success"><CircleCheckFilled /></el-icon>
-              <el-icon v-else-if="isFailed(step.status)" class="pipeline-idx-ico is-failed"><CircleCloseFilled /></el-icon>
-              <el-icon v-else-if="isSkipped(step.status)" class="pipeline-idx-ico is-skipped"><RemoveFilled /></el-icon>
-              <span v-else-if="isRunningStatus(step.status)" class="pipeline-idx-spinner" aria-hidden="true" />
+              <el-icon v-if="isSuccess(step.status)" class="pipeline-idx-ico is-success"
+                ><CircleCheckFilled
+              /></el-icon>
+              <el-icon v-else-if="isFailed(step.status)" class="pipeline-idx-ico is-failed"
+                ><CircleCloseFilled
+              /></el-icon>
+              <el-icon v-else-if="isSkipped(step.status)" class="pipeline-idx-ico is-skipped"
+                ><RemoveFilled
+              /></el-icon>
+              <span
+                v-else-if="isRunningStatus(step.status)"
+                class="pipeline-idx-spinner"
+                aria-hidden="true"
+              />
               <span v-else class="pipeline-idx-dot" aria-hidden="true" />
             </span>
           </span>
@@ -66,7 +80,9 @@
           </div>
           <div class="detail-trace-item-right">
             <span>耗时 {{ formatDuration(traceDurationMs(trace)) }}</span>
-            <span v-if="trace.message" :title="trace.message">说明：{{ shortError(trace.message, 80) }}</span>
+            <span v-if="trace.message" :title="trace.message"
+              >说明：{{ shortError(trace.message, 80) }}</span
+            >
           </div>
         </div>
       </div>
@@ -82,16 +98,16 @@ import { CircleCheckFilled, CircleCloseFilled, RemoveFilled } from '@element-plu
 const props = defineProps({
   detail: {
     type: Object,
-    default: null
+    default: null,
   },
   loading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   showRefresh: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['refresh'])
@@ -207,7 +223,7 @@ const pipelineStepClass = (step) => {
     'is-failed': s === 'FAILED',
     'is-cancelled': s === 'CANCELLED',
     'is-skipped': s === 'SKIPPED',
-    'is-pending': s === 'PENDING' || !s
+    'is-pending': s === 'PENDING' || !s,
   }
 }
 
@@ -217,7 +233,7 @@ const traceItemClass = (trace) => {
     'is-success': s === 'SUCCESS',
     'is-running': s === 'RUNNING',
     'is-failed': s === 'FAILED',
-    'is-cancelled': s === 'CANCELLED'
+    'is-cancelled': s === 'CANCELLED',
   }
 }
 </script>

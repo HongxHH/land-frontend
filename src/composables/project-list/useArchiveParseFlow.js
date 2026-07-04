@@ -101,6 +101,6 @@ export function useArchiveParseFlow({ isActive }) {
     parseFlowLoading,
     openParseFlowDialog,
     refreshParseFlowDialog,
-    stopParseFlowAutoRefresh
+    stopParseFlowAutoRefresh,
   }
 }

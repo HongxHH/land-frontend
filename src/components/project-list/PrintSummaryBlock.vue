@@ -12,7 +12,9 @@
       <thead>
         <tr>
           <template v-for="(cell, ti) in headerModel.topCells" :key="'pt-' + ti">
-            <th v-if="cell.rowspan > 1" :rowspan="cell.rowspan" :colspan="cell.colspan">{{ cell.text }}</th>
+            <th v-if="cell.rowspan > 1" :rowspan="cell.rowspan" :colspan="cell.colspan">
+              {{ cell.text }}
+            </th>
             <th v-else :colspan="cell.colspan">{{ cell.text }}</th>
           </template>
         </tr>
@@ -29,7 +31,7 @@
 
     <section v-for="group in selectedPrintGroups" :key="group.key" class="print-comparison-group">
       <div class="print-group-title">{{ group.title }}</div>
-      <table class="native-print-table info-table" style="margin-top: 8px;">
+      <table class="native-print-table info-table" style="margin-top: 8px">
         <thead>
           <tr>
             <th>维度</th>
@@ -61,31 +63,34 @@
 
 <script setup>
 import { computed } from 'vue'
-import { buildTwoRowHeaderModel, formatSummaryCellValue } from '@/composables/project-list/summaryExportColumnSchema.js'
+import {
+  buildTwoRowHeaderModel,
+  formatSummaryCellValue,
+} from '@/composables/project-list/summaryExportColumnSchema.js'
 import { buildSelectedComparisonGroups } from '@/composables/project-list/summaryAreaComparisonTables.js'
 import { SUMMARY_COMPARISON_GROUP_KEYS } from '@/composables/project-list/summaryComparisonGroupMeta.js'
 
 const props = defineProps({
   isPrinting: {
     type: Boolean,
-    default: false
+    default: false,
   },
   /** 打印主表列（与导出一致，由「打印与导出设置」生成） */
   resolvedMainColumns: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   currentProjectInfo: {
     type: Object,
-    required: true
+    required: true,
   },
   currentPrintDate: {
     type: String,
-    required: true
+    required: true,
   },
   displayTableData: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   areaComparison: {
     type: Object,
@@ -93,13 +98,13 @@ const props = defineProps({
       systemCalculated: {},
       projectPartyDeclared: {},
       planningCalculated: {},
-      capacityIndicatorCalculated: {}
-    })
+      capacityIndicatorCalculated: {},
+    }),
   },
   selectedComparisonGroups: {
     type: Array,
-    default: () => [...SUMMARY_COMPARISON_GROUP_KEYS]
-  }
+    default: () => [...SUMMARY_COMPARISON_GROUP_KEYS],
+  },
 })
 
 const headerModel = computed(() => buildTwoRowHeaderModel(props.resolvedMainColumns || []))

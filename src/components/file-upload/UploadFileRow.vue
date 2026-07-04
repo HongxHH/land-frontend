@@ -15,14 +15,18 @@
           :show-text="false"
           class="upload-file-row-progress"
         />
-        <span class="upload-file-row-muted">{{ status === 'processing' ? '入库中' : '传输中' }}</span>
+        <span class="upload-file-row-muted">{{
+          status === 'processing' ? '入库中' : '传输中'
+        }}</span>
       </template>
       <template v-else-if="status === 'done'">
         <span class="upload-file-row-done">✓ 已入库</span>
       </template>
       <template v-else-if="status === 'error'">
         <span class="upload-file-row-error" :title="errorText">✗ {{ errorText }}</span>
-        <el-button v-if="showRetry" link type="primary" size="small" @click="emit('retry')">重试</el-button>
+        <el-button v-if="showRetry" link type="primary" size="small" @click="emit('retry')"
+          >重试</el-button
+        >
       </template>
       <template v-else-if="status === 'cancelled'">
         <span class="upload-file-row-muted">已取消</span>
@@ -54,7 +58,7 @@ const props = defineProps({
   errorText: { type: String, default: '' },
   showRemove: { type: Boolean, default: true },
   removeDisabled: { type: Boolean, default: false },
-  showRetry: { type: Boolean, default: false }
+  showRetry: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['remove', 'retry'])

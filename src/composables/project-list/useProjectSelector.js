@@ -11,12 +11,16 @@ function mapProjectRecord(item) {
     name: item.projectName || '',
     code: item.projectCode || `XM-${idStr.padStart(3, '0')}`,
     projectTime: item.projectTime || '',
-    updateTime: item.updateTime || null
+    updateTime: item.updateTime || null,
   }
 }
 
 function isAbortError(error) {
-  return error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError' || error?.name === 'AbortError'
+  return (
+    error?.code === 'ERR_CANCELED' ||
+    error?.name === 'CanceledError' ||
+    error?.name === 'AbortError'
+  )
 }
 
 function mergeProjectOptions(existing, incoming) {
@@ -39,7 +43,7 @@ export function useProjectSelector() {
     id: '',
     name: '请选择项目',
     code: '-',
-    status: '-'
+    status: '-',
   })
 
   let listAbortController = null
@@ -54,13 +58,16 @@ export function useProjectSelector() {
           pageNum: 1,
           pageSize: RECENT_LIST_PAGE_SIZE,
           sortField: 'updateTime',
-          sortDirection: 'desc'
+          sortDirection: 'desc',
         },
         { signal: listAbortController.signal }
       )
       if (res.data?.code === 200) {
         const records = Array.isArray(res.data?.data?.records) ? res.data.data.records : []
-        projectOptions.value = mergeProjectOptions(projectOptions.value, records.map(mapProjectRecord))
+        projectOptions.value = mergeProjectOptions(
+          projectOptions.value,
+          records.map(mapProjectRecord)
+        )
       }
     } catch (error) {
       if (!isAbortError(error)) {
@@ -83,7 +90,7 @@ export function useProjectSelector() {
           pageSize: SEARCH_PAGE_SIZE,
           sortField: 'updateTime',
           sortDirection: 'desc',
-          ...(trimmed ? { projectName: trimmed } : {})
+          ...(trimmed ? { projectName: trimmed } : {}),
         },
         { signal: searchAbortController.signal }
       )
@@ -115,7 +122,7 @@ export function useProjectSelector() {
       const res = await queryProjects({
         projectId: Number(pid),
         pageNum: 1,
-        pageSize: 1
+        pageSize: 1,
       })
       if (res.data?.code !== 200) return false
       const records = Array.isArray(res.data?.data?.records) ? res.data.data.records : []
@@ -148,6 +155,6 @@ export function useProjectSelector() {
     fetchProjects,
     searchProjects,
     ensureProjectOption,
-    applyProjectMeta
+    applyProjectMeta,
   }
 }

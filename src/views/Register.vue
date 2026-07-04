@@ -10,7 +10,11 @@
 
       <el-form ref="formRef" :model="form" :rules="rules" label-width="0" size="large">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名（3-20 位字母数字下划线）" :prefix-icon="User" />
+          <el-input
+            v-model="form.username"
+            placeholder="用户名（3-20 位字母数字下划线）"
+            :prefix-icon="User"
+          />
         </el-form-item>
         <el-form-item prop="password">
           <el-input
@@ -71,18 +75,18 @@ const form = reactive({
   password2: '',
   realName: '',
   phone: '',
-  email: ''
+  email: '',
 })
 
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 20, message: '长度 3-20', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_]+$/, message: '仅字母、数字、下划线', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9_]+$/, message: '仅字母、数字、下划线', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '长度 6-20', trigger: 'blur' }
+    { min: 6, max: 20, message: '长度 6-20', trigger: 'blur' },
   ],
   password2: [
     { required: true, message: '请再次输入密码', trigger: 'blur' },
@@ -91,8 +95,8 @@ const rules = {
         if (v !== form.password) cb(new Error('两次密码不一致'))
         else cb()
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   realName: [{ required: true, message: '请输入真实姓名', trigger: 'blur' }],
   phone: [
@@ -103,20 +107,21 @@ const rules = {
         if (!/^1[3-9]\d{9}$/.test(s)) cb(new Error('手机号格式不正确'))
         else cb()
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   email: [
     {
       validator: (_r, v, cb) => {
         const s = String(v || '').trim()
         if (!s) return cb()
-        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(s)) cb(new Error('邮箱格式不正确'))
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(s))
+          cb(new Error('邮箱格式不正确'))
         else cb()
       },
-      trigger: 'blur'
-    }
-  ]
+      trigger: 'blur',
+    },
+  ],
 }
 
 const submit = async () => {
@@ -133,7 +138,7 @@ const submit = async () => {
       password: form.password,
       realName: form.realName.trim(),
       phone: String(form.phone || '').trim(),
-      email: String(form.email || '').trim()
+      email: String(form.email || '').trim(),
     }
     const data = await registerUser(payload)
     if (Number(data.code) !== 200) {

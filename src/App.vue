@@ -28,7 +28,8 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: var(--biz-text);
   background: var(--biz-page-bg);
 }

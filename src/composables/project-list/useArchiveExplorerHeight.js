@@ -52,6 +52,6 @@ export function useArchiveExplorerHeight(getContainer) {
     explorerHeight,
     updateExplorerHeight,
     bindExplorerHeightObserver,
-    disconnectExplorerHeightObserver
+    disconnectExplorerHeightObserver,
   }
 }

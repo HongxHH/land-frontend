@@ -12,8 +12,7 @@ export const fetchUnreadStationNotifications = (projectIds = []) => {
 }
 
 /** 登录后拉取：不传 projectIds，由后端按「最近站内未读」返回 */
-export const fetchUnreadStationNotificationsAfterLogin = () =>
-  fetchUnreadStationNotifications([])
+export const fetchUnreadStationNotificationsAfterLogin = () => fetchUnreadStationNotifications([])
 
 export const markStationNotificationsRead = (messageIds = []) => {
   const normalized = Array.isArray(messageIds)

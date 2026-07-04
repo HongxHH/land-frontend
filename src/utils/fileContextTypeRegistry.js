@@ -12,7 +12,7 @@ export const UPLOAD_FILE_CONTEXT_KINDS = new Set([
   'PLANNING_REVIEW',
   'CAPACITY_INDICATOR',
   'PROJECT_PARTY_SURVEY_SUMMARY',
-  'OTHER'
+  'OTHER',
 ])
 
 /** 上传弹窗 / 列表展示用中文名 */
@@ -22,7 +22,7 @@ export const FILE_CONTEXT_TYPE_LABELS = {
   PLANNING_REVIEW: '规划复核文件',
   CAPACITY_INDICATOR: '容量指标核查表',
   PROJECT_PARTY_SURVEY_SUMMARY: '项目方实测汇总表',
-  OTHER: '其他文件'
+  OTHER: '其他文件',
 }
 
 /** 归档「审核」按钮路由策略 */
@@ -32,14 +32,14 @@ export const FILE_CONTEXT_AUDIT_STRATEGY = {
   PLANNING_REVIEW: 'planning_review',
   CAPACITY_INDICATOR: 'capacity_indicator',
   PROJECT_PARTY_SURVEY_SUMMARY: 'party_summary',
-  OTHER: 'calibration'
+  OTHER: 'calibration',
 }
 
 /** 项目工作区独立 Tab（name 与 ProjectList el-tab-pane name 一致） */
 export const FILE_CONTEXT_WORKSPACE_TAB = {
   PLANNING_REVIEW: 'planningReview',
   CAPACITY_INDICATOR: 'capacityIndicator',
-  PROJECT_PARTY_SURVEY_SUMMARY: 'projectPartySummary'
+  PROJECT_PARTY_SURVEY_SUMMARY: 'projectPartySummary',
 }
 
 export function normalizeFileContextType(value) {
@@ -71,7 +71,7 @@ export const PROJECT_WORKSPACE_TAB_NAMES = [
   'planningReview',
   'capacityIndicator',
   'projectPartySummary',
-  'operationAudit'
+  'operationAudit',
 ]
 
 export function isProjectWorkspaceTab(tabName) {

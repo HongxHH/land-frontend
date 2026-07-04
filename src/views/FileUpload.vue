@@ -123,8 +123,8 @@ import FileUploadTaskPanel from '@/components/file-upload/FileUploadTaskPanel.vu
 import CreateProjectDialog from '@/components/file-upload/CreateProjectDialog.vue'
 import BatchUploadDialog from '@/components/file-upload/BatchUploadDialog.vue'
 
-const CalibrationWorkspaceDialog = defineAsyncComponent(() =>
-  import('@/components/file-upload/CalibrationWorkspaceDialog.vue')
+const CalibrationWorkspaceDialog = defineAsyncComponent(
+  () => import('@/components/file-upload/CalibrationWorkspaceDialog.vue')
 )
 import { useFileUploadPage } from '@/composables/file-upload/useFileUploadPage'
 const route = useRoute()
@@ -203,7 +203,7 @@ const {
   searchRoomInfosByPages,
   loadMoreRoomInfo,
   roomInfoHasMore,
-  roomInfoLoadingMore
+  roomInfoLoadingMore,
 } = useFileUploadPage()
 
 const isAuditOnlyMode = computed(() => String(route.query.returnTo || '') === 'projects')
@@ -216,7 +216,7 @@ const navigateBackToProjects = () => {
   isReturningToProjects.value = true
   const query = {
     tab: String(route.query.returnTab || 'archives'),
-    fromAuditReturn: '1'
+    fromAuditReturn: '1',
   }
   if (route.query.projectId) query.projectId = String(route.query.projectId)
   if (route.query.archiveId) query.archiveId = String(route.query.archiveId)

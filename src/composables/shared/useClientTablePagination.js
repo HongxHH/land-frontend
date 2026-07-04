@@ -50,6 +50,6 @@ export function useClientTablePagination(rowsSource, options = {}) {
     total,
     showPagination,
     pageCount,
-    onPageChange
+    onPageChange,
   }
 }

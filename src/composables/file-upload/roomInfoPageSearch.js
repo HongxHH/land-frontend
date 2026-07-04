@@ -6,7 +6,7 @@ export const ROOM_SEARCH_FIELDS = [
   'floorAreaType',
   'remark',
   'roomLevel',
-  'roomNumber'
+  'roomNumber',
 ]
 
 export const ROOM_SEARCH_PAGE_SIZE = 200
@@ -31,7 +31,7 @@ export async function searchRoomInfosByPages({
   signal,
   onProgress,
   queryRoomInfos,
-  mapRoomInfoList
+  mapRoomInfoList,
 }) {
   const kw = String(keyword || '').trim()
   if (!kw || !projectId || !surveyReportInfoId) {
@@ -55,7 +55,7 @@ export async function searchRoomInfosByPages({
       pageNum,
       pageSize: ROOM_SEARCH_PAGE_SIZE,
       sortField: 'id',
-      sortDirection: 'asc'
+      sortDirection: 'asc',
     })
     if (roomRes.data?.code !== 200) break
 
@@ -72,7 +72,7 @@ export async function searchRoomInfosByPages({
       scannedPages: pageNum,
       totalPages,
       matchCount: rawMatches.length,
-      done: false
+      done: false,
     })
 
     if (records.length === 0) break
@@ -85,7 +85,7 @@ export async function searchRoomInfosByPages({
     scannedPages: pageNum,
     totalPages,
     matchCount: ranked.length,
-    done: true
+    done: true,
   })
   return ranked
 }
@@ -103,7 +103,7 @@ export async function fetchRoomInfoById({ roomInfoId, queryRoomInfos, mapRoomInf
   const roomRes = await queryRoomInfos({
     roomInfoId: id,
     pageNum: 1,
-    pageSize: 1
+    pageSize: 1,
   })
   if (roomRes.data?.code !== 200) return null
 

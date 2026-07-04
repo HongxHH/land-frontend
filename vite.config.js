@@ -12,23 +12,23 @@ export default defineConfig({
   plugins: [
     vue(),
     AutoImport({
-      resolvers: [elementPlusResolver]
+      resolvers: [elementPlusResolver],
     }),
     Components({
-      resolvers: [elementPlusResolver]
-    })
+      resolvers: [elementPlusResolver],
+    }),
   ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      'buffer': fileURLToPath(new URL('./node_modules/buffer/index.js', import.meta.url))
-    }
+      buffer: fileURLToPath(new URL('./node_modules/buffer/index.js', import.meta.url)),
+    },
   },
   define: {
-    'process.env': {}
+    'process.env': {},
   },
   optimizeDeps: {
-    include: ['buffer']
+    include: ['buffer'],
   },
   build: {
     rollupOptions: {
@@ -40,9 +40,9 @@ export default defineConfig({
           if (id.includes('@vue-office')) return 'vue-office'
           if (id.includes('marked') || id.includes('dompurify')) return 'markdown'
           return undefined
-        }
-      }
-    }
+        },
+      },
+    },
   },
   server: {
     host: '0.0.0.0',
@@ -53,8 +53,8 @@ export default defineConfig({
         target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8082',
         changeOrigin: true,
         ws: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
-  }
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })

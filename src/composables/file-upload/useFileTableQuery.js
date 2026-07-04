@@ -4,7 +4,7 @@ import { queryFiles } from '@/services/file.service'
 import {
   buildOptimisticUploadTableRow,
   formatUploadTimeForDisplay,
-  sortFilesAttentionFirst
+  sortFilesAttentionFirst,
 } from '@/utils/fileStatePresent.js'
 
 function mapApiFileToTableRow(item) {
@@ -28,7 +28,7 @@ function mapApiFileToTableRow(item) {
     errorMessage: item.parseMessage,
     thumbnailUrl: item.thumbGridfsId
       ? `/api/file/download/gridfs/${item.thumbGridfsId}`
-      : 'https://placehold.co/150/e0e0e0/808080?text=NoThumb'
+      : 'https://placehold.co/150/e0e0e0/808080?text=NoThumb',
   }
 }
 
@@ -57,7 +57,7 @@ export function useFileTableQuery(currentProject) {
           fileId,
           fileName: entry.fileName,
           fileContextType: entry.fileContextType,
-          phase: entry.phase ?? null
+          phase: entry.phase ?? null,
         })
       )
     }
@@ -80,7 +80,7 @@ export function useFileTableQuery(currentProject) {
         fileContextType: filterFileType.value || null,
         fileState: filterStatus.value || null,
         pageNum: currentPage.value,
-        pageSize: pageSize.value
+        pageSize: pageSize.value,
       }
       const res = await queryFiles(queryParams)
 
@@ -154,7 +154,6 @@ export function useFileTableQuery(currentProject) {
     resetFilter,
     handleSizeChange,
     handleCurrentChange,
-    handleRefresh
+    handleRefresh,
   }
 }
-

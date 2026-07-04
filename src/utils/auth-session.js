@@ -12,7 +12,7 @@ export function setUserSession(user) {
     id: user.id,
     userType: user.userType,
     username: user.username,
-    realName: user.realName
+    realName: user.realName,
   }
   sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(snapshot))
 }

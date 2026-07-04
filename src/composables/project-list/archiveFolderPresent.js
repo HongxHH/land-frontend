@@ -6,13 +6,13 @@ import {
   isFileAttentionFirst,
   isFileParseFailed,
   isFileVerifyFailed,
-  sortFilesAttentionFirst
+  sortFilesAttentionFirst,
 } from '@/utils/fileStatePresent.js'
 
 export const ARCHIVE_VERIFY_STATUS_OPTIONS = [
   { label: '已通过', value: 'PASSED' },
   { label: '未通过', value: 'FAILED' },
-  { label: '未校验', value: 'UNVERIFIED' }
+  { label: '未校验', value: 'UNVERIFIED' },
 ]
 
 /** 与后端 FileStateEnum 对齐的文件状态筛选项 */
@@ -56,7 +56,9 @@ export const sortArchiveFilesVerifyFailedFirst = sortFilesAttentionFirst
 
 export function archiveFileTableRowClassName({ row }) {
   if (isFileAttentionFirst(row)) {
-    return isFileParseFailed(row) ? 'archive-file-row--parse-failed' : 'archive-file-row--verify-failed'
+    return isFileParseFailed(row)
+      ? 'archive-file-row--parse-failed'
+      : 'archive-file-row--verify-failed'
   }
   return ''
 }

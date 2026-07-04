@@ -1,16 +1,11 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    title="合同信息编辑"
-    width="700px"
-    :close-on-click-modal="false"
-  >
+  <el-dialog v-model="visible" title="合同信息编辑" width="700px" :close-on-click-modal="false">
     <el-form :ref="setFormRef" :model="form" :rules="rules" label-width="120px">
       <el-form-item label="合同编号" prop="contractNumber">
         <el-input
           :model-value="form.contractNumber"
           placeholder="请输入合同编号"
-          style="width: 100%;"
+          style="width: 100%"
           @update:model-value="setFormField('contractNumber', $event)"
         />
       </el-form-item>
@@ -18,7 +13,7 @@
         <el-input
           :model-value="form.transferor"
           placeholder="请输入出让方（土地管理部门）"
-          style="width: 100%;"
+          style="width: 100%"
           @update:model-value="setFormField('transferor', $event)"
         />
       </el-form-item>
@@ -26,7 +21,7 @@
         <el-input
           :model-value="form.transferee"
           placeholder="请输入受让方（开发商）"
-          style="width: 100%;"
+          style="width: 100%"
           @update:model-value="setFormField('transferee', $event)"
         />
       </el-form-item>
@@ -36,7 +31,7 @@
           placeholder="请输入总面积"
           :precision="2"
           :min="0"
-          style="width: 100%;"
+          style="width: 100%"
           @update:model-value="setFormField('totalArea', $event)"
         />
       </el-form-item>
@@ -45,7 +40,7 @@
           :model-value="form.plannedUse"
           placeholder="请选择规划用途"
           clearable
-          style="width: 100%;"
+          style="width: 100%"
           @update:model-value="setFormField('plannedUse', $event)"
         >
           <el-option label="住宅" value="住宅" />
@@ -61,7 +56,7 @@
           type="textarea"
           rows="3"
           placeholder="请输入备注信息"
-          style="width: 100%;"
+          style="width: 100%"
           @update:model-value="setFormField('remark', $event)"
         />
       </el-form-item>
@@ -80,24 +75,24 @@ import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   form: {
     type: Object,
-    required: true
+    required: true,
   },
   rules: {
     type: Object,
-    required: true
+    required: true,
   },
   loading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   setFormRef: {
     type: Function,
-    default: () => {}
-  }
+    default: () => {},
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'update:form', 'submit'])
@@ -106,6 +101,6 @@ const setFormField = createFormFieldPatcher(props, emit, 'form')
 
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 </script>

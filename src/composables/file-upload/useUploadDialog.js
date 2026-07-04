@@ -4,7 +4,7 @@ import {
   isUploadAbortError,
   resolveUploadFileUid,
   runConcurrentUploads,
-  UPLOAD_FILE_STATUS
+  UPLOAD_FILE_STATUS,
 } from '@/composables/file-upload/useConcurrentFileUpload.js'
 import { uploadFile as defaultUploadApi } from '@/services/file.service'
 
@@ -14,7 +14,7 @@ export function useUploadDialog({
   startPolling,
   refreshData,
   prependUploadedFiles,
-  uploadApi = defaultUploadApi
+  uploadApi = defaultUploadApi,
 }) {
   const uploadDialogVisible = ref(false)
   const tempUploadType = ref('SURVEY_REPORT')
@@ -49,7 +49,7 @@ export function useUploadDialog({
           loaded: 0,
           total: Number(item?.raw?.size ?? item?.size ?? 0),
           fileId: null,
-          error: null
+          error: null,
         })
       }
     }
@@ -81,7 +81,7 @@ export function useUploadDialog({
   const buildUploadParams = () => ({
     projectId: currentProject.value,
     fileContextType: tempUploadType.value,
-    phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : undefined
+    phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : undefined,
   })
 
   const executeUpload = async (filesToUpload) => {
@@ -100,10 +100,10 @@ export function useUploadDialog({
               fileId,
               fileName,
               fileContextType: tempUploadType.value,
-              phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : null
-            }
+              phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : null,
+            },
           ])
-        }
+        },
       })
 
       if (result.successCount > 0) {
@@ -112,7 +112,9 @@ export function useUploadDialog({
       }
 
       if (result.errorCount > 0 && result.successCount > 0) {
-        ElMessage.warning(`部分文件上传失败：成功 ${result.successCount} 个，失败 ${result.errorCount} 个`)
+        ElMessage.warning(
+          `部分文件上传失败：成功 ${result.successCount} 个，失败 ${result.errorCount} 个`
+        )
       } else if (result.successCount > 0) {
         ElMessage.success(`${result.successCount} 个文件已入库，正在后台后处理与解析`)
       } else if (!result.cancelled) {
@@ -173,7 +175,7 @@ export function useUploadDialog({
       confirmButtonText: '确认并上传',
       cancelButtonText: '再检查一下',
       type: 'info',
-      center: true
+      center: true,
     })
       .then(() => handleRealUpload())
       .catch(() => { })
@@ -193,7 +195,7 @@ export function useUploadDialog({
     handleFileRemove,
     handleUploadDialogClosed,
     confirmUpload,
-    retryUploadFile
+    retryUploadFile,
   }
 }
 

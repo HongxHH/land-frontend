@@ -12,16 +12,28 @@ export const SUMMARY_COLUMN_SCHEMA = [
   { id: 'index', prop: null, subLabel: '序号', headerGroup: null, kind: 'index' },
   { id: 'projectName', prop: 'projectName', subLabel: '工程名称', headerGroup: null, kind: 'text' },
   { id: 'certNo', prop: 'certNo', subLabel: '不动产权证编号', headerGroup: null, kind: 'text' },
-  { id: 'contractNo', prop: 'contractNo', subLabel: '合同/批文编号', headerGroup: null, kind: 'text' },
+  {
+    id: 'contractNo',
+    prop: 'contractNo',
+    subLabel: '合同/批文编号',
+    headerGroup: null,
+    kind: 'text',
+  },
   { id: 'phase', prop: 'phase', subLabel: '期数', headerGroup: null, kind: 'text' },
-  { id: 'totalArea', prop: 'totalArea', subLabel: '实测报告总建筑面积', headerGroup: null, kind: 'area' },
+  {
+    id: 'totalArea',
+    prop: 'totalArea',
+    subLabel: '实测报告总建筑面积',
+    headerGroup: null,
+    kind: 'area',
+  },
   {
     id: 'calcCommercial',
     prop: 'calcCommercial',
     subLabel: '商业(办公)面积',
     headerGroup: 'calc',
     groupLabel: '计容',
-    kind: 'area'
+    kind: 'area',
   },
   {
     id: 'calcResidential',
@@ -29,7 +41,7 @@ export const SUMMARY_COLUMN_SCHEMA = [
     subLabel: '住宅面积',
     headerGroup: 'calc',
     groupLabel: '计容',
-    kind: 'area'
+    kind: 'area',
   },
   {
     id: 'calcPropMgmt',
@@ -37,7 +49,7 @@ export const SUMMARY_COLUMN_SCHEMA = [
     subLabel: '物管用房',
     headerGroup: 'calc',
     groupLabel: '计容',
-    kind: 'area'
+    kind: 'area',
   },
   {
     id: 'calcOther',
@@ -45,7 +57,7 @@ export const SUMMARY_COLUMN_SCHEMA = [
     subLabel: '其他计容',
     headerGroup: 'calc',
     groupLabel: '计容',
-    kind: 'area'
+    kind: 'area',
   },
   {
     id: 'nonCalcCommunity',
@@ -53,7 +65,7 @@ export const SUMMARY_COLUMN_SCHEMA = [
     subLabel: '社区用房面积',
     headerGroup: 'nonCalc',
     groupLabel: '不计容',
-    kind: 'area'
+    kind: 'area',
   },
   {
     id: 'nonCalcOther',
@@ -61,17 +73,23 @@ export const SUMMARY_COLUMN_SCHEMA = [
     subLabel: '其他公用面积',
     headerGroup: 'nonCalc',
     groupLabel: '不计容',
-    kind: 'area'
+    kind: 'area',
   },
   {
     id: 'areaConfirmationNoticeNo',
     prop: 'areaConfirmationNoticeNo',
     subLabel: '房产面积确认告知书编号',
     headerGroup: null,
-    kind: 'text'
+    kind: 'text',
   },
-  { id: 'reportNo', prop: 'reportNo', subLabel: '房地产勘测报告书编号', headerGroup: null, kind: 'text' },
-  { id: 'remarks', prop: 'remarks', subLabel: '备注', headerGroup: null, kind: 'text' }
+  {
+    id: 'reportNo',
+    prop: 'reportNo',
+    subLabel: '房地产勘测报告书编号',
+    headerGroup: null,
+    kind: 'text',
+  },
+  { id: 'remarks', prop: 'remarks', subLabel: '备注', headerGroup: null, kind: 'text' },
 ]
 
 const schemaById = Object.fromEntries(SUMMARY_COLUMN_SCHEMA.map((c) => [c.id, c]))

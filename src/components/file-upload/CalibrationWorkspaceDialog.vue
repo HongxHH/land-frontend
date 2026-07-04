@@ -52,7 +52,12 @@
             </div>
           </template>
           <template #recognition>
-            <div v-if="recognitionHtml" class="audit-preview-md md-content" v-html="recognitionHtml" />
+            <!-- eslint-disable-next-line vue/no-v-html -- recognitionHtml 经 renderRecognitionMarkdownHtml + DOMPurify 消毒 -->
+            <div
+              v-if="recognitionHtml"
+              class="audit-preview-md md-content"
+              v-html="recognitionHtml"
+            />
             <div v-else class="audit-preview-empty">
               <el-empty description="暂无识别内容" />
             </div>
@@ -146,7 +151,7 @@ const props = defineProps({
   loadMoreRoomInfo: { type: Function, default: null },
   roomInfoHasMore: { type: Boolean, default: false },
   roomInfoLoadingMore: { type: Boolean, default: false },
-  focusUsageName: { type: String, default: '' }
+  focusUsageName: { type: String, default: '' },
 })
 
 const emit = defineEmits(['update:modelValue', 'closed'])
@@ -159,9 +164,9 @@ const calibrationPreviewViews = computed(() => [
     id: 'preprocess',
     label: '预处理文件',
     disabled: !props.isPreprocessAvailable,
-    hint: props.isPreprocessAvailable ? '' : '暂无'
+    hint: props.isPreprocessAvailable ? '' : '暂无',
   },
-  { id: 'recognition', label: '识别文件(MD)' }
+  { id: 'recognition', label: '识别文件(MD)' },
 ])
 
 const downloadSourceFile = async () => {
@@ -189,7 +194,7 @@ const downloadSourceFile = async () => {
 
 const dialogVisible = computed({
   get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val)
+  set: (val) => emit('update:modelValue', val),
 })
 
 const handleDialogClosed = () => {
@@ -201,6 +206,6 @@ const { auditLayoutRef, leftPanelStyle, onSplitterMouseDown } = useAuditSplitPan
   defaultLeftPercent: 40,
   onSplitEnd: () => {
     window.dispatchEvent(new Event('resize'))
-  }
+  },
 })
 </script>

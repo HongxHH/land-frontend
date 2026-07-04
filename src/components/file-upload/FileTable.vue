@@ -13,9 +13,9 @@
       <el-table-column type="selection" width="120" align="center" />
       <el-table-column label="预览" width="120" align="center">
         <template #default="{ row }">
-          <div @click.stop style="display: flex; justify-content: center;">
+          <div @click.stop style="display: flex; justify-content: center">
             <el-image
-              style="width: 200px; height: 60px; border-radius: 6px; border: 1px solid #e4e7ed;"
+              style="width: 200px; height: 60px; border-radius: 6px; border: 1px solid #e4e7ed"
               :src="row.thumbnailUrl"
               :preview-src-list="[row.thumbnailUrl]"
               fit="cover"
@@ -24,7 +24,16 @@
               preview-z-index="99999"
             >
               <template #error>
-                <div class="image-slot" style="display:flex; justify-content:center; align-items:center; height:100%; color:#909399;">
+                <div
+                  class="image-slot"
+                  style="
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100%;
+                    color: #909399;
+                  "
+                >
                   <el-icon><Picture /></el-icon>
                 </div>
               </template>
@@ -36,15 +45,17 @@
       <el-table-column prop="name" label="文件名" min-width="200">
         <template #default="{ row }">
           <div class="file-name-cell">
-            <span style="font-weight: 600; font-size: 15px; color: #303133;">{{ row.name }}</span>
-            <span v-if="row.phase" style="font-size: 12px; color: #999; margin-top: 4px;">第 {{ row.phase }} 期</span>
+            <span style="font-weight: 600; font-size: 15px; color: #303133">{{ row.name }}</span>
+            <span v-if="row.phase" style="font-size: 12px; color: #999; margin-top: 4px"
+              >第 {{ row.phase }} 期</span
+            >
           </div>
         </template>
       </el-table-column>
 
       <el-table-column prop="uploadTime" label="上传时间" width="180" align="center">
         <template #default="{ row }">
-          <span style="color: #606266; font-size: 13px;">{{ row.uploadTime }}</span>
+          <span style="color: #606266; font-size: 13px">{{ row.uploadTime }}</span>
         </template>
       </el-table-column>
 
@@ -52,7 +63,10 @@
         <template #default="{ row }">
           <el-tag
             :color="row.type === 'contract' ? '#FFF0F0' : '#F0F9EB'"
-            :style="{ color: row.type === 'contract' ? '#F56C6C' : '#67C23A', border: '1px solid ' + (row.type === 'contract' ? '#FAB6B6' : '#b3e19d') }"
+            :style="{
+              color: row.type === 'contract' ? '#F56C6C' : '#67C23A',
+              border: '1px solid ' + (row.type === 'contract' ? '#FAB6B6' : '#b3e19d'),
+            }"
             effect="light"
           >
             {{ row.type === 'contract' ? '合同文件' : '实测报告' }}
@@ -68,11 +82,23 @@
             placement="top"
           >
             <el-tag :type="getFileStateTagType(row.status)" size="small" effect="light">
-              {{ statusMap[row.status]?.text || getFileStateLabel(row.status, { fileContextType: row.fileContextType, autoParseQueuedAt: row.autoParseQueuedAt }) }}
+              {{
+                statusMap[row.status]?.text ||
+                getFileStateLabel(row.status, {
+                  fileContextType: row.fileContextType,
+                  autoParseQueuedAt: row.autoParseQueuedAt,
+                })
+              }}
             </el-tag>
           </el-tooltip>
           <el-tag v-else :type="getFileStateTagType(row.status)" size="small" effect="light">
-            {{ statusMap[row.status]?.text || getFileStateLabel(row.status, { fileContextType: row.fileContextType, autoParseQueuedAt: row.autoParseQueuedAt }) }}
+            {{
+              statusMap[row.status]?.text ||
+              getFileStateLabel(row.status, {
+                fileContextType: row.fileContextType,
+                autoParseQueuedAt: row.autoParseQueuedAt,
+              })
+            }}
           </el-tag>
         </template>
       </el-table-column>
@@ -105,14 +131,16 @@
               重新解析
             </el-button>
             <el-button
-              v-if="['PARSE_COMPLETE', 'UNPARSEABLE', 'AUDITING', 'AUDIT_FAIL'].includes(row.status)"
+              v-if="
+                ['PARSE_COMPLETE', 'UNPARSEABLE', 'AUDITING', 'AUDIT_FAIL'].includes(row.status)
+              "
               color="#A0C4FF"
               size="small"
               round
-              style="color:white"
+              style="color: white"
               @click="$emit('open-calibration', row)"
             >
-              <el-icon style="margin-right:4px"><EditPen /></el-icon>
+              <el-icon style="margin-right: 4px"><EditPen /></el-icon>
               {{ row.status === 'UNPARSEABLE' ? '人工校对' : '审核' }}
             </el-button>
             <el-button
@@ -123,15 +151,21 @@
             >
               查看详情
             </el-button>
-            <el-popconfirm title="确定删除该文件吗?" @confirm="$emit('delete-file', row)" confirm-button-type="danger">
-              <template #reference><el-button link type="danger" icon="Delete"></el-button></template>
+            <el-popconfirm
+              title="确定删除该文件吗?"
+              @confirm="$emit('delete-file', row)"
+              confirm-button-type="danger"
+            >
+              <template #reference
+                ><el-button link type="danger" icon="Delete"></el-button
+              ></template>
             </el-popconfirm>
           </el-space>
         </template>
       </el-table-column>
     </el-table>
 
-    <div style="margin-top: 20px; text-align: right;">
+    <div style="margin-top: 20px; text-align: right">
       <el-pagination
         @size-change="(val) => $emit('size-change', val)"
         @current-change="(val) => $emit('current-change', val)"
@@ -153,28 +187,28 @@ import { getFileStateLabel, getFileStateTagType } from '@/utils/fileStatePresent
 defineProps({
   fileTableData: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   statusMap: {
     type: Object,
-    default: () => ({})
+    default: () => ({}),
   },
   tableRowClassName: {
     type: Function,
-    required: true
+    required: true,
   },
   currentPage: {
     type: Number,
-    default: 1
+    default: 1,
   },
   pageSize: {
     type: Number,
-    default: 20
+    default: 20,
   },
   total: {
     type: Number,
-    default: 0
-  }
+    default: 0,
+  },
 })
 
 defineEmits([
@@ -184,7 +218,6 @@ defineEmits([
   'open-calibration',
   'delete-file',
   'size-change',
-  'current-change'
+  'current-change',
 ])
 </script>
-

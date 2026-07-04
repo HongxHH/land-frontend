@@ -85,7 +85,8 @@ export function useArchiveUploadMeter(uploadFilesRef, uploadUploadedBytesRef, up
       const db = bytes - uploadSpeedLastBytes
       if (db > 0) {
         const inst = (db * 1000) / dt
-        uploadSpeedBps.value = uploadSpeedBps.value > 0 ? uploadSpeedBps.value * 0.72 + inst * 0.28 : inst
+        uploadSpeedBps.value =
+          uploadSpeedBps.value > 0 ? uploadSpeedBps.value * 0.72 + inst * 0.28 : inst
       }
       uploadSpeedLastTs = now
       uploadSpeedLastBytes = bytes
@@ -115,6 +116,6 @@ export function useArchiveUploadMeter(uploadFilesRef, uploadUploadedBytesRef, up
     uploadSpeedText,
     uploadEtaText,
     startUploadSpeedMeter,
-    stopUploadSpeedMeter
+    stopUploadSpeedMeter,
   }
 }

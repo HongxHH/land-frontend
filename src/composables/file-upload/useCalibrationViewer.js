@@ -1,6 +1,9 @@
 import { computed, ref } from 'vue'
 import axios from 'axios'
-import { enrichAuditSummaryFromVerificationReason, isAreaSumMissing } from '@/composables/file-upload/auditSummaryMetrics'
+import {
+  enrichAuditSummaryFromVerificationReason,
+  isAreaSumMissing,
+} from '@/composables/file-upload/auditSummaryMetrics'
 import { ElMessage } from 'element-plus'
 import { downloadGridFsFile } from '@/services/file.service'
 import { queryRoomInfos } from '@/services/project.service'
@@ -17,7 +20,7 @@ export function useCalibrationViewer({
   roomInfoPageSize,
   roomSumInfo,
   auditSummaryData,
-  usageCategoryMap
+  usageCategoryMap,
 }) {
   const currentViewType = ref('original')
   const preprocessGridfsId = ref('')
@@ -42,10 +45,14 @@ export function useCalibrationViewer({
         pageSize: 20,
         sortField: 'createTime',
         sortDirection: 'desc',
-        loadGridFsPayload: true
+        loadGridFsPayload: true,
       })
 
-      if (res.data.code === 200 && Array.isArray(res.data.data.records) && res.data.data.records.length > 0) {
+      if (
+        res.data.code === 200 &&
+        Array.isArray(res.data.data.records) &&
+        res.data.data.records.length > 0
+      ) {
         const ocrResult = res.data.data.records[0]
         recognitionMdContent.value = ocrResult.markdownContent || '# 暂无识别内容（MD格式）'
       } else {
@@ -122,7 +129,7 @@ export function useCalibrationViewer({
       roomInfoBuildingAreaSumFromOcr: '0.00',
       roomInfoInnerAreaSumFromOcr: '0.00',
       roomInfoBalconyAreaSumFromOcr: '0.00',
-      roomInfoSharedAreaSumFromOcr: '0.00'
+      roomInfoSharedAreaSumFromOcr: '0.00',
     })
     roomInfoData.value = []
     if (roomInfoTotal) roomInfoTotal.value = 0
@@ -168,26 +175,50 @@ export function useCalibrationViewer({
         roomSumInfo.sharedAreaSum = '0.00'
 
         try {
-          const summaryRes = await axios.post('/api/project/survey-reports/query', { fileRecordId: row.rawId })
+          const summaryRes = await axios.post('/api/project/survey-reports/query', {
+            fileRecordId: row.rawId,
+          })
 
-          if (summaryRes.data.code === 200 && Array.isArray(summaryRes.data.data.records) && summaryRes.data.data.records.length > 0) {
+          if (
+            summaryRes.data.code === 200 &&
+            Array.isArray(summaryRes.data.data.records) &&
+            summaryRes.data.data.records.length > 0
+          ) {
             const currentSummary = summaryRes.data.data.records[0]
             realSurveyReportId.value = currentSummary.id
 
-            auditSummaryData.pendingConfirmArea = (currentSummary.pendingConfirmArea || 0).toFixed(2)
+            auditSummaryData.pendingConfirmArea = (currentSummary.pendingConfirmArea || 0).toFixed(
+              2
+            )
             auditSummaryData.unknownUsages = currentSummary.unknownUsages || '[]'
             auditSummaryData.unknownUsageCount = currentSummary.unknownUsageCount || 0
             auditSummaryData.isVerified = currentSummary.isVerified || 0
             auditSummaryData.hasUnknownUsage = currentSummary.hasUnknownUsage || 0
             auditSummaryData.verificationErrorReason = currentSummary.verificationErrorReason || '-'
-            auditSummaryData.roomInfoBuildingAreaSum = (currentSummary.roomInfoBuildingAreaSum || 0).toFixed(2)
-            auditSummaryData.roomInfoInnerAreaSum = (currentSummary.roomInfoInnerAreaSum || 0).toFixed(2)
-            auditSummaryData.roomInfoBalconyAreaSum = (currentSummary.roomInfoBalconyAreaSum || 0).toFixed(2)
-            auditSummaryData.roomInfoSharedAreaSum = (currentSummary.roomInfoSharedAreaSum || 0).toFixed(2)
-            auditSummaryData.roomInfoBuildingAreaSumFromOcr = (currentSummary.roomInfoBuildingAreaSumFromOcr || 0).toFixed(2)
-            auditSummaryData.roomInfoInnerAreaSumFromOcr = (currentSummary.roomInfoInnerAreaSumFromOcr || 0).toFixed(2)
-            auditSummaryData.roomInfoBalconyAreaSumFromOcr = (currentSummary.roomInfoBalconyAreaSumFromOcr || 0).toFixed(2)
-            auditSummaryData.roomInfoSharedAreaSumFromOcr = (currentSummary.roomInfoSharedAreaSumFromOcr || 0).toFixed(2)
+            auditSummaryData.roomInfoBuildingAreaSum = (
+              currentSummary.roomInfoBuildingAreaSum || 0
+            ).toFixed(2)
+            auditSummaryData.roomInfoInnerAreaSum = (
+              currentSummary.roomInfoInnerAreaSum || 0
+            ).toFixed(2)
+            auditSummaryData.roomInfoBalconyAreaSum = (
+              currentSummary.roomInfoBalconyAreaSum || 0
+            ).toFixed(2)
+            auditSummaryData.roomInfoSharedAreaSum = (
+              currentSummary.roomInfoSharedAreaSum || 0
+            ).toFixed(2)
+            auditSummaryData.roomInfoBuildingAreaSumFromOcr = (
+              currentSummary.roomInfoBuildingAreaSumFromOcr || 0
+            ).toFixed(2)
+            auditSummaryData.roomInfoInnerAreaSumFromOcr = (
+              currentSummary.roomInfoInnerAreaSumFromOcr || 0
+            ).toFixed(2)
+            auditSummaryData.roomInfoBalconyAreaSumFromOcr = (
+              currentSummary.roomInfoBalconyAreaSumFromOcr || 0
+            ).toFixed(2)
+            auditSummaryData.roomInfoSharedAreaSumFromOcr = (
+              currentSummary.roomInfoSharedAreaSumFromOcr || 0
+            ).toFixed(2)
             enrichAuditSummaryFromVerificationReason(auditSummaryData)
           } else {
             ElMessage.warning('query 接口返回格式异常，未获取到有效数据')
@@ -195,7 +226,7 @@ export function useCalibrationViewer({
               pendingConfirmArea: '0.00',
               unknownUsageCount: 0,
               verificationErrorReason: '-',
-              roomInfoBuildingAreaSum: '0.00'
+              roomInfoBuildingAreaSum: '0.00',
             })
             return
           }
@@ -206,7 +237,7 @@ export function useCalibrationViewer({
             pendingConfirmArea: '0.00',
             unknownUsageCount: 0,
             verificationErrorReason: '-',
-            roomInfoBuildingAreaSum: '0.00'
+            roomInfoBuildingAreaSum: '0.00',
           })
           return
         }
@@ -237,7 +268,7 @@ export function useCalibrationViewer({
               pageNum: page,
               pageSize,
               sortField: 'id',
-              sortDirection: 'asc'
+              sortDirection: 'asc',
             })
             if (roomRes.data.code !== 200) {
               roomInfoData.value = []
@@ -278,11 +309,17 @@ export function useCalibrationViewer({
                   : item.floorAreaType === 'NON_BUILDABLE'
                     ? '不计容'
                     : '未知',
-              remark: item.remark || ''
+              remark: item.remark || '',
             }))
 
-            if (isAreaSumMissing(auditSummaryData.roomInfoBuildingAreaSum) && roomInfoData.value.length > 0) {
-              const buildingAreaTotal = roomInfoData.value.reduce((sum, item) => sum + Number(item.buildingArea), 0)
+            if (
+              isAreaSumMissing(auditSummaryData.roomInfoBuildingAreaSum) &&
+              roomInfoData.value.length > 0
+            ) {
+              const buildingAreaTotal = roomInfoData.value.reduce(
+                (sum, item) => sum + Number(item.buildingArea),
+                0
+              )
               if (buildingAreaTotal > 0) {
                 auditSummaryData.roomInfoBuildingAreaSum = buildingAreaTotal.toFixed(2)
               }
@@ -309,7 +346,7 @@ export function useCalibrationViewer({
     }
   }
 
-  const pdfLoaded = () => { }
+  const pdfLoaded = () => {}
 
   const pdfLoadError = () => {
     ElMessage.warning('PDF预览失败，可通过下载接口查看文件')
@@ -329,6 +366,6 @@ export function useCalibrationViewer({
     resetCalibrationState,
     openCalibration,
     pdfLoaded,
-    pdfLoadError
+    pdfLoadError,
   }
 }

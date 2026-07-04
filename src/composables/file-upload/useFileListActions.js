@@ -26,7 +26,7 @@ export function useFileListActions({ currentProject, refreshData }) {
         fileContextType: null,
         fileState: null,
         pageNum: 1,
-        pageSize: 9999
+        pageSize: 9999,
       },
       { signal: options.signal }
     )
@@ -34,6 +34,6 @@ export function useFileListActions({ currentProject, refreshData }) {
 
   return {
     deleteFile,
-    checkBatchStatus
+    checkBatchStatus,
   }
 }

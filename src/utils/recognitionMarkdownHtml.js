@@ -7,7 +7,7 @@ function ensureMarkedConfigured() {
   if (markedConfigured) return
   marked.setOptions({
     gfm: true,
-    breaks: true
+    breaks: true,
   })
   markedConfigured = true
 }
@@ -36,15 +36,15 @@ const PURIFY_CONFIG = {
     'tbody',
     'tr',
     'th',
-    'td'
+    'td',
   ],
   ALLOWED_ATTR: {
     img: ['src', 'alt', 'width'],
     a: ['href', 'title'],
     th: ['colspan', 'rowspan'],
-    td: ['colspan', 'rowspan']
+    td: ['colspan', 'rowspan'],
   },
-  ALLOW_DATA_ATTR: false
+  ALLOW_DATA_ATTR: false,
 }
 
 /** 仅保留文件名，防止路径穿越；相对路径统一走后端图片下载接口 */

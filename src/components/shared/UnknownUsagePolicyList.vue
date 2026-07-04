@@ -20,14 +20,24 @@
           </span>
           <template v-if="roomNumbersText(rule)">
             <span class="meta-dot" aria-hidden="true">·</span>
-            <span class="meta-rooms" :title="roomNumbersText(rule)">{{ roomNumbersText(rule) }}</span>
+            <span class="meta-rooms" :title="roomNumbersText(rule)">{{
+              roomNumbersText(rule)
+            }}</span>
           </template>
           <template v-if="rule.recentFileName || rule.fileRecordId">
             <span class="meta-dot" aria-hidden="true">·</span>
           </template>
-          <span v-if="rule.recentFileName" class="meta-file" :title="rule.recentFileName">{{ rule.recentFileName }}</span>
-          <span v-else-if="rule.fileRecordId" class="meta-file meta-file--muted">文件记录 #{{ rule.fileRecordId }}</span>
-          <span v-else-if="!rule.occurrenceCount && !roomNumbersText(rule)" class="meta-file meta-file--muted">当前报告待确认</span>
+          <span v-if="rule.recentFileName" class="meta-file" :title="rule.recentFileName">{{
+            rule.recentFileName
+          }}</span>
+          <span v-else-if="rule.fileRecordId" class="meta-file meta-file--muted"
+            >文件记录 #{{ rule.fileRecordId }}</span
+          >
+          <span
+            v-else-if="!rule.occurrenceCount && !roomNumbersText(rule)"
+            class="meta-file meta-file--muted"
+            >当前报告待确认</span
+          >
         </div>
 
         <div v-if="hasRowAction(rule)" class="policy-row__actions">
@@ -65,7 +75,7 @@ const props = defineProps({
   projectId: { type: [String, Number], default: '' },
   highlightUsageName: { type: String, default: '' },
   showAuditButton: { type: Boolean, default: false },
-  showLocateButton: { type: Boolean, default: false }
+  showLocateButton: { type: Boolean, default: false },
 })
 
 defineEmits(['open-source-audit', 'locate-usage'])
@@ -78,7 +88,8 @@ const isHighlighted = (rule) => {
 
 const roomNumbersText = (rule) => formatRoomNumbersInline(rule?.roomNumbers)
 
-const isReadOnlyRow = (rule) => Boolean(rule?.readOnly) || String(rule?.usageName || '').trim() === '用途缺失'
+const isReadOnlyRow = (rule) =>
+  Boolean(rule?.readOnly) || String(rule?.usageName || '').trim() === '用途缺失'
 
 const hasRowAction = (rule) => {
   if (props.showAuditButton && rule.fileRecordId && props.projectId) return true

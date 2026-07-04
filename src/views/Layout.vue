@@ -1,6 +1,10 @@
 <template>
   <el-container class="layout-container">
-    <el-aside :width="asideWidth" class="aside no-print" :class="{ 'aside--collapsed': isAsideCollapsed }">
+    <el-aside
+      :width="asideWidth"
+      class="aside no-print"
+      :class="{ 'aside--collapsed': isAsideCollapsed }"
+    >
       <div class="logo">
         <span v-if="!isAsideCollapsed" class="logo-main">国土测绘系统</span>
         <el-button class="aside-toggle" link @click="toggleAside">
@@ -57,7 +61,12 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <el-dropdown trigger="click" placement="bottom-end" popper-class="layout-user-dropdown" @command="handleUserCommand">
+          <el-dropdown
+            trigger="click"
+            placement="bottom-end"
+            popper-class="layout-user-dropdown"
+            @command="handleUserCommand"
+          >
             <el-button class="user-menu-trigger" text>
               <span class="user-menu-trigger__greet">您好，{{ userDisplayName }}</span>
               <el-icon class="user-menu-trigger__arrow"><ArrowDown /></el-icon>
@@ -88,7 +97,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import { DataAnalysis, ArrowDown, Odometer, UserFilled, MapLocation, Fold, Expand, Cpu } from '@element-plus/icons-vue'
+import {
+  DataAnalysis,
+  ArrowDown,
+  Odometer,
+  UserFilled,
+  MapLocation,
+  Fold,
+  Expand,
+  Cpu,
+} from '@element-plus/icons-vue'
 import UserProfileDialog from '@/components/layout/UserProfileDialog.vue'
 import { clearAuth } from '@/utils/auth-token'
 import {
@@ -96,7 +114,7 @@ import {
   canAccessUserManagement,
   getUserDisplayName,
   getUserSession,
-  setUserSession
+  setUserSession,
 } from '@/utils/auth-session.js'
 
 const router = useRouter()

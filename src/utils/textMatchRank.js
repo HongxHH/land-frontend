@@ -5,8 +5,12 @@
  * @returns {number}
  */
 export function textMatchScore(text, keyword) {
-  const t = String(text ?? '').trim().toLowerCase()
-  const k = String(keyword ?? '').trim().toLowerCase()
+  const t = String(text ?? '')
+    .trim()
+    .toLowerCase()
+  const k = String(keyword ?? '')
+    .trim()
+    .toLowerCase()
   if (!k || !t) return 0
   if (t === k) return 100
   if (t.startsWith(k)) return 80
@@ -40,14 +44,16 @@ export function bestTextMatchScore(keyword, fields = []) {
  */
 export function filterAndRankByKeyword(items, keyword, getMatchFields) {
   const list = Array.isArray(items) ? items : []
-  const kw = String(keyword ?? '').trim().toLowerCase()
+  const kw = String(keyword ?? '')
+    .trim()
+    .toLowerCase()
   if (!kw) return list
 
   return list
     .map((item, index) => ({
       item,
       index,
-      score: bestTextMatchScore(kw, getMatchFields(item))
+      score: bestTextMatchScore(kw, getMatchFields(item)),
     }))
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score || a.index - b.index)
@@ -61,7 +67,7 @@ export const ROOM_TABLE_SEARCH_FIELD_BOOSTS = {
   floorAreaType: 1,
   remark: 1,
   roomLevel: 1,
-  roomNumber: 1
+  roomNumber: 1,
 }
 
 /**
@@ -73,7 +79,7 @@ export const ROOM_TABLE_SEARCH_FIELD_BOOSTS = {
 export function roomRowSearchMatchScore(row, keyword, fields) {
   const matchFields = (fields || []).map((field) => ({
     text: row?.[field],
-    boost: ROOM_TABLE_SEARCH_FIELD_BOOSTS[field] ?? 1
+    boost: ROOM_TABLE_SEARCH_FIELD_BOOSTS[field] ?? 1,
   }))
   return bestTextMatchScore(keyword, matchFields)
 }
@@ -85,14 +91,16 @@ export function roomRowSearchMatchScore(row, keyword, fields) {
  * @returns {Record<string, unknown>[]}
  */
 export function filterAndRankRoomRows(rows, keyword, fields) {
-  const kw = String(keyword ?? '').trim().toLowerCase()
+  const kw = String(keyword ?? '')
+    .trim()
+    .toLowerCase()
   if (!kw) return rows
 
   return (Array.isArray(rows) ? rows : [])
     .map((row, index) => ({
       row,
       index,
-      score: roomRowSearchMatchScore(row, kw, fields)
+      score: roomRowSearchMatchScore(row, kw, fields),
     }))
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score || a.index - b.index)
@@ -108,6 +116,6 @@ export function filterAndRankUsageOptions(options, keyword) {
   return filterAndRankByKeyword(options, keyword, (item) => [
     { text: item?.usagePattern, boost: 1.25 },
     { text: item?.usageCategoryText },
-    { text: item?.floorAreaTypeText }
+    { text: item?.floorAreaTypeText },
   ])
 }

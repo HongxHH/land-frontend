@@ -10,7 +10,7 @@ export function useCalibrationState() {
     buildingAreaSum: '0.00',
     innerAreaSum: '0.00',
     balconyAreaSum: '0.00',
-    sharedAreaSum: '0.00'
+    sharedAreaSum: '0.00',
   })
 
   const showCalibration = ref(false)
@@ -31,7 +31,7 @@ export function useCalibrationState() {
     roomInfoBuildingAreaSumFromOcr: '0.00',
     roomInfoInnerAreaSumFromOcr: '0.00',
     roomInfoBalconyAreaSumFromOcr: '0.00',
-    roomInfoSharedAreaSumFromOcr: '0.00'
+    roomInfoSharedAreaSumFromOcr: '0.00',
   })
 
   return {
@@ -44,6 +44,6 @@ export function useCalibrationState() {
     showCalibration,
     calibrationLoading,
     currentFile,
-    auditSummaryData
+    auditSummaryData,
   }
 }

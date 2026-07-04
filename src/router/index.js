@@ -8,12 +8,12 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Login.vue')
+    component: () => import('../views/Login.vue'),
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../views/Register.vue')
+    component: () => import('../views/Register.vue'),
   },
   {
     path: '/',
@@ -25,49 +25,49 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('../views/Dashboard.vue'),
-        meta: { title: '首页' }
+        meta: { title: '首页' },
       },
       {
         path: 'projects',
         name: 'ProjectList',
         component: () => import('../views/ProjectList.vue'),
-        meta: { title: '项目信息', keepAlive: true }
+        meta: { title: '项目信息', keepAlive: true },
       },
       {
         path: 'upload',
         name: 'FileUpload',
         component: () => import('../views/FileUpload.vue'),
-        meta: { title: '项目/文件上传', keepAlive: true }
+        meta: { title: '项目/文件上传', keepAlive: true },
       },
       {
         path: 'users',
         name: 'UserList',
         component: () => import('../views/UserList.vue'),
-        meta: { title: '用户权限管理', requiresUserManagement: true }
+        meta: { title: '用户权限管理', requiresUserManagement: true },
       },
       {
         path: 'fields',
         name: 'FieldManagement',
         component: () => import('../views/FieldManagement.vue'),
-        meta: { title: '土地类型管理' }
+        meta: { title: '土地类型管理' },
       },
       {
         path: 'task-pool',
         name: 'TaskPoolMonitor',
         component: () => import('../views/TaskPoolMonitor.vue'),
-        meta: { title: '任务线程池监控', requiresDeveloper: true }
-      }
-    ]
+        meta: { title: '任务线程池监控', requiresDeveloper: true },
+      },
+    ],
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/'
-  }
+    redirect: '/',
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
 })
 
 const PUBLIC_ROUTE_NAMES = ['Login', 'Register']

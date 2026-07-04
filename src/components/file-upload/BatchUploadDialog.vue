@@ -72,9 +72,13 @@
     </el-form>
     <template #footer>
       <div class="upload-batch-footer">
-        <span class="upload-batch-count">已选择 <strong>{{ tempFiles.length }}</strong> 个文件</span>
+        <span class="upload-batch-count"
+          >已选择 <strong>{{ tempFiles.length }}</strong> 个文件</span
+        >
         <div>
-          <el-button @click="emit('update:modelValue', false)" :disabled="uploadLoading">取消</el-button>
+          <el-button @click="emit('update:modelValue', false)" :disabled="uploadLoading"
+            >取消</el-button
+          >
           <el-button
             type="primary"
             class="upload-confirm-btn"
@@ -97,28 +101,28 @@ import UploadFileRow from '@/components/file-upload/UploadFileRow.vue'
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   tempUploadType: {
     type: String,
-    default: 'SURVEY_REPORT'
+    default: 'SURVEY_REPORT',
   },
   uploadPhase: {
     type: Number,
-    default: 1
+    default: 1,
   },
   tempFiles: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   uploadLoading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   getFileUploadState: {
     type: Function,
-    default: () => null
-  }
+    default: () => null,
+  },
 })
 
 const emit = defineEmits([
@@ -129,7 +133,7 @@ const emit = defineEmits([
   'file-remove',
   'confirm',
   'closed',
-  'retry-one'
+  'retry-one',
 ])
 
 const resolveFileState = (item) => props.getFileUploadState?.(item) ?? null
@@ -147,7 +151,11 @@ const resolveFileState = (item) => props.getFileUploadState?.(item) ?? null
   margin-right: 0;
   padding: 16px 18px 12px;
   border-bottom: 1px solid rgba(219, 228, 239, 0.9);
-  background: linear-gradient(180deg, var(--home-header-grad-start, #f8fbff) 0%, var(--home-header-grad-end, #f1f6fc) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--home-header-grad-start, #f8fbff) 0%,
+    var(--home-header-grad-end, #f1f6fc) 100%
+  );
 }
 
 .upload-batch-dialog .el-dialog__title {
@@ -238,7 +246,10 @@ const resolveFileState = (item) => props.getFileUploadState?.(item) ?? null
   border: 1px dashed rgba(148, 163, 184, 0.45);
   background: rgba(255, 255, 255, 0.85);
   padding: 16px 14px;
-  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+  transition:
+    transform 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
 }
 
 .upload-dropzone .el-upload-dragger:hover {
@@ -296,4 +307,3 @@ const resolveFileState = (item) => props.getFileUploadState?.(item) ?? null
   overflow-y: auto;
 }
 </style>
-

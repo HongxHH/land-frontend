@@ -21,8 +21,6 @@
 
     <div class="spe-shell">
       <aside class="spe-panel spe-panel--config" aria-label="列与对比表设置">
-
-
         <el-form label-position="top" class="spe-form">
           <el-form-item>
             <template #label>
@@ -30,7 +28,13 @@
               <span class="spe-label-hint">勾选显示 · 上移/下移排序</span>
             </template>
             <div class="spe-table-wrap">
-              <el-table :data="localRows" border size="small" class="spe-layout-table" max-height="min(52vh, 420px)">
+              <el-table
+                :data="localRows"
+                border
+                size="small"
+                class="spe-layout-table"
+                max-height="min(52vh, 420px)"
+              >
                 <el-table-column label="显示" width="56" align="center">
                   <template #default="{ row }">
                     <el-checkbox v-model="row.visible" class="spe-cb" />
@@ -96,21 +100,29 @@
               <thead>
                 <tr>
                   <template v-for="(cell, ti) in previewHeaderModel.topCells" :key="'pv-t-' + ti">
-                    <th v-if="cell.rowspan > 1" :rowspan="cell.rowspan" :colspan="cell.colspan">{{ cell.text }}</th>
+                    <th v-if="cell.rowspan > 1" :rowspan="cell.rowspan" :colspan="cell.colspan">
+                      {{ cell.text }}
+                    </th>
                     <th v-else :colspan="cell.colspan">{{ cell.text }}</th>
                   </template>
                 </tr>
                 <tr v-if="previewHeaderModel.bottomCells.length">
-                  <th v-for="(cell, bi) in previewHeaderModel.bottomCells" :key="'pv-b-' + bi">{{ cell.text }}</th>
+                  <th v-for="(cell, bi) in previewHeaderModel.bottomCells" :key="'pv-b-' + bi">
+                    {{ cell.text }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(row, ri) in previewRows" :key="row.id ?? `p-${ri}`">
-                  <td v-for="col in previewColumnDefs" :key="col.id">{{ previewCell(col, row, ri) }}</td>
+                  <td v-for="col in previewColumnDefs" :key="col.id">
+                    {{ previewCell(col, row, ri) }}
+                  </td>
                 </tr>
               </tbody>
             </table>
-            <p v-if="previewRows.length === 0" class="spe-preview-no-rows">暂无数据行，仅展示表头结构</p>
+            <p v-if="previewRows.length === 0" class="spe-preview-no-rows">
+              暂无数据行，仅展示表头结构
+            </p>
           </div>
         </div>
 
@@ -120,7 +132,11 @@
               请至少勾选一组对比结果，打印与 Excel 才会包含附表
             </div>
             <div v-else class="spe-comparison-preview__scroll">
-              <div v-for="group in previewComparisonGroups" :key="group.key" class="spe-comparison-block">
+              <div
+                v-for="group in previewComparisonGroups"
+                :key="group.key"
+                class="spe-comparison-block"
+              >
                 <div class="spe-comparison-block__title">{{ group.title }}</div>
                 <table class="spe-comparison-table" :aria-label="group.title">
                   <thead>
@@ -174,7 +190,7 @@ import {
   getColumnConfigLabel,
   buildTwoRowHeaderModel,
   resolveVisibleColumnDefs,
-  formatSummaryCellValue
+  formatSummaryCellValue,
 } from '@/composables/project-list/summaryExportColumnSchema.js'
 import { saveSummaryLayoutToStorage } from '@/composables/project-list/summaryExportLayoutStorage.js'
 import { buildSelectedComparisonGroups } from '@/composables/project-list/summaryAreaComparisonTables.js'
@@ -182,13 +198,13 @@ import { SUMMARY_COMPARISON_GROUP_META } from '@/composables/project-list/summar
 
 const comparisonGroupOptions = SUMMARY_COMPARISON_GROUP_META.map((item) => ({
   key: item.key,
-  label: item.printTitle || item.title
+  label: item.printTitle || item.title,
 }))
 
 const props = defineProps({
   previewTableData: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   /** 与页面「面积核算对比」同源，用于附表实时预览 */
   areaComparison: {
@@ -197,21 +213,21 @@ const props = defineProps({
       systemCalculated: {},
       projectPartyDeclared: {},
       planningCalculated: {},
-      capacityIndicatorCalculated: {}
-    })
-  }
+      capacityIndicatorCalculated: {},
+    }),
+  },
 })
 
 const visible = defineModel({ type: Boolean, default: false })
 
 const layoutRows = defineModel('layoutRows', {
   type: Array,
-  required: true
+  required: true,
 })
 
 const comparisonGroupsModel = defineModel('comparisonGroups', {
   type: Array,
-  required: true
+  required: true,
 })
 
 const emit = defineEmits(['after-print-request', 'after-export-request'])
@@ -239,7 +255,10 @@ function columnLabel(id) {
 }
 
 function syncLocalFromParent() {
-  localRows.value = (layoutRows.value || []).map((r) => ({ id: r.id, visible: r.visible !== false }))
+  localRows.value = (layoutRows.value || []).map((r) => ({
+    id: r.id,
+    visible: r.visible !== false,
+  }))
 }
 
 watch(
@@ -455,7 +474,9 @@ function onExport() {
   width: 100%;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 8px 28px -18px rgba(15, 23, 42, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 8px 28px -18px rgba(15, 23, 42, 0.2);
   border: 1px solid rgba(148, 163, 184, 0.35);
 }
 

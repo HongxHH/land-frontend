@@ -12,7 +12,7 @@
             :class="{
               loading: optionsLoading,
               selected: !!activeProjectName && !optionsLoading,
-              empty: !activeProjectName && !optionsLoading
+              empty: !activeProjectName && !optionsLoading,
             }"
           >
             <template v-if="optionsLoading">
@@ -59,8 +59,12 @@
                       <span class="opt-code">{{ item.code }}</span>
                     </div>
                     <div v-if="item.projectTime || item.updateTime" class="opt-meta">
-                      <span v-if="item.projectTime" class="opt-chip">{{ formatProjectTimeForDisplay(item.projectTime) }}</span>
-                      <span v-if="item.updateTime" class="opt-updated">更新 {{ formatShortTime(item.updateTime) }}</span>
+                      <span v-if="item.projectTime" class="opt-chip">{{
+                        formatProjectTimeForDisplay(item.projectTime)
+                      }}</span>
+                      <span v-if="item.updateTime" class="opt-updated"
+                        >更新 {{ formatShortTime(item.updateTime) }}</span
+                      >
                     </div>
                   </div>
                 </template>
@@ -88,7 +92,6 @@
             </el-button>
           </el-tooltip>
         </div>
-
       </div>
     </div>
   </div>
@@ -102,31 +105,31 @@ import { formatProjectTimeForDisplay } from '@/utils/projectTimePresent'
 const props = defineProps({
   modelValue: {
     type: [String, Number],
-    default: ''
+    default: '',
   },
   projectOptions: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   currentProjectId: {
     type: [String, Number],
-    default: ''
+    default: '',
   },
   /** 已加载（查询档案后）的项目名称，与 currentProjectId 配套 */
   currentProjectName: {
     type: String,
-    default: ''
+    default: '',
   },
   /** 首屏拉取项目列表时提示，避免长时间无文案 */
   optionsLoading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   /** (keyword: string) => Promise<projectOption[]> */
   searchProjects: {
     type: Function,
-    default: null
-  }
+    default: null,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'search', 'create-project', 'request-options'])
@@ -194,9 +197,7 @@ async function fetchProjectSuggestions(queryString, cb) {
   const recentIds = getRecentProjectIds()
 
   const pickRecent = (source) => {
-    const recent = recentIds
-      .map((id) => source.find((p) => String(p.id) === id))
-      .filter(Boolean)
+    const recent = recentIds.map((id) => source.find((p) => String(p.id) === id)).filter(Boolean)
     const fallback = source.filter((p) => !recentIds.includes(String(p.id))).slice(0, 12)
     return [...recent, ...fallback].slice(0, 18)
   }
@@ -299,11 +300,7 @@ function formatShortTime(val) {
   inset: -40% -20% auto auto;
   width: 55%;
   height: 120%;
-  background: radial-gradient(
-    closest-side,
-    rgba(59, 130, 246, 0.14),
-    rgba(59, 130, 246, 0) 70%
-  );
+  background: radial-gradient(closest-side, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0) 70%);
   pointer-events: none;
 }
 
@@ -606,7 +603,6 @@ function formatShortTime(val) {
   .action-block {
     width: 100%;
   }
-
 
   :deep(.primary-cta),
   :deep(.ghost-cta) {

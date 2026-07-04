@@ -8,7 +8,7 @@ export function useProjectEditManagement({
   currentProjectInfo,
   fetchProjectList,
   applyProjectMeta,
-  reloadActiveTabData
+  reloadActiveTabData,
 }) {
   const projectEditRef = ref(null)
   const setProjectEditRef = (formRef) => {
@@ -19,12 +19,12 @@ export function useProjectEditManagement({
   const projectUpdateForm = reactive({
     id: '',
     projectName: '',
-    projectTime: ''
+    projectTime: '',
   })
 
   const projectEditRules = reactive({
     id: [{ required: true, message: '项目ID不能为空', trigger: 'blur' }],
-    projectTime: [{ required: false, message: '项目时间格式错误', trigger: 'change' }]
+    projectTime: [{ required: false, message: '项目时间格式错误', trigger: 'change' }],
   })
 
   const fetchProjectOriginalData = async (projectId) => {
@@ -32,7 +32,7 @@ export function useProjectEditManagement({
 
     try {
       const res = await axios.post('/api/project/projects/query', {
-        projectId: Number(projectId)
+        projectId: Number(projectId),
       })
 
       const projectOriginal = res?.data?.data?.records?.[0]
@@ -81,7 +81,7 @@ export function useProjectEditManagement({
       const requestData = {
         id: projectUpdateForm.id,
         projectName: projectUpdateForm.projectName,
-        projectTime: projectUpdateForm.projectTime
+        projectTime: projectUpdateForm.projectTime,
       }
 
       const res = await axios.put('/api/project/update', requestData)
@@ -121,6 +121,6 @@ export function useProjectEditManagement({
     projectEditRules,
     setProjectEditRef,
     fetchProjectOriginalData,
-    submitProjectUpdate
+    submitProjectUpdate,
   }
 }

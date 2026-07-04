@@ -1,6 +1,10 @@
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getSurveyRoomInfo, querySurveyReports, updateSurveyReportInfo } from '@/services/project.service'
+import {
+  getSurveyRoomInfo,
+  querySurveyReports,
+  updateSurveyReportInfo,
+} from '@/services/project.service'
 
 const usageCategoryMap = {
   RESIDENTIAL: '住宅',
@@ -9,7 +13,7 @@ const usageCategoryMap = {
   COMMUNITY: '社区用房',
   OTHER_BUILDABLE: '其他计容',
   OTHER_PUBLIC: '其他公用',
-  UNKNOWN: '未知'
+  UNKNOWN: '未知',
 }
 
 export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetchSurveyReports }) {
@@ -26,13 +30,13 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
     roomInfoBuildingAreaSumFromOcr: '0.00',
     roomInfoInnerAreaSumFromOcr: '0.00',
     roomInfoBalconyAreaSumFromOcr: '0.00',
-    roomInfoSharedAreaSumFromOcr: '0.00'
+    roomInfoSharedAreaSumFromOcr: '0.00',
   })
   const reportBasicInfoForm = reactive({
     id: '',
     buildingName: '',
     propertyCertificateNumber: '',
-    propertyAreaConfirmationNoticeNumber: ''
+    propertyAreaConfirmationNoticeNumber: '',
   })
   const reportBasicInfoSaving = ref(false)
 
@@ -46,7 +50,7 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
       roomInfoBuildingAreaSumFromOcr: '0.00',
       roomInfoInnerAreaSumFromOcr: '0.00',
       roomInfoBalconyAreaSumFromOcr: '0.00',
-      roomInfoSharedAreaSumFromOcr: '0.00'
+      roomInfoSharedAreaSumFromOcr: '0.00',
     })
   }
 
@@ -62,9 +66,12 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
     reportBasicInfoForm.id = String(row.id || '')
     reportBasicInfoForm.buildingName =
       row?.projectName && row.projectName !== '未知楼栋' ? row.projectName : ''
-    reportBasicInfoForm.propertyCertificateNumber = row?.certNo && row.certNo !== '-' ? row.certNo : ''
+    reportBasicInfoForm.propertyCertificateNumber =
+      row?.certNo && row.certNo !== '-' ? row.certNo : ''
     reportBasicInfoForm.propertyAreaConfirmationNoticeNumber =
-      row?.areaConfirmationNoticeNo && row.areaConfirmationNoticeNo !== '-' ? row.areaConfirmationNoticeNo : ''
+      row?.areaConfirmationNoticeNo && row.areaConfirmationNoticeNo !== '-'
+        ? row.areaConfirmationNoticeNo
+        : ''
 
     try {
       resetAuditInfo()
@@ -75,25 +82,37 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
           pageNum: 1,
           pageSize: 1,
           sortField: 'createTime',
-          sortDirection: 'desc'
+          sortDirection: 'desc',
         })
         const reportRecord = reportRes?.data?.data?.records?.[0]
         if (reportRes?.data?.code === 200 && reportRecord) {
           reportBasicInfoForm.id = String(reportRecord.id || row.id || '')
-          reportBasicInfoForm.buildingName = reportRecord.buildingName || reportBasicInfoForm.buildingName
-          reportBasicInfoForm.propertyCertificateNumber = reportRecord.propertyCertificateNumber || ''
+          reportBasicInfoForm.buildingName =
+            reportRecord.buildingName || reportBasicInfoForm.buildingName
+          reportBasicInfoForm.propertyCertificateNumber =
+            reportRecord.propertyCertificateNumber || ''
           reportBasicInfoForm.propertyAreaConfirmationNoticeNumber =
             reportRecord.propertyAreaConfirmationNoticeNumber || ''
 
-          reportAuditInfo.pendingConfirmArea = Number(reportRecord.pendingConfirmArea || 0).toFixed(2)
+          reportAuditInfo.pendingConfirmArea = Number(reportRecord.pendingConfirmArea || 0).toFixed(
+            2
+          )
           reportAuditInfo.unknownUsageCount = Number(reportRecord.unknownUsageCount || 0)
           reportAuditInfo.hasUnknownUsage = Number(reportRecord.hasUnknownUsage || 0)
           reportAuditInfo.isVerified = Number(reportRecord.isVerified || 0)
           reportAuditInfo.verificationErrorReason = reportRecord.verificationErrorReason || '-'
-          reportAuditInfo.roomInfoBuildingAreaSumFromOcr = Number(reportRecord.roomInfoBuildingAreaSumFromOcr || 0).toFixed(2)
-          reportAuditInfo.roomInfoInnerAreaSumFromOcr = Number(reportRecord.roomInfoInnerAreaSumFromOcr || 0).toFixed(2)
-          reportAuditInfo.roomInfoBalconyAreaSumFromOcr = Number(reportRecord.roomInfoBalconyAreaSumFromOcr || 0).toFixed(2)
-          reportAuditInfo.roomInfoSharedAreaSumFromOcr = Number(reportRecord.roomInfoSharedAreaSumFromOcr || 0).toFixed(2)
+          reportAuditInfo.roomInfoBuildingAreaSumFromOcr = Number(
+            reportRecord.roomInfoBuildingAreaSumFromOcr || 0
+          ).toFixed(2)
+          reportAuditInfo.roomInfoInnerAreaSumFromOcr = Number(
+            reportRecord.roomInfoInnerAreaSumFromOcr || 0
+          ).toFixed(2)
+          reportAuditInfo.roomInfoBalconyAreaSumFromOcr = Number(
+            reportRecord.roomInfoBalconyAreaSumFromOcr || 0
+          ).toFixed(2)
+          reportAuditInfo.roomInfoSharedAreaSumFromOcr = Number(
+            reportRecord.roomInfoSharedAreaSumFromOcr || 0
+          ).toFixed(2)
         }
       } catch (error) {
         console.error('获取实测报告校验信息失败:', error)
@@ -112,7 +131,7 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
           isCalculate: item.isCalculate || 0,
           usageCategory: usageCategoryMap[item.usageCategory] || '未知',
           roomUsage: item.roomUsage || '-',
-          floorAreaType: item.floorAreaType === 'BUILDABLE' ? '计容' : '不计容'
+          floorAreaType: item.floorAreaType === 'BUILDABLE' ? '计容' : '不计容',
         }))
       } else {
         roomInfoData.value = []
@@ -145,7 +164,9 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
         id: Number(reportBasicInfoForm.id),
         buildingName,
         propertyCertificateNumber: (reportBasicInfoForm.propertyCertificateNumber || '').trim(),
-        propertyAreaConfirmationNoticeNumber: (reportBasicInfoForm.propertyAreaConfirmationNoticeNumber || '').trim()
+        propertyAreaConfirmationNoticeNumber: (
+          reportBasicInfoForm.propertyAreaConfirmationNoticeNumber || ''
+        ).trim(),
       }
       const res = await updateSurveyReportInfo(payload)
       if (res?.data?.code !== 200) {
@@ -153,7 +174,9 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
         return
       }
 
-      const target = rawTableData.value.find((item) => String(item.id) === String(reportBasicInfoForm.id))
+      const target = rawTableData.value.find(
+        (item) => String(item.id) === String(reportBasicInfoForm.id)
+      )
       if (target) {
         target.projectName = payload.buildingName
         target.certNo = payload.propertyCertificateNumber || '-'
@@ -164,7 +187,7 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
           ...currentDetailRow.value,
           projectName: payload.buildingName,
           certNo: payload.propertyCertificateNumber || '-',
-          areaConfirmationNoticeNo: payload.propertyAreaConfirmationNoticeNumber || '-'
+          areaConfirmationNoticeNo: payload.propertyAreaConfirmationNoticeNumber || '-',
         }
       }
 
@@ -190,6 +213,6 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
     reportBasicInfoForm,
     reportBasicInfoSaving,
     viewDetail,
-    saveReportBasicInfo
+    saveReportBasicInfo,
   }
 }

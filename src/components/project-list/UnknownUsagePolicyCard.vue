@@ -12,7 +12,9 @@
         :rows="unknownUsages"
         :project-id="projectId"
         show-audit-button
-        @open-source-audit="(fileRecordId, usageName) => $emit('open-source-audit', { fileRecordId, usageName })"
+        @open-source-audit="
+          (fileRecordId, usageName) => $emit('open-source-audit', { fileRecordId, usageName })
+        "
       />
     </div>
   </transition>
@@ -25,7 +27,7 @@ import UnknownUsagePolicyList from '@/components/shared/UnknownUsagePolicyList.v
 
 const props = defineProps({
   unknownUsages: { type: Array, default: () => [] },
-  projectId: { type: [String, Number], default: '' }
+  projectId: { type: [String, Number], default: '' },
 })
 
 defineEmits(['open-source-audit'])
@@ -33,9 +35,7 @@ defineEmits(['open-source-audit'])
 const distinctUsageClassCount = computed(() => {
   const list = props.unknownUsages || []
   const names = new Set(
-    list
-      .map((r) => (r && r.usageName != null ? String(r.usageName).trim() : ''))
-      .filter(Boolean)
+    list.map((r) => (r && r.usageName != null ? String(r.usageName).trim() : '')).filter(Boolean)
   )
   return names.size
 })

@@ -9,7 +9,7 @@ export function useRoomTableInfiniteScroll({
   hasMore,
   loading,
   loadingMore,
-  onLoadMore
+  onLoadMore,
 }) {
   const scrollBound = ref(false)
   let rafId = null
@@ -95,6 +95,6 @@ export function useRoomTableInfiniteScroll({
 
   return {
     tryFillViewport,
-    rebindScroll: bindScroll
+    rebindScroll: bindScroll,
   }
 }

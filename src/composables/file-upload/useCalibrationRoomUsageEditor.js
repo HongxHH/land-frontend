@@ -8,7 +8,7 @@ import {
   floorAreaTypeLabel,
   normalizeUsageCategoryCode,
   resolveFloorAreaTypeByCategory,
-  usageCategoryLabel
+  usageCategoryLabel,
 } from '@/constants/usageCategory.js'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 
@@ -18,8 +18,12 @@ const usagePresetMap = {
   MANAGEMENT: { roomUsage: '物管', floorAreaType: 'BUILDABLE', floorAreaTypeText: '计容' },
   OTHER_BUILDABLE: { roomUsage: '其他计容', floorAreaType: 'BUILDABLE', floorAreaTypeText: '计容' },
   COMMUNITY: { roomUsage: '社区用房', floorAreaType: 'NON_BUILDABLE', floorAreaTypeText: '不计容' },
-  OTHER_PUBLIC: { roomUsage: '其他公用', floorAreaType: 'NON_BUILDABLE', floorAreaTypeText: '不计容' },
-  UNKNOWN: { roomUsage: '未知', floorAreaType: 'UNKNOWN', floorAreaTypeText: '未知' }
+  OTHER_PUBLIC: {
+    roomUsage: '其他公用',
+    floorAreaType: 'NON_BUILDABLE',
+    floorAreaTypeText: '不计容',
+  },
+  UNKNOWN: { roomUsage: '未知', floorAreaType: 'UNKNOWN', floorAreaTypeText: '未知' },
 }
 
 export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, handleDeleteRoom }) {
@@ -35,15 +39,17 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
     sharedArea: '',
     remark: '',
     roomUsage: '',
-    floorAreaType: ''
+    floorAreaType: '',
   })
 
   const derivedRoomPreset = computed(() => {
-    return usagePresetMap[createRoomForm.usageCategory] || {
-      roomUsage: '-',
-      floorAreaType: 'UNKNOWN',
-      floorAreaTypeText: '-'
-    }
+    return (
+      usagePresetMap[createRoomForm.usageCategory] || {
+        roomUsage: '-',
+        floorAreaType: 'UNKNOWN',
+        floorAreaTypeText: '-',
+      }
+    )
   })
 
   const resetCreateRoomForm = () => {
@@ -73,7 +79,7 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
     const ok = await handleCreateRoom({
       ...createRoomForm,
       roomUsage: derivedRoomPreset.value.roomUsage,
-      floorAreaType: derivedRoomPreset.value.floorAreaType
+      floorAreaType: derivedRoomPreset.value.floorAreaType,
     })
     if (ok) {
       createRoomDialogVisible.value = false
@@ -96,11 +102,11 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
   const createUsageFormRef = ref(null)
   const createUsageForm = reactive({
     usagePattern: '',
-    usageCategory: ''
+    usageCategory: '',
   })
   const createUsageFormRules = {
     usagePattern: [{ required: true, message: '请输入用途名称', trigger: 'blur' }],
-    usageCategory: [{ required: true, message: '请选择用途类别', trigger: 'change' }]
+    usageCategory: [{ required: true, message: '请选择用途类别', trigger: 'change' }],
   }
 
   const normalizeUsageCategoryText = (value) => usageCategoryLabel(value, '未知')
@@ -162,7 +168,8 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
       return
     }
     const matched = usagePickerOptions.value.find(
-      (item) => String(item.usagePattern || '').trim() === String(usageEditorDraft.roomUsage || '').trim()
+      (item) =>
+        String(item.usagePattern || '').trim() === String(usageEditorDraft.roomUsage || '').trim()
     )
     if (!matched) {
       ElMessage.warning('未找到对应用途配置，请先新增用途')
@@ -191,7 +198,7 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
         usageCategory: String(item.usageCategory || '').toUpperCase(),
         floorAreaType: String(item.floorAreaType || '').toUpperCase(),
         usageCategoryText: normalizeUsageCategoryText(item.usageCategory),
-        floorAreaTypeText: normalizeFloorAreaTypeText(item.floorAreaType)
+        floorAreaTypeText: normalizeFloorAreaTypeText(item.floorAreaType),
       }))
     } catch (error) {
       console.error('获取用途映射失败:', error)
@@ -273,7 +280,7 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
         priority: 100,
         status: 1,
         remark: '审核界面新增',
-        collectionName: ''
+        collectionName: '',
       }
       const res = await axios.post('/api/usage-config', payload)
       if (res.data?.code !== 200) {
@@ -288,7 +295,9 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
       const created = usagePickerOptions.value.find(
         (item) =>
           String(item.usagePattern || '').trim() === usagePattern &&
-          String(item.usageCategory || '').trim().toUpperCase() === usageCategory
+          String(item.usageCategory || '')
+            .trim()
+            .toUpperCase() === usageCategory
       )
       if (created) {
         applyUsagePicker(created)
@@ -345,6 +354,6 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
     closeUsageEditor,
     confirmUsageEditor,
     openCreateUsageDialogForRow,
-    resetUsageEditorState
+    resetUsageEditorState,
   }
 }

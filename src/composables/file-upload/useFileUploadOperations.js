@@ -4,17 +4,21 @@ import { useParseActions } from '@/composables/file-upload/useParseActions'
 import { useFileListActions } from '@/composables/file-upload/useFileListActions'
 import { useBatchPoller } from '@/composables/file-upload/useBatchPoller'
 
-export function useFileUploadOperations({ currentProject, projectOptions, refreshData, prependUploadedFiles }) {
+export function useFileUploadOperations({
+  currentProject,
+  projectOptions,
+  refreshData,
+  prependUploadedFiles,
+}) {
   const { deleteFile, checkBatchStatus } = useFileListActions({
     currentProject,
-    refreshData
+    refreshData,
   })
 
-  const { startPolling, stopPolling, isPolling } = useBatchPoller(
-    checkBatchStatus,
-    refreshData,
-    { onPollTick: () => refreshData(), pollIntervalMs: 3000 }
-  )
+  const { startPolling, stopPolling, isPolling } = useBatchPoller(checkBatchStatus, refreshData, {
+    onPollTick: () => refreshData(),
+    pollIntervalMs: 3000,
+  })
 
   const {
     selectedRows,
@@ -22,7 +26,7 @@ export function useFileUploadOperations({ currentProject, projectOptions, refres
     canBatchParse,
     handleSelectionChange,
     batchDelete,
-    batchParse
+    batchParse,
   } = useBatchActions({ refreshData, startPolling })
 
   const {
@@ -38,13 +42,13 @@ export function useFileUploadOperations({ currentProject, projectOptions, refres
     handleFileRemove,
     handleUploadDialogClosed,
     confirmUpload,
-    retryUploadFile
+    retryUploadFile,
   } = useUploadDialog({
     currentProject,
     projectOptions,
     startPolling,
     refreshData,
-    prependUploadedFiles
+    prependUploadedFiles,
   })
 
   const { startProcessing, cancelProcessing } = useParseActions({ startPolling })
@@ -73,6 +77,6 @@ export function useFileUploadOperations({ currentProject, projectOptions, refres
     confirmUpload,
     retryUploadFile,
     startProcessing,
-    cancelProcessing
+    cancelProcessing,
   }
 }

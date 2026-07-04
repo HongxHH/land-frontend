@@ -43,7 +43,7 @@ export function useSurveyRefresh({ currentProjectInfo, fetchSurveyReports }) {
       cdStorageKey,
       JSON.stringify({
         startAt: cdStartAt,
-        remaining: REFRESH_CD_SECONDS
+        remaining: REFRESH_CD_SECONDS,
       })
     )
 
@@ -141,6 +141,6 @@ export function useSurveyRefresh({ currentProjectInfo, fetchSurveyReports }) {
     handleRefreshSurveyData,
     resetRefreshCdStatus,
     restoreRefreshCdStatus,
-    clearRefreshTimer
+    clearRefreshTimer,
   }
 }

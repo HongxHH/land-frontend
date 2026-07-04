@@ -4,7 +4,7 @@
 export const USER_TYPE_OPTIONS = [
   { value: 'SUPER_ADMIN', label: '超级管理员' },
   { value: 'DEVELOPER', label: '开发人员' },
-  { value: 'USER', label: '普通用户' }
+  { value: 'USER', label: '普通用户' },
 ]
 
 const LEGACY_DEPT_USER = 'DEPT_USER'

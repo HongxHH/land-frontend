@@ -52,6 +52,6 @@ export function useArchiveFolderSplitter({ onResize }) {
     treePanelWidth,
     handleSplitterMouseDown,
     handleWindowResize,
-    cleanupSplitter
+    cleanupSplitter,
   }
 }

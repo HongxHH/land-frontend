@@ -86,10 +86,7 @@
 import { computed } from 'vue'
 import { Search, View } from '@element-plus/icons-vue'
 
-import {
-  floorAreaTypeLabel,
-  formatUsageCategoryLabel
-} from '@/constants/usageCategory.js'
+import { floorAreaTypeLabel, formatUsageCategoryLabel } from '@/constants/usageCategory.js'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -99,12 +96,12 @@ const props = defineProps({
   keyword: { type: String, default: '' },
   summary: {
     type: Object,
-    default: () => ({ totalFiles: 0, totalMatchedRooms: 0 })
+    default: () => ({ totalFiles: 0, totalMatchedRooms: 0 }),
   },
   pagination: {
     type: Object,
-    default: () => ({ current: 1, size: 10, total: 0, pages: 0 })
-  }
+    default: () => ({ current: 1, size: 10, total: 0, pages: 0 }),
+  },
 })
 
 const emit = defineEmits([
@@ -113,12 +110,12 @@ const emit = defineEmits([
   'page-change',
   'size-change',
   'open-audit',
-  'update:keyword'
+  'update:keyword',
 ])
 
 const keywordModel = computed({
   get: () => props.keyword,
-  set: (value) => emit('update:keyword', value)
+  set: (value) => emit('update:keyword', value),
 })
 
 const drawerTitle = computed(() => {

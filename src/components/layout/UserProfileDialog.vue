@@ -15,7 +15,12 @@
         <el-input :model-value="userTypeLabel(profile.userType)" disabled />
       </el-form-item>
       <el-form-item label="真实姓名" prop="realName">
-        <el-input v-model="form.realName" placeholder="请输入真实姓名" maxlength="50" show-word-limit />
+        <el-input
+          v-model="form.realName"
+          placeholder="请输入真实姓名"
+          maxlength="50"
+          show-word-limit
+        />
       </el-form-item>
       <el-form-item label="手机号" prop="phone">
         <el-input v-model="form.phone" placeholder="手机号（可选）" maxlength="11" />
@@ -85,7 +90,7 @@ const form = reactive({
   email: '',
   oldPassword: '',
   newPassword: '',
-  newPassword2: ''
+  newPassword2: '',
 })
 
 const rules = computed(() => ({
@@ -98,19 +103,20 @@ const rules = computed(() => ({
         if (!/^1[3-9]\d{9}$/.test(s)) cb(new Error('手机号格式不正确'))
         else cb()
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   email: [
     {
       validator: (_r, v, cb) => {
         const s = String(v || '').trim()
         if (!s) return cb()
-        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(s)) cb(new Error('邮箱格式不正确'))
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(s))
+          cb(new Error('邮箱格式不正确'))
         else cb()
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   oldPassword: [
     {
@@ -119,8 +125,8 @@ const rules = computed(() => ({
           cb(new Error('修改密码请输入原密码'))
         } else cb()
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   newPassword: [
     {
@@ -130,8 +136,8 @@ const rules = computed(() => ({
         if (s.length < 6 || s.length > 20) cb(new Error('新密码长度 6-20 位'))
         else cb()
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   newPassword2: [
     {
@@ -141,9 +147,9 @@ const rules = computed(() => ({
         if (String(v || '').trim() !== np) cb(new Error('两次密码不一致'))
         else cb()
       },
-      trigger: 'blur'
-    }
-  ]
+      trigger: 'blur',
+    },
+  ],
 }))
 
 function formatTime(v) {
@@ -191,7 +197,7 @@ async function submit() {
   const payload = {
     realName: form.realName.trim(),
     phone: String(form.phone || '').trim(),
-    email: String(form.email || '').trim()
+    email: String(form.email || '').trim(),
   }
   const newPassword = String(form.newPassword || '').trim()
   if (newPassword) {

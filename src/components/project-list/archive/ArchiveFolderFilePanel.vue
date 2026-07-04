@@ -40,7 +40,9 @@
         placeholder="文件名关键词"
         clearable
         class="query-item keyword"
-        @update:model-value="setQueryField('keyword', typeof $event === 'string' ? $event.trim() : $event)"
+        @update:model-value="
+          setQueryField('keyword', typeof $event === 'string' ? $event.trim() : $event)
+        "
         @input="emit('auto-query', 'keyword')"
         @clear="emit('auto-query', 'keyword')"
         @keyup.enter="emit('search')"
@@ -70,10 +72,17 @@
         @change="emit('auto-query', 'fileState')"
         @clear="emit('auto-query', 'fileState')"
       >
-        <el-option v-for="item in fileStateOptions" :key="item.value" :label="item.label" :value="item.value" />
+        <el-option
+          v-for="item in fileStateOptions"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        />
       </el-select>
       <el-button class="query-bar-btn" size="small" @click="emit('reset')">重置</el-button>
-      <el-button class="query-bar-btn" size="small" :icon="Refresh" @click="emit('refresh')">刷新</el-button>
+      <el-button class="query-bar-btn" size="small" :icon="Refresh" @click="emit('refresh')"
+        >刷新</el-button
+      >
     </div>
 
     <div ref="tableWrapRef" class="table-wrap" v-loading="fileLoading">
@@ -94,151 +103,186 @@
             :row-class-name="archiveFileTableRowClassName"
             @selection-change="(rows) => emit('selection-change', rows)"
           >
-          <el-table-column type="selection" width="48" align="center" />
-          <el-table-column v-if="showThumbnailColumn" label="缩略图" width="108" align="center">
-            <template #default="{ row }">
-              <el-image
-                v-if="getArchiveThumbnailUrl(row)"
-                class="thumb"
-                :src="getArchiveThumbnailUrl(row)"
-                fit="cover"
-                :preview-src-list="getArchiveThumbnailPreviewList(row)"
-                :preview-teleported="true"
-              >
-                <template #error>
-                  <div class="thumb-placeholder">
-                    <el-icon><Picture /></el-icon>
-                  </div>
-                </template>
-              </el-image>
-              <div v-else class="thumb-placeholder">
-                <el-icon><Picture /></el-icon>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="文件名" min-width="280">
-            <template #default="{ row }">
-              <el-link
-                v-if="canPreview(row)"
-                type="primary"
-                :underline="false"
-                class="archive-file-name-link"
-                :title="`点击预览：${row.originalName || ''}`"
-                @click="emit('preview', row)"
-              >
-                {{ row.originalName || '-' }}
-              </el-link>
-              <span v-else class="archive-file-name-text" :title="row.originalName || ''">
-                {{ row.originalName || '-' }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="130" align="center">
-            <template #default="{ row }">
-              <el-tag
-                v-if="row.parseJobId"
-                :type="getArchiveStateTagType(row.fileState)"
-                size="small"
-                effect="light"
-                class="state-tag-parse-flow"
-                title="点击查看解析流程"
-                @click.stop="emit('open-parse-flow', row)"
-              >
-                {{ getArchiveFileStateLabel(row.fileState, row) }}
-              </el-tag>
-              <el-tag v-else :type="getArchiveStateTagType(row.fileState)" size="small" effect="light">
-                {{ getArchiveFileStateLabel(row.fileState, row) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column
-            v-if="selectedArchiveKind === 'SURVEY_REPORT'"
-            label="校验状态"
-            width="130"
-            align="center"
-          >
-            <template #default="{ row }">
-              <el-tooltip
-                v-if="getArchiveVerifyStatus(row).type === 'danger' && row.verificationErrorReason"
-                :content="row.verificationErrorReason"
-                placement="top"
-                effect="light"
-              >
-                <el-tag :type="getArchiveVerifyStatus(row).type" size="small" effect="light">
+            <el-table-column type="selection" width="48" align="center" />
+            <el-table-column v-if="showThumbnailColumn" label="缩略图" width="108" align="center">
+              <template #default="{ row }">
+                <el-image
+                  v-if="getArchiveThumbnailUrl(row)"
+                  class="thumb"
+                  :src="getArchiveThumbnailUrl(row)"
+                  fit="cover"
+                  :preview-src-list="getArchiveThumbnailPreviewList(row)"
+                  :preview-teleported="true"
+                >
+                  <template #error>
+                    <div class="thumb-placeholder">
+                      <el-icon><Picture /></el-icon>
+                    </div>
+                  </template>
+                </el-image>
+                <div v-else class="thumb-placeholder">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="文件名" min-width="280">
+              <template #default="{ row }">
+                <el-link
+                  v-if="canPreview(row)"
+                  type="primary"
+                  :underline="false"
+                  class="archive-file-name-link"
+                  :title="`点击预览：${row.originalName || ''}`"
+                  @click="emit('preview', row)"
+                >
+                  {{ row.originalName || '-' }}
+                </el-link>
+                <span v-else class="archive-file-name-text" :title="row.originalName || ''">
+                  {{ row.originalName || '-' }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="130" align="center">
+              <template #default="{ row }">
+                <el-tag
+                  v-if="row.parseJobId"
+                  :type="getArchiveStateTagType(row.fileState)"
+                  size="small"
+                  effect="light"
+                  class="state-tag-parse-flow"
+                  title="点击查看解析流程"
+                  @click.stop="emit('open-parse-flow', row)"
+                >
+                  {{ getArchiveFileStateLabel(row.fileState, row) }}
+                </el-tag>
+                <el-tag
+                  v-else
+                  :type="getArchiveStateTagType(row.fileState)"
+                  size="small"
+                  effect="light"
+                >
+                  {{ getArchiveFileStateLabel(row.fileState, row) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
+              v-if="selectedArchiveKind === 'SURVEY_REPORT'"
+              label="校验状态"
+              width="130"
+              align="center"
+            >
+              <template #default="{ row }">
+                <el-tooltip
+                  v-if="
+                    getArchiveVerifyStatus(row).type === 'danger' && row.verificationErrorReason
+                  "
+                  :content="row.verificationErrorReason"
+                  placement="top"
+                  effect="light"
+                >
+                  <el-tag :type="getArchiveVerifyStatus(row).type" size="small" effect="light">
+                    {{ getArchiveVerifyStatus(row).label }}
+                  </el-tag>
+                </el-tooltip>
+                <el-tag v-else :type="getArchiveVerifyStatus(row).type" size="small" effect="light">
                   {{ getArchiveVerifyStatus(row).label }}
                 </el-tag>
-              </el-tooltip>
-              <el-tag v-else :type="getArchiveVerifyStatus(row).type" size="small" effect="light">
-                {{ getArchiveVerifyStatus(row).label }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="上传时间" width="180" align="center">
-            <template #default="{ row }">{{ formatArchiveDateTime(row.uploadTime) }}</template>
-          </el-table-column>
-          <el-table-column label="上传人" width="110" align="center" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.uploadUserName || '—' }}</template>
-          </el-table-column>
-          <el-table-column label="文件类型" width="110" align="center">
-            <template #default="{ row }">
-              <el-tag size="small" effect="plain">{{ row.fileType || '-' }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="大小" width="100" align="center">
-            <template #default="{ row }">{{ formatArchiveFileSize(row.fileSize) }}</template>
-          </el-table-column>
-          <el-table-column label="操作" width="300" align="center" fixed="right">
-            <template #default="{ row }">
-              <div class="archive-file-op-actions">
-                <el-button
-                  v-if="showArchiveParseButton(row)"
-                  class="op-btn parse-btn"
-                  size="small"
-                  type="primary"
-                  @click="emit('parse', row)"
-                >
-                  {{ archiveParseButtonText(row) }}
-                </el-button>
-                <el-button
-                  v-if="showArchiveCancelParseButton(row)"
-                  class="op-btn cancel-parse-btn"
-                  size="small"
-                  type="warning"
-                  plain
-                  @click="emit('cancel-parse', row)"
-                >
-                  取消解析
-                </el-button>
-                <el-button
-                  v-if="showArchiveAuditButton(row, selectedArchiveKind)"
-                  class="op-btn audit-btn"
-                  size="small"
-                  type="primary"
-                  plain
-                  @click="emit('audit', row)"
-                >
-                  {{ row.fileState === 'AUDIT_PASS' ? '查看' : '审核' }}
-                </el-button>
-                <el-tooltip
-                  v-if="!canDeleteArchiveFile(row)"
-                  :content="getArchiveFileDeleteDisabledReason(row)"
-                  placement="top"
-                >
-                  <span class="op-btn-wrap">
-                    <el-button class="op-btn delete-btn" size="small" type="danger" plain disabled>
-                      删除
-                    </el-button>
-                  </span>
-                </el-tooltip>
-                <el-popconfirm v-else title="确定删除该文件吗？" @confirm="emit('delete-file', row)">
-                  <template #reference>
-                    <el-button class="op-btn delete-btn" size="small" type="danger" plain>删除</el-button>
-                  </template>
-                </el-popconfirm>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
+              </template>
+            </el-table-column>
+            <el-table-column label="上传时间" width="180" align="center">
+              <template #default="{ row }">{{ formatArchiveDateTime(row.uploadTime) }}</template>
+            </el-table-column>
+            <el-table-column label="上传人" width="110" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.uploadUserName || '—' }}</template>
+            </el-table-column>
+            <el-table-column label="文件类型" width="110" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" effect="plain">{{ row.fileType || '-' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="大小" width="100" align="center">
+              <template #default="{ row }">{{ formatArchiveFileSize(row.fileSize) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="260" align="center" fixed="right">
+              <template #default="{ row }">
+                <div class="archive-file-op-actions">
+                  <div class="op-action-slot">
+                    <el-tooltip
+                      :disabled="!getRowActions(row).parse.tooltip"
+                      :content="getRowActions(row).parse.tooltip"
+                      placement="top"
+                    >
+                      <span class="op-btn-wrap">
+                        <el-button
+                          class="op-btn parse-btn"
+                          size="small"
+                          :type="getRowActions(row).parse.buttonType"
+                          :plain="getRowActions(row).parse.plain"
+                          :disabled="!getRowActions(row).parse.enabled"
+                          @click="onParseSlotClick(row)"
+                        >
+                          {{ getRowActions(row).parse.label }}
+                        </el-button>
+                      </span>
+                    </el-tooltip>
+                  </div>
+                  <div class="op-action-slot">
+                    <el-tooltip
+                      :disabled="!getRowActions(row).audit.tooltip"
+                      :content="getRowActions(row).audit.tooltip"
+                      placement="top"
+                    >
+                      <span class="op-btn-wrap">
+                        <el-button
+                          class="op-btn audit-btn"
+                          :class="{ 'audit-btn--unavailable': !getRowActions(row).audit.enabled }"
+                          size="small"
+                          :type="getRowActions(row).audit.buttonType"
+                          :plain="getRowActions(row).audit.plain"
+                          :disabled="!getRowActions(row).audit.enabled"
+                          @click="onAuditSlotClick(row)"
+                        >
+                          {{ getRowActions(row).audit.label }}
+                        </el-button>
+                      </span>
+                    </el-tooltip>
+                  </div>
+                  <div class="op-action-slot">
+                    <el-tooltip
+                      v-if="!getRowActions(row).delete.enabled"
+                      :content="getRowActions(row).delete.tooltip"
+                      placement="top"
+                    >
+                      <span class="op-btn-wrap">
+                        <el-button
+                          class="op-btn delete-btn"
+                          size="small"
+                          type="danger"
+                          plain
+                          disabled
+                        >
+                          删除
+                        </el-button>
+                      </span>
+                    </el-tooltip>
+                    <el-popconfirm
+                      v-else
+                      title="确定删除该文件吗？"
+                      @confirm="emit('delete-file', row)"
+                    >
+                      <template #reference>
+                        <span class="op-btn-wrap">
+                          <el-button class="op-btn delete-btn" size="small" type="danger" plain>
+                            删除
+                          </el-button>
+                        </span>
+                      </template>
+                    </el-popconfirm>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
 
         <div class="pager-row">
@@ -271,16 +315,11 @@ import {
   getArchiveStateTagType,
   getArchiveThumbnailPreviewList,
   getArchiveThumbnailUrl,
-  getArchiveVerifyStatus
+  getArchiveVerifyStatus,
 } from '@/composables/project-list/archiveFolderPresent.js'
 import {
-  archiveParseButtonText,
-  canDeleteArchiveFile,
-  getArchiveFileDeleteDisabledReason,
+  resolveArchiveRowActions,
   getArchiveFileStateLabel,
-  showArchiveAuditButton,
-  showArchiveCancelParseButton,
-  showArchiveParseButton
 } from '@/composables/project-list/archiveFileRowPresent.js'
 import { useArchiveFileTableHeight } from '@/composables/project-list/useArchiveFileTableHeight.js'
 
@@ -298,7 +337,7 @@ const props = defineProps({
   canBatchDelete: { type: Boolean, default: false },
   batchDeleteLoading: { type: Boolean, default: false },
   batchParseLoading: { type: Boolean, default: false },
-  canPreview: { type: Function, default: () => false }
+  canPreview: { type: Function, default: () => false },
 })
 
 const emit = defineEmits([
@@ -318,20 +357,42 @@ const emit = defineEmits([
   'audit',
   'delete-file',
   'page-change',
-  'page-size-change'
+  'page-size-change',
 ])
 
 const setQueryField = createFormFieldPatcher(props, emit, 'queryForm')
 
+function getRowActions(row) {
+  return resolveArchiveRowActions(row, props.selectedArchiveKind)
+}
+
+function onParseSlotClick(row) {
+  const { parse } = getRowActions(row)
+  if (!parse.enabled) return
+  if (parse.action === 'cancel-parse') emit('cancel-parse', row)
+  else if (parse.action === 'parse') emit('parse', row)
+}
+
+function onAuditSlotClick(row) {
+  const { audit } = getRowActions(row)
+  if (!audit.enabled || audit.action !== 'audit') return
+  emit('audit', row)
+}
+
 const verifyStatusOptions = ARCHIVE_VERIFY_STATUS_OPTIONS
 const fileStateOptions = ARCHIVE_FILE_STATE_OPTIONS
 
-const { tableWrapRef, tableBodyHostRef, tableBodyHeight, updateTableBodyHeight, bindTableWrapResizeObserver } =
-  useArchiveFileTableHeight()
+const {
+  tableWrapRef,
+  tableBodyHostRef,
+  tableBodyHeight,
+  updateTableBodyHeight,
+  bindTableWrapResizeObserver,
+} = useArchiveFileTableHeight()
 
 defineExpose({
   updateTableBodyHeight,
-  bindTableWrapResizeObserver
+  bindTableWrapResizeObserver,
 })
 </script>
 
@@ -366,7 +427,11 @@ defineExpose({
   padding: 10px 12px;
   border: 1px solid var(--home-soft-border);
   border-radius: var(--home-card-radius);
-  background: linear-gradient(180deg, var(--home-panel-grad-start) 0%, var(--home-panel-grad-end) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--home-panel-grad-start) 0%,
+    var(--home-panel-grad-end) 100%
+  );
   flex-wrap: nowrap;
   box-sizing: border-box;
 }
@@ -551,14 +616,39 @@ defineExpose({
 }
 
 .archive-file-op-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  row-gap: 8px;
-  max-width: 100%;
+  gap: 8px;
+  width: 100%;
   padding: 2px 0;
+  box-sizing: border-box;
+}
+
+.op-action-slot {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.op-action-slot .op-btn-wrap {
+  display: flex;
+  width: 100%;
+}
+
+:deep(.archive-file-op-actions .op-action-slot .el-button) {
+  width: 100%;
+  min-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+:deep(.archive-file-op-actions .audit-btn.audit-btn--unavailable.is-disabled),
+:deep(.archive-file-op-actions .audit-btn.audit-btn--unavailable.is-disabled:hover),
+:deep(.archive-file-op-actions .audit-btn.audit-btn--unavailable.is-disabled:focus) {
+  color: #b0b8c4;
+  border-color: #e2e6eb;
+  background-color: #f4f5f7;
 }
 
 :deep(.archive-file-op-actions .el-button + .el-button) {

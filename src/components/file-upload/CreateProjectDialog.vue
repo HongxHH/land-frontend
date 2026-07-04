@@ -21,7 +21,7 @@
           format="YYYY-MM-DD"
           value-format="YYYY-MM-DD"
           placeholder="请选择业务时间"
-          style="width: 100%;"
+          style="width: 100%"
           :locale="locale"
           @update:model-value="setNewProjectField('projectTime', $event)"
         />
@@ -40,16 +40,16 @@ import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   newProjectForm: {
     type: Object,
-    required: true
+    required: true,
   },
   locale: {
     type: Object,
-    default: null
-  }
+    default: null,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'update:newProjectForm', 'submit'])

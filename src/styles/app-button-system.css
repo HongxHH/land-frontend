@@ -27,8 +27,10 @@
   color: var(--biz-btn-soft-text, #1f4e79);
 }
 
-#app .el-button.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):hover,
-#app .el-button.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):focus {
+#app
+  .el-button.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):hover,
+#app
+  .el-button.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):focus {
   background: var(--biz-btn-soft-bg-hover, #d7e7f8);
   border-color: #b8d3ec;
   color: #163a5a;
@@ -69,8 +71,10 @@
   color: var(--biz-btn-danger-text, #dc2626);
 }
 
-#app .el-button.el-button--danger:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):hover,
-#app .el-button.el-button--danger:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):focus {
+#app
+  .el-button.el-button--danger:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):hover,
+#app
+  .el-button.el-button--danger:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):focus {
   background: var(--biz-btn-danger-bg-hover, #ffe4e6);
   border-color: #fca5a5;
   color: #b91c1c;

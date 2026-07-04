@@ -20,7 +20,8 @@ export function clampMainListTableHeight(rowCount) {
   const cap = mainListTableMaxHeightPx()
   if (!cap || cap < 40) return 200
   if (rowCount <= 0) return Math.min(cap, EL_TABLE_EMPTY_MIN)
-  const natural = EL_TABLE_HEADER_H + rowCount * EL_TABLE_ROW_H + 4 + MAIN_LIST_TABLE_NATURAL_SLACK_PX
+  const natural =
+    EL_TABLE_HEADER_H + rowCount * EL_TABLE_ROW_H + 4 + MAIN_LIST_TABLE_NATURAL_SLACK_PX
   return Math.min(cap, natural)
 }
 

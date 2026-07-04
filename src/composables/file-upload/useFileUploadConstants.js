@@ -1,14 +1,11 @@
 ﻿import { computed } from 'vue'
-import {
-  FILE_STATE_LABELS,
-  getFileStateDotColor
-} from '@/utils/fileStatePresent.js'
+import { FILE_STATE_LABELS, getFileStateDotColor } from '@/utils/fileStatePresent.js'
 
 export function useFileUploadConstants() {
   const statusMap = Object.fromEntries(
     Object.entries(FILE_STATE_LABELS).map(([key, text]) => [
       key,
-      { text, color: getFileStateDotColor(key) }
+      { text, color: getFileStateDotColor(key) },
     ])
   )
 
@@ -19,7 +16,7 @@ export function useFileUploadConstants() {
     COMMUNITY: '社区用房',
     OTHER_BUILDABLE: '其他计容',
     OTHER_PUBLIC: '其他公用',
-    UNKNOWN: '未知'
+    UNKNOWN: '未知',
   }
 
   const usageCategoryReverseMap = {
@@ -31,13 +28,13 @@ export function useFileUploadConstants() {
     社区用房: 'COMMUNITY',
     其他计容: 'OTHER_BUILDABLE',
     其他公用: 'OTHER_PUBLIC',
-    未知: 'UNKNOWN'
+    未知: 'UNKNOWN',
   }
 
   return {
     statusMap,
     usageCategoryMap,
-    usageCategoryReverseMap
+    usageCategoryReverseMap,
   }
 }
 
@@ -68,7 +65,7 @@ export function useAuditSummaryDisplay(auditSummaryData) {
           : verifiedFlag === 0
             ? 'danger'
             : 'info',
-      hasUnknownUsageText: hasPendingUnknown ? '有' : '无'
+      hasUnknownUsageText: hasPendingUnknown ? '有' : '无',
     }
   })
 

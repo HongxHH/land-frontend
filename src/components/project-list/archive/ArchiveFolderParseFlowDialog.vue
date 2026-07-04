@@ -8,11 +8,7 @@
     class="parse-flow-archive-dialog"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <TaskParseFlowDetailPanel
-      :detail="detail"
-      :loading="loading"
-      @refresh="emit('refresh')"
-    />
+    <TaskParseFlowDetailPanel :detail="detail" :loading="loading" @refresh="emit('refresh')" />
   </el-dialog>
 </template>
 
@@ -22,7 +18,7 @@ import TaskParseFlowDetailPanel from '@/components/layout/TaskParseFlowDetailPan
 defineProps({
   modelValue: { type: Boolean, default: false },
   detail: { type: Object, default: null },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'refresh'])
@@ -40,7 +36,11 @@ const emit = defineEmits(['update:modelValue', 'refresh'])
   margin-right: 0;
   padding: 16px 18px 12px;
   border-bottom: 1px solid rgba(219, 228, 239, 0.9);
-  background: linear-gradient(180deg, var(--home-header-grad-start) 0%, var(--home-header-grad-end) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--home-header-grad-start) 0%,
+    var(--home-header-grad-end) 100%
+  );
 }
 
 :deep(.parse-flow-archive-dialog .el-dialog__title) {

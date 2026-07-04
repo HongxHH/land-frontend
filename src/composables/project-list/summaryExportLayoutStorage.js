@@ -1,4 +1,8 @@
-import { SUMMARY_LAYOUT_STORAGE_KEY, SUMMARY_COLUMN_SCHEMA, getDefaultSummaryLayoutRows } from './summaryExportColumnSchema.js'
+import {
+  SUMMARY_LAYOUT_STORAGE_KEY,
+  SUMMARY_COLUMN_SCHEMA,
+  getDefaultSummaryLayoutRows,
+} from './summaryExportColumnSchema.js'
 
 function schemaIds() {
   return new Set(SUMMARY_COLUMN_SCHEMA.map((c) => c.id))
@@ -49,7 +53,7 @@ function parseStoredSummaryLayout(raw) {
 
     return order.map((id) => ({
       id,
-      visible: vis.has(id) ? vis.get(id) : true
+      visible: vis.has(id) ? vis.get(id) : true,
     }))
   } catch {
     return defaults

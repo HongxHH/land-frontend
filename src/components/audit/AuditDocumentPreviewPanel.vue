@@ -54,9 +54,9 @@ const props = defineProps({
     type: Array,
     default: () => [
       { id: 'pdf', label: 'PDF预览' },
-      { id: 'markdown', label: '解析内容(MD)' }
-    ]
-  }
+      { id: 'markdown', label: '解析内容(MD)' },
+    ],
+  },
 })
 
 const emit = defineEmits(['update:currentView', 'download'])
@@ -66,7 +66,7 @@ const viewOptions = computed(() =>
     id: String(item.id),
     label: item.label,
     disabled: Boolean(item.disabled),
-    hint: item.hint || ''
+    hint: item.hint || '',
   }))
 )
 

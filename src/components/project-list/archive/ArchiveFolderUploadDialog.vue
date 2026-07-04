@@ -24,7 +24,9 @@
           </div>
           <div class="upload-target-summary__item upload-target-summary__item--folder">
             <div class="upload-target-summary__label">
-              <el-icon class="upload-target-summary__icon" aria-hidden="true"><FolderOpened /></el-icon>
+              <el-icon class="upload-target-summary__icon" aria-hidden="true"
+                ><FolderOpened
+              /></el-icon>
               目标归档夹
             </div>
             <div class="upload-target-summary__value upload-target-summary__value--folder">
@@ -34,7 +36,10 @@
         </div>
         <p class="upload-target-summary__hint">由当前选中的归档夹决定，上传前请确认无误</p>
       </div>
-      <el-form-item v-if="uploadForm.fileContextType === 'SURVEY_REPORT'" label="期数（实测报告必填）">
+      <el-form-item
+        v-if="uploadForm.fileContextType === 'SURVEY_REPORT'"
+        label="期数（实测报告必填）"
+      >
         <el-input-number
           :model-value="uploadForm.phase"
           :min="1"
@@ -94,7 +99,8 @@
         class="upload-progress"
       />
       <div v-if="uploadLoading" class="upload-progress-bytes">
-        已上传 {{ formatArchiveFileSize(uploadUploadedBytes) }} / {{ formatArchiveFileSize(uploadTotalBytes) }}
+        已上传 {{ formatArchiveFileSize(uploadUploadedBytes) }} /
+        {{ formatArchiveFileSize(uploadTotalBytes) }}
         <span v-if="uploadSpeedText" class="upload-speed">· {{ uploadSpeedText }}</span>
         <span v-if="uploadEtaText" class="upload-eta">· 剩余 {{ uploadEtaText }}</span>
       </div>
@@ -125,11 +131,14 @@ import UploadFileRow from '@/components/file-upload/UploadFileRow.vue'
 import {
   archiveUploadFileDisplayName,
   archiveUploadFileSize,
-  formatArchiveFileSize
+  formatArchiveFileSize,
 } from '@/composables/project-list/archiveFolderPresent.js'
 import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 
-import { getFileContextLabel, resolveUploadFileContextType } from '@/utils/fileContextTypeRegistry.js'
+import {
+  getFileContextLabel,
+  resolveUploadFileContextType,
+} from '@/utils/fileContextTypeRegistry.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -145,7 +154,7 @@ const props = defineProps({
   uploadPhaseLabel: { type: String, default: '' },
   hasActiveUpload: { type: Boolean, default: false },
   getFileUploadState: { type: Function, default: () => null },
-  beforeClose: { type: Function, default: undefined }
+  beforeClose: { type: Function, default: undefined },
 })
 
 const resolveFileState = (item) => props.getFileUploadState?.(item) ?? null
@@ -164,7 +173,7 @@ const emit = defineEmits([
   'remove-one',
   'retry-one',
   'confirm-upload',
-  'cancel'
+  'cancel',
 ])
 
 const setUploadField = createFormFieldPatcher(props, emit, 'uploadForm')

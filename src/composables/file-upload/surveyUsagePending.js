@@ -9,7 +9,8 @@ export function isBlankRoomUsage(roomUsage) {
 export function parsePendingUsageMap(unknownUsagesJson) {
   if (!unknownUsagesJson) return {}
   try {
-    const raw = typeof unknownUsagesJson === 'string' ? JSON.parse(unknownUsagesJson) : unknownUsagesJson
+    const raw =
+      typeof unknownUsagesJson === 'string' ? JSON.parse(unknownUsagesJson) : unknownUsagesJson
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
     return raw
   } catch {
@@ -19,7 +20,8 @@ export function parsePendingUsageMap(unknownUsagesJson) {
 
 export function countMissingUsageFromSummary(unknownUsagesJson) {
   const map = parsePendingUsageMap(unknownUsagesJson)
-  return Object.values(map).filter((value) => String(value ?? '').trim() === MISSING_USAGE_LABEL).length
+  return Object.values(map).filter((value) => String(value ?? '').trim() === MISSING_USAGE_LABEL)
+    .length
 }
 
 export function countMissingUsageInRoomRows(roomRows = []) {
@@ -83,7 +85,8 @@ export function pendingUsageTooltip(raw) {
   if (!raw) return ''
   const map = parsePendingUsageMap(raw)
   const lines = Object.entries(map).map(([room, usage]) => {
-    const label = String(usage ?? '').trim() === MISSING_USAGE_LABEL ? '用途缺失' : String(usage ?? '').trim()
+    const label =
+      String(usage ?? '').trim() === MISSING_USAGE_LABEL ? '用途缺失' : String(usage ?? '').trim()
     return `${room}：${label}`
   })
   return lines.length ? lines.join('\n') : formatPendingUsageDisplay(raw)
@@ -93,7 +96,8 @@ export function pendingUsageTooltip(raw) {
 export function parseDistinctUnknownUsageNames(unknownUsagesJson) {
   if (!unknownUsagesJson) return []
   try {
-    const raw = typeof unknownUsagesJson === 'string' ? JSON.parse(unknownUsagesJson) : unknownUsagesJson
+    const raw =
+      typeof unknownUsagesJson === 'string' ? JSON.parse(unknownUsagesJson) : unknownUsagesJson
     if (Array.isArray(raw)) {
       const set = new Set()
       for (const item of raw) {
@@ -209,7 +213,8 @@ export function projectHasPendingUnknownUsageRows(displayTableData = []) {
 
 /** 将报告内未知用途与项目 API 记录合并为策略列表行（汇总表 / 审核页共用） */
 export function mergeUnknownUsagePolicyRows(unknownUsagesJson, apiRows = [], options = {}) {
-  const fileRecordIdByUsage = options.fileRecordIdByUsage instanceof Map ? options.fileRecordIdByUsage : null
+  const fileRecordIdByUsage =
+    options.fileRecordIdByUsage instanceof Map ? options.fileRecordIdByUsage : null
   const occurrenceMap = countUnknownUsageOccurrences(unknownUsagesJson)
   const roomsByUsageName = groupRoomNumbersByUsageName(unknownUsagesJson)
   const nameSet = new Set(parseDistinctUnknownUsageNames(unknownUsagesJson))
@@ -235,7 +240,7 @@ export function mergeUnknownUsagePolicyRows(unknownUsagesJson, apiRows = [], opt
             id: null,
             usageName: name,
             occurrenceCount: occurrenceMap.get(name) || 0,
-            selectedTarget: ''
+            selectedTarget: '',
           },
           name
         )
@@ -256,7 +261,7 @@ export function mergeUnknownUsagePolicyRows(unknownUsagesJson, apiRows = [], opt
       occurrenceCount: missingRooms.length,
       roomNumbers: missingRooms,
       selectedTarget: '',
-      readOnly: true
+      readOnly: true,
     })
   }
 

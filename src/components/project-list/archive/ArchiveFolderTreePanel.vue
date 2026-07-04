@@ -1,5 +1,9 @@
 <template>
-  <section class="tree-panel" :style="{ flexBasis: `${treePanelWidth}px` }" v-loading="archiveLoading">
+  <section
+    class="tree-panel"
+    :style="{ flexBasis: `${treePanelWidth}px` }"
+    v-loading="archiveLoading"
+  >
     <div class="tree-panel-actions">
       <el-button
         class="tree-action-btn tree-action-btn--create"
@@ -37,7 +41,10 @@
         @node-click="(data) => emit('node-click', data)"
       >
         <template #default="{ data }">
-          <div class="tree-node-row" :class="{ selected: data.archiveId && data.archiveId === selectedArchiveId }">
+          <div
+            class="tree-node-row"
+            :class="{ selected: data.archiveId && data.archiveId === selectedArchiveId }"
+          >
             <el-icon class="folder-icon">
               <FolderOpened v-if="data.nodeType === 'project'" />
               <Folder v-else />
@@ -61,7 +68,7 @@ defineProps({
   treeData: { type: Array, default: () => [] },
   treeProps: { type: Object, default: () => ({}) },
   selectedArchiveId: { type: [String, Number], default: null },
-  canDeleteSelectedArchive: { type: Boolean, default: false }
+  canDeleteSelectedArchive: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['create', 'delete-selected', 'node-click'])

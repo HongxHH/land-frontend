@@ -6,7 +6,7 @@ const ARCHIVE_PREVIEW_MODES = {
   PDF: 'pdf',
   EXCEL: 'excel',
   IMAGE: 'image',
-  UNSUPPORTED: 'unsupported'
+  UNSUPPORTED: 'unsupported',
 }
 
 const IMAGE_TYPES = new Set(['PNG', 'JPEG', 'JPG', 'GIF'])
@@ -77,7 +77,7 @@ export function useArchiveFilePreview() {
     previewFileMeta.value = {
       originalName: row?.originalName || row?.name || '未命名文件',
       fileType: row?.fileType || '',
-      gridfsId
+      gridfsId,
     }
     previewMode.value = inferArchivePreviewMode(row?.fileType, previewFileMeta.value.originalName)
 
@@ -169,7 +169,7 @@ export function useArchiveFilePreview() {
     openArchivePreview,
     closeArchivePreview,
     handlePreviewClosed,
-    downloadPreviewFile
+    downloadPreviewFile,
   }
 }
 

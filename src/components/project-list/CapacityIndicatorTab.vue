@@ -5,51 +5,26 @@
       class="forms-panel planning-panel planning-panel--modern project-tab-panel"
       v-loading="formsLoading"
     >
-      <header class="planning-hero">
-        <div class="planning-hero__brand">
-          <div class="planning-hero__icon-wrap" aria-hidden="true">
-            <el-icon class="planning-hero__icon"><Document /></el-icon>
-          </div>
-          <div class="planning-hero__titles">
-            <span class="planning-hero__eyebrow">容量指标核查</span>
-            <h2 class="planning-hero__title">主表</h2>
-          </div>
-        </div>
-
-        <div class="planning-stat-grid" role="group" aria-label="容量指标核查主表统计">
-          <div class="planning-stat-tile planning-stat-tile--slate">
-            <div class="planning-stat-tile__icon"><el-icon><Files /></el-icon></div>
-            <div class="planning-stat-tile__text">
-              <div class="planning-stat-tile__line">
-                <span class="planning-stat-tile__value">{{ formTotal }}</span>
-                <span class="planning-stat-tile__unit">条</span>
-              </div>
-              <span class="planning-stat-tile__label">主表总数</span>
-            </div>
-          </div>
-          <div
-            class="planning-stat-tile"
-            :class="activeFileRecordId ? 'planning-stat-tile--teal' : 'planning-stat-tile--amber'"
+      <ProjectTabHero
+        eyebrow="容量指标核查"
+        title="主表"
+        :icon="Document"
+        stat-grid-label="容量指标核查主表统计"
+        actions-label="主表操作"
+        :stats="heroStats"
+      >
+        <template #actions>
+          <el-button
+            class="project-tab-hero__btn project-tab-hero__btn--ghost"
+            size="small"
+            :loading="formsLoading"
+            @click="fetchForms"
           >
-            <div class="planning-stat-tile__icon">
-              <el-icon><CircleCheck v-if="activeFileRecordId" /><Warning v-else /></el-icon>
-            </div>
-            <div class="planning-stat-tile__text planning-stat-tile__text--wide">
-              <div class="planning-stat-tile__line planning-stat-tile__line--single">
-                <span class="planning-stat-tile__pick">{{ activeFormSelectionText }}</span>
-              </div>
-              <span class="planning-stat-tile__label">当前主表</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="planning-hero__actions" aria-label="主表操作">
-          <el-button class="pr-btn pr-btn--ghost" size="small" :loading="formsLoading" @click="fetchForms">
             <el-icon><Refresh /></el-icon>
             刷新数据
           </el-button>
-        </div>
-      </header>
+        </template>
+      </ProjectTabHero>
 
       <div ref="formsTableWrapRef" class="planning-table-wrap">
         <el-table
@@ -66,7 +41,13 @@
           @row-click="handleFormRowClick"
         >
           <el-table-column type="index" width="52" label="序号" align="center" fixed="left" />
-          <el-table-column label="核查文件" min-width="220" align="center" fixed="left" show-overflow-tooltip>
+          <el-table-column
+            label="核查文件"
+            min-width="220"
+            align="center"
+            fixed="left"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
               {{ resolveFormFileName(row) || `fileRecordId ${row.fileRecordId || '-'}` }}
             </template>
@@ -82,7 +63,11 @@
           </el-table-column>
           <el-table-column label="解析状态" width="110" align="center">
             <template #default="{ row }">
-              <el-tag :type="Number(row.isParsed) === 1 ? 'success' : 'info'" size="small" effect="light">
+              <el-tag
+                :type="Number(row.isParsed) === 1 ? 'success' : 'info'"
+                size="small"
+                effect="light"
+              >
                 {{ Number(row.isParsed) === 1 ? '已解析' : '未解析' }}
               </el-tag>
             </template>
@@ -97,7 +82,13 @@
           >
             <template #default="{ row }">
               <span class="tab-table-row-actions">
-                <el-button class="op-btn audit-btn" type="primary" size="small" plain @click.stop="openAudit(row)">
+                <el-button
+                  class="op-btn audit-btn"
+                  type="primary"
+                  size="small"
+                  plain
+                  @click.stop="openAudit(row)"
+                >
                   审核
                 </el-button>
               </span>
@@ -105,7 +96,12 @@
           </el-table-column>
         </el-table>
 
-        <div v-show="formsShowXScroll" class="planning-table-x-float" role="presentation" aria-hidden="true">
+        <div
+          v-show="formsShowXScroll"
+          class="planning-table-x-float"
+          role="presentation"
+          aria-hidden="true"
+        >
           <div
             class="planning-table-x-float__edge planning-table-x-float__edge--left"
             :class="{ 'is-active': formsCanScrollLeft }"
@@ -162,31 +158,28 @@ import {
   onMounted,
   onBeforeUnmount,
   nextTick,
-  defineAsyncComponent
+  defineAsyncComponent,
 } from 'vue'
-import { clampTableBodyHeight, clampMainListTableHeight } from '@/composables/project-list/useElTableHeightClamp.js'
-import { ElMessage } from 'element-plus'
 import {
-  Document,
-  Files,
-  CircleCheck,
-  Warning,
-  Refresh,
-  DArrowLeft,
-  DArrowRight
-} from '@element-plus/icons-vue'
+  clampTableBodyHeight,
+  clampMainListTableHeight,
+} from '@/composables/project-list/useElTableHeightClamp.js'
+import { ElMessage } from 'element-plus'
+import { Document, Files, Refresh, DArrowLeft, DArrowRight } from '@element-plus/icons-vue'
 import { queryCapacityIndicatorForms } from '@/services/project.service'
 import { useSummaryTableHorizontalScroll } from '@/composables/project-list/useSummaryTableHorizontalScroll'
+import ProjectTabHero from '@/components/project-list/ProjectTabHero.vue'
+import '@/styles/planning-review-tab.css'
 
-const CapacityIndicatorAuditDialog = defineAsyncComponent(() =>
-  import('@/components/project-list/CapacityIndicatorAuditDialog.vue')
+const CapacityIndicatorAuditDialog = defineAsyncComponent(
+  () => import('@/components/project-list/CapacityIndicatorAuditDialog.vue')
 )
 
 const CAPACITY_FORMS_PAGE_SIZE = 500
 
 const props = defineProps({
   projectId: { type: [String, Number], default: '' },
-  active: { type: Boolean, default: false }
+  active: { type: Boolean, default: false },
 })
 
 const formsLoading = ref(false)
@@ -212,13 +205,13 @@ const formQuery = reactive({
   pageSize: CAPACITY_FORMS_PAGE_SIZE,
   sortField: 'updateTime',
   sortDirection: 'desc',
-  projectId: ''
+  projectId: '',
 })
 
 function measureFormsTableCap() {
   const panel = formsPanelRef.value
   if (!panel) return
-  const hero = panel.querySelector('.planning-hero')
+  const hero = panel.querySelector('.project-tab-hero')
   const ph = panel.getBoundingClientRect().height
   const hh = hero ? hero.getBoundingClientRect().height : 0
   formsTableCap.value = Math.max(100, Math.floor(ph - hh - 1))
@@ -237,7 +230,7 @@ const {
   showXScrollProxy: formsShowXScroll,
   canScrollLeft: formsCanScrollLeft,
   canScrollRight: formsCanScrollRight,
-  scrollTableBy: formsScrollBy
+  scrollTableBy: formsScrollBy,
 } = useSummaryTableHorizontalScroll(formsTableRef, forms)
 
 onMounted(() => {
@@ -269,7 +262,7 @@ const buildMainFormDraftFromRow = (row) => ({
   totalArea: row?.totalArea ?? null,
   commercialArea: row?.commercialArea ?? null,
   residentialArea: row?.residentialArea ?? null,
-  remark: row?.remark || ''
+  remark: row?.remark || '',
 })
 
 const displayedForm = computed(() => {
@@ -300,6 +293,17 @@ const activeFormSelectionText = computed(() => {
   return `第 ${n} 份 · 共 ${formTotal.value || list.length} 份`
 })
 
+const heroStats = computed(() => [
+  { variant: 'slate', icon: Files, value: formTotal.value, unit: '条', label: '主表总数' },
+  {
+    variant: activeFileRecordId.value ? 'teal' : 'amber',
+    status: activeFileRecordId.value ? 'ok' : 'warn',
+    pick: activeFormSelectionText.value,
+    wide: true,
+    label: '当前主表',
+  },
+])
+
 function ensureActiveFormSelection() {
   const list = forms.value
   if (!list.length) {
@@ -329,7 +333,7 @@ const buildFormPayload = () => ({
   pageSize: formQuery.pageSize,
   sortField: formQuery.sortField,
   sortDirection: formQuery.sortDirection,
-  projectId: Number(formQuery.projectId)
+  projectId: Number(formQuery.projectId),
 })
 
 const fetchForms = async () => {
@@ -387,7 +391,7 @@ const openAudit = (row) => {
   currentAuditFile.value = {
     id: row?.fileRecordId,
     fileRecordId: row?.fileRecordId,
-    originalName: resolveFormFileName(row) || `容量指标核查表-${row?.fileRecordId || '-'}`
+    originalName: resolveFormFileName(row) || `容量指标核查表-${row?.fileRecordId || '-'}`,
   }
   auditDialogVisible.value = true
 }
@@ -435,293 +439,6 @@ watch(
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.planning-panel--modern.project-tab-panel {
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.42);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 48%, #f1f5f9 100%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 14px 40px -22px rgba(15, 23, 42, 0.18);
-  overflow: hidden;
-}
-
-.planning-hero {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 16px;
-  padding: 11px 14px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
-  background: linear-gradient(125deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 250, 252, 0.92) 45%, rgba(241, 245, 249, 0.88) 100%);
-  flex-shrink: 0;
-  min-height: 64px;
-  box-sizing: border-box;
-}
-
-.planning-hero::after {
-  content: '';
-  position: absolute;
-  right: -16%;
-  top: -50%;
-  width: 40%;
-  height: 180%;
-  background: radial-gradient(closest-side, rgba(59, 130, 246, 0.08), transparent 72%);
-  pointer-events: none;
-}
-
-.planning-hero__brand {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1 1 200px;
-  min-width: 0;
-  z-index: 1;
-}
-
-.planning-hero__icon-wrap {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(145deg, #3b82f6 0%, #1d4ed8 100%);
-  box-shadow:
-    0 8px 18px -10px rgba(29, 78, 216, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.planning-hero__icon {
-  font-size: 21px;
-  color: #fff;
-}
-
-.planning-hero__eyebrow {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #64748b;
-  margin-bottom: 2px;
-}
-
-.planning-hero__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.2;
-}
-
-.planning-stat-grid {
-  position: relative;
-  z-index: 1;
-  flex: 1 1 260px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  min-width: 0;
-}
-
-.planning-stat-tile {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  min-width: 0;
-}
-
-.planning-stat-tile--slate .planning-stat-tile__icon {
-  background: rgba(100, 116, 139, 0.12);
-  color: #475569;
-}
-
-.planning-stat-tile--teal .planning-stat-tile__icon {
-  background: rgba(20, 184, 166, 0.14);
-  color: #0f766e;
-}
-
-.planning-stat-tile--amber .planning-stat-tile__icon {
-  background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
-}
-
-.planning-stat-tile__icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-}
-
-.planning-stat-tile__text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-  min-width: 0;
-}
-
-.planning-stat-tile__text--wide {
-  flex: 1;
-}
-
-.planning-stat-tile__line {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-  line-height: 1.1;
-}
-
-.planning-stat-tile__line--single {
-  width: 100%;
-}
-
-.planning-stat-tile__value {
-  font-size: 16px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  color: #0f172a;
-}
-
-.planning-stat-tile__unit {
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-}
-
-.planning-stat-tile__pick {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #0f172a;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
-
-.planning-stat-tile__label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #64748b;
-  line-height: 1.2;
-}
-
-.planning-hero__actions {
-  position: relative;
-  z-index: 1;
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: 0;
-}
-
-.pr-btn {
-  width: auto;
-  min-width: 104px;
-  justify-content: center;
-  border-radius: 9px;
-  font-weight: 600;
-}
-
-:deep(.pr-btn--ghost) {
-  border: 1px solid rgba(148, 163, 184, 0.55);
-  background: rgba(255, 255, 255, 0.92);
-  color: #334155;
-}
-
-:deep(.pr-btn--ghost:hover) {
-  border-color: #94a3b8;
-  background: #fff;
-  color: #0f172a;
-}
-
-.planning-table-wrap {
-  position: relative;
-  min-height: 0;
-  padding: 0;
-  background: #fff;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  flex: 1 1 auto;
-}
-
-.planning-table-x-float {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.planning-table-x-float__edge {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 36px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.planning-table-x-float__edge--left {
-  left: 0;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.06), transparent);
-}
-
-.planning-table-x-float__edge--right {
-  right: 0;
-  background: linear-gradient(270deg, rgba(15, 23, 42, 0.06), transparent);
-}
-
-.planning-table-x-float__edge.is-active {
-  opacity: 1;
-}
-
-.planning-table-x-float__fab {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: auto;
-  box-shadow: 0 8px 24px -8px rgba(29, 78, 216, 0.55);
-  border: none;
-}
-
-.planning-table-x-float__fab--left {
-  left: 6px;
-}
-
-.planning-table-x-float__fab--right {
-  right: 6px;
-}
-
-:deep(.planning-el-table.el-table) {
-  --el-table-header-bg-color: #f8fafc;
-  --el-table-header-text-color: #334155;
-}
-
-:deep(.planning-el-table th.el-table__cell) {
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
-  font-weight: 700;
-  color: #334155;
 }
 
 :deep(.planning-el-table th.el-table__cell .cell),

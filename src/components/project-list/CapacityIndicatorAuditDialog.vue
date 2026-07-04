@@ -8,7 +8,10 @@
     class="capacity-indicator-audit-dialog"
     @closed="handleClosed"
   >
-    <div ref="auditLayoutRef" class="audit-split-layout audit-split-layout--responsive capacity-audit-shell">
+    <div
+      ref="auditLayoutRef"
+      class="audit-split-layout audit-split-layout--responsive capacity-audit-shell"
+    >
       <section class="audit-split-layout__left audit-preview-shell" :style="leftPanelStyle">
         <AuditDocumentPreviewPanel
           :loading="metaLoading || mdLoading || pdfLoading"
@@ -25,6 +28,7 @@
             </div>
           </template>
           <template #markdown>
+            <!-- eslint-disable-next-line vue/no-v-html -- recognitionHtml 经 renderRecognitionMarkdownHtml + DOMPurify 消毒 -->
             <div v-if="recognitionMdContent" class="audit-preview-md" v-html="recognitionHtml" />
             <div v-else class="audit-preview-empty">
               <el-empty description="暂无解析内容" />
@@ -44,7 +48,9 @@
       <section class="audit-split-layout__right capacity-audit-right">
         <div class="capacity-audit-right__head">
           <div class="capacity-audit-right__title">核查数据</div>
-          <el-tag v-if="formEdit.id" size="small" type="info" effect="plain">主表 id: {{ formEdit.id }}</el-tag>
+          <el-tag v-if="formEdit.id" size="small" type="info" effect="plain"
+            >主表 id: {{ formEdit.id }}</el-tag
+          >
         </div>
 
         <div class="capacity-audit-right__body">
@@ -88,7 +94,9 @@
 
         <div class="capacity-audit-right__footer">
           <el-button @click="dialogVisible = false">关闭</el-button>
-          <el-button type="primary" :loading="mainFormSaveLoading" @click="submitMainFormEdit">保存</el-button>
+          <el-button type="primary" :loading="mainFormSaveLoading" @click="submitMainFormEdit"
+            >保存</el-button
+          >
         </div>
       </section>
     </div>
@@ -101,7 +109,10 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import AuditDocumentPreviewPanel from '@/components/audit/AuditDocumentPreviewPanel.vue'
 import { downloadGridFsFile, queryFiles } from '@/services/file.service'
-import { queryCapacityIndicatorForms, updateCapacityIndicatorForm } from '@/services/project.service'
+import {
+  queryCapacityIndicatorForms,
+  updateCapacityIndicatorForm,
+} from '@/services/project.service'
 import { useRecognitionMarkdown } from '@/composables/file-upload/useRecognitionMarkdown'
 import { useAuditSplitPanel } from '@/composables/audit/useAuditSplitPanel'
 
@@ -110,14 +121,14 @@ const props = defineProps({
   projectId: { type: [String, Number], default: '' },
   fileRecordId: { type: [String, Number], default: '' },
   initialFile: { type: Object, default: null },
-  mainFormDraft: { type: Object, default: null }
+  mainFormDraft: { type: Object, default: null },
 })
 
 const emit = defineEmits(['update:modelValue', 'main-form-saved'])
 
 const dialogVisible = computed({
   get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v)
+  set: (v) => emit('update:modelValue', v),
 })
 
 const leftView = ref('pdf')
@@ -128,13 +139,13 @@ const mainFormSaveLoading = ref(false)
 
 const previewViews = [
   { id: 'pdf', label: 'PDF预览' },
-  { id: 'markdown', label: '解析内容(MD)' }
+  { id: 'markdown', label: '解析内容(MD)' },
 ]
 
 const areaEditRows = [
   { label: '合计', field: 'totalArea' },
   { label: '商业类', field: 'commercialArea' },
-  { label: '住宅类', field: 'residentialArea' }
+  { label: '住宅类', field: 'residentialArea' },
 ]
 
 const recognitionMdContent = ref('')
@@ -144,7 +155,7 @@ const fileMeta = reactive({
   id: null,
   originalName: '',
   gridfsId: '',
-  preprocessGridfsId: ''
+  preprocessGridfsId: '',
 })
 
 const pdfUrl = ref('')
@@ -156,7 +167,7 @@ const formEdit = reactive({
   totalArea: null,
   commercialArea: null,
   residentialArea: null,
-  remark: ''
+  remark: '',
 })
 
 const resetMainFormEdit = () => {
@@ -165,7 +176,7 @@ const resetMainFormEdit = () => {
     totalArea: null,
     commercialArea: null,
     residentialArea: null,
-    remark: ''
+    remark: '',
   })
 }
 
@@ -179,7 +190,7 @@ const assignMainFormFromDraft = (draft) => {
     totalArea: draft.totalArea ?? null,
     commercialArea: draft.commercialArea ?? null,
     residentialArea: draft.residentialArea ?? null,
-    remark: draft.remark || ''
+    remark: draft.remark || '',
   })
 }
 
@@ -205,7 +216,7 @@ const fetchCapacityFormRow = async () => {
       sortField: 'updateTime',
       sortDirection: 'desc',
       projectId: Number(props.projectId),
-      fileRecordId: Number(props.fileRecordId)
+      fileRecordId: Number(props.fileRecordId),
     })
     if (res.data?.code !== 200) return null
     return Array.isArray(res.data?.data?.records) ? res.data.data.records[0] : null
@@ -225,14 +236,14 @@ const fetchFileMeta = async () => {
         id: fromProps.id,
         originalName: fromProps.originalName || '',
         gridfsId: fromProps.gridfsId || fromProps.fileId || '',
-        preprocessGridfsId: fromProps.preprocessGridfsId || ''
+        preprocessGridfsId: fromProps.preprocessGridfsId || '',
       })
       return
     }
     const res = await queryFiles({
       pageNum: 1,
       pageSize: 1,
-      fileId: String(props.fileRecordId)
+      fileId: String(props.fileRecordId),
     })
     const parsed = normalizePage(res.data?.data)
     const hit = parsed.records?.[0]
@@ -244,7 +255,7 @@ const fetchFileMeta = async () => {
       id: hit.id,
       originalName: hit.originalName || '',
       gridfsId: hit.gridfsId || '',
-      preprocessGridfsId: hit.preprocessGridfsId || ''
+      preprocessGridfsId: hit.preprocessGridfsId || '',
     })
   } catch (error) {
     console.error('查询容量指标核查文件失败:', error)
@@ -283,7 +294,7 @@ const fetchMarkdown = async () => {
       pageSize: 20,
       sortField: 'createTime',
       sortDirection: 'desc',
-      loadGridFsPayload: true
+      loadGridFsPayload: true,
     })
     const hit = res.data?.data?.records?.[0]
     recognitionMdContent.value = hit?.markdownContent || ''
@@ -348,7 +359,7 @@ const submitMainFormEdit = async () => {
       totalArea: formEdit.totalArea,
       commercialArea: formEdit.commercialArea,
       residentialArea: formEdit.residentialArea,
-      remark: formEdit.remark || null
+      remark: formEdit.remark || null,
     })
     if (res.data?.code !== 200) {
       ElMessage.warning(res.data?.msg || '更新失败')

@@ -25,7 +25,7 @@ export function useProjectStomp({
   activeRef,
   onFileUpdate,
   onConnected,
-  disconnectGraceMs = 45000
+  disconnectGraceMs = 45000,
 }) {
   let client = null
   let subscriptions = []
@@ -154,7 +154,8 @@ export function useProjectStomp({
 
   const scheduleReconnect = () => {
     const pid = getLiveProjectId()
-    if (isDisconnecting || reconnectTimer || !pid || !shouldStayConnected(pid) || !getToken()) return
+    if (isDisconnecting || reconnectTimer || !pid || !shouldStayConnected(pid) || !getToken())
+      return
     if (reconnectAttempts >= maxReconnectAttempts) {
       console.warn(`STOMP reconnect stopped after ${maxReconnectAttempts} attempts`)
       connectionState.value = 'stopped'
@@ -181,10 +182,10 @@ export function useProjectStomp({
     if (!isReconnect && client?.connected && String(currentProjectId) === String(projectId)) return
 
     if (
-      !isReconnect
-      && client?.connected
-      && String(projectId) !== String(currentProjectId)
-      && shouldStayConnected(projectId)
+      !isReconnect &&
+      client?.connected &&
+      String(projectId) !== String(currentProjectId) &&
+      shouldStayConnected(projectId)
     ) {
       resubscribeForProject(projectId)
       return
@@ -201,10 +202,10 @@ export function useProjectStomp({
         heartbeatIncoming: 10000,
         heartbeatOutgoing: 10000,
         connectHeaders: {
-          [SA_TOKEN_HEADER_NAME]: getToken()
+          [SA_TOKEN_HEADER_NAME]: getToken(),
         },
         webSocketFactory: () => new SockJS(buildWsUrl()),
-        debug: () => { }
+        debug: () => { },
       })
 
       client.onConnect = () => {
@@ -274,6 +275,6 @@ export function useProjectStomp({
     disconnect,
     connectionState,
     reconnectCount,
-    maxReconnectAttempts
+    maxReconnectAttempts,
   }
 }

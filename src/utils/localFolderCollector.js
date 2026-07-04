@@ -10,7 +10,7 @@ export function annotateFileRelativePath(file, relativePath) {
     Object.defineProperty(file, 'webkitRelativePath', {
       value: relativePath,
       configurable: true,
-      enumerable: true
+      enumerable: true,
     })
   } catch {
     // 部分环境不允许重新定义，忽略
@@ -57,7 +57,7 @@ export async function traverseFileSystemEntry(entry, basePath = '') {
 
   if (entry.isFile) {
     const file = await new Promise((resolve, reject) => {
-      /** @type {FileSystemFileEntry} */ (entry).file(resolve, reject)
+      /** @type {FileSystemFileEntry} */ entry.file(resolve, reject)
     })
     const relativePath = basePath ? `${basePath}/${file.name}` : file.name
     return [annotateFileRelativePath(file, relativePath)]
@@ -98,7 +98,9 @@ export function extractRootFolderNameFromFiles(files) {
   /** @type {Map<string, number>} */
   const counts = new Map()
   for (const file of list) {
-    const path = String(file.webkitRelativePath || '').replace(/\\/g, '/').trim()
+    const path = String(file.webkitRelativePath || '')
+      .replace(/\\/g, '/')
+      .trim()
     if (!path.includes('/')) continue
     const root = path.split('/')[0]?.trim()
     if (!root) continue

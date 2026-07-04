@@ -46,11 +46,10 @@ export function useBatchActions({ refreshData, startPolling }) {
       ['WAITING_PARSE', 'PARSE_FAIL', 'PARSE_COMPLETE'].includes(row.status)
     )
 
-    ElMessageBox.confirm(
-      `确认解析选中的可解析文件（${parseRows.length} 个）吗？`,
-      '批量解析',
-      { type: 'primary', confirmButtonText: '立即开始' }
-    ).then(async () => {
+    ElMessageBox.confirm(`确认解析选中的可解析文件（${parseRows.length} 个）吗？`, '批量解析', {
+      type: 'primary',
+      confirmButtonText: '立即开始',
+    }).then(async () => {
       batchLoading.value = true
       try {
         await Promise.all(
@@ -77,7 +76,6 @@ export function useBatchActions({ refreshData, startPolling }) {
     canBatchParse,
     handleSelectionChange,
     batchDelete,
-    batchParse
+    batchParse,
   }
 }
-

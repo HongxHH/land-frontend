@@ -22,7 +22,9 @@
       <div class="audit-overview__metrics">
         <div class="audit-metric">
           <span class="audit-metric__label">待确认面积</span>
-          <span class="audit-metric__value audit-metric__value--warn">{{ reportAuditInfo.pendingConfirmArea }}</span>
+          <span class="audit-metric__value audit-metric__value--warn">{{
+            reportAuditInfo.pendingConfirmArea
+          }}</span>
           <span class="audit-metric__unit">㎡</span>
         </div>
         <div class="audit-metric">
@@ -33,7 +35,12 @@
         <div class="audit-metric">
           <span class="audit-metric__label">未知用途</span>
           <div class="audit-metric__tag-wrap">
-            <el-tag size="small" effect="light" round :type="reportAuditInfo.hasUnknownUsage === 1 ? 'warning' : 'success'">
+            <el-tag
+              size="small"
+              effect="light"
+              round
+              :type="reportAuditInfo.hasUnknownUsage === 1 ? 'warning' : 'success'"
+            >
               {{ reportAuditInfo.hasUnknownUsage === 1 ? '有' : '无' }}
             </el-tag>
           </div>
@@ -41,7 +48,12 @@
         <div class="audit-metric">
           <span class="audit-metric__label">校验状态</span>
           <div class="audit-metric__tag-wrap">
-            <el-tag size="small" effect="light" round :type="reportAuditInfo.isVerified === 1 ? 'success' : 'danger'">
+            <el-tag
+              size="small"
+              effect="light"
+              round
+              :type="reportAuditInfo.isVerified === 1 ? 'success' : 'danger'"
+            >
               {{ reportAuditInfo.isVerified === 1 ? '已通过' : '未通过' }}
             </el-tag>
           </div>
@@ -49,7 +61,12 @@
       </div>
     </section>
 
-    <div v-if="reportAuditInfo.verificationErrorReason && reportAuditInfo.verificationErrorReason !== '-'" class="verify-error">
+    <div
+      v-if="
+        reportAuditInfo.verificationErrorReason && reportAuditInfo.verificationErrorReason !== '-'
+      "
+      class="verify-error"
+    >
       <el-icon class="verify-error__icon"><WarningFilled /></el-icon>
       <div>
         <span class="verify-error__label">校验失败原因</span>
@@ -90,7 +107,9 @@
                   maxlength="80"
                   clearable
                   placeholder="请输入"
-                  @update:model-value="(v) => emit('update:propertyAreaConfirmationNoticeNumber', v)"
+                  @update:model-value="
+                    (v) => emit('update:propertyAreaConfirmationNoticeNumber', v)
+                  "
                 />
               </el-form-item>
             </el-col>
@@ -137,7 +156,13 @@
           v-loading="detailLoading"
           element-loading-text="加载户室数据中..."
         >
-          <el-table-column label="序号" type="index" width="60" align="center" :index="(index) => index + 1" />
+          <el-table-column
+            label="序号"
+            type="index"
+            width="60"
+            align="center"
+            :index="(index) => index + 1"
+          />
           <el-table-column prop="roomLevel" label="楼层" width="80" align="center" />
           <el-table-column prop="roomNumber" label="房号" width="100" align="center" />
           <el-table-column prop="buildingArea" label="建筑面积(㎡)" width="120" align="center" />
@@ -145,7 +170,13 @@
           <el-table-column prop="balconyArea" label="阳台面积(㎡)" width="120" align="center" />
           <el-table-column prop="sharedArea" label="公摊面积(㎡)" width="120" align="center" />
           <el-table-column prop="usageCategory" label="用途类别" width="120" align="center" />
-          <el-table-column prop="roomUsage" label="用途" min-width="120" show-overflow-tooltip align="center" />
+          <el-table-column
+            prop="roomUsage"
+            label="用途"
+            min-width="120"
+            show-overflow-tooltip
+            align="center"
+          />
           <el-table-column prop="floorAreaType" label="面积类型" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="row.floorAreaType === '计容' ? 'success' : 'info'" size="small">
@@ -181,9 +212,9 @@ const props = defineProps({
   canJumpAudit: { type: Boolean, default: false },
   reportBasicInfoForm: {
     type: Object,
-    required: true
+    required: true,
   },
-  reportBasicInfoSaving: { type: Boolean, default: false }
+  reportBasicInfoSaving: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -192,12 +223,12 @@ const emit = defineEmits([
   'save-basic-info',
   'update:buildingName',
   'update:propertyCertificateNumber',
-  'update:propertyAreaConfirmationNoticeNumber'
+  'update:propertyAreaConfirmationNoticeNumber',
 ])
 
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const tableContainer = ref(null)
@@ -452,7 +483,11 @@ onBeforeUnmount(() => {
   align-items: center;
   border-bottom: 1px solid rgba(219, 228, 239, 0.9);
   padding: 12px 14px;
-  background: linear-gradient(180deg, var(--home-header-grad-start, #f8fbff) 0%, var(--home-header-grad-end, #f1f6fc) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--home-header-grad-start, #f8fbff) 0%,
+    var(--home-header-grad-end, #f1f6fc) 100%
+  );
 }
 
 .table-toolbar .title {
@@ -481,7 +516,11 @@ onBeforeUnmount(() => {
   font-weight: 700;
   height: 32px;
   padding: 0 14px;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    border-color 0.12s ease,
+    background-color 0.12s ease;
 }
 
 :deep(.jump-btn.el-button:hover) {

@@ -27,7 +27,7 @@ export function useProjectListWorkspace({
   resetRefreshCdStatus,
   showCreateProjectDialog,
   workspaceAuditStackRef,
-  workspaceQueryLoading
+  workspaceQueryLoading,
 }) {
   const initialArchiveId = ref(
     String(route.query.fromAuditReturn || '') === '1' ? String(route.query.archiveId || '') : ''
@@ -68,7 +68,7 @@ export function useProjectListWorkspace({
         JSON.stringify({
           id,
           name: currentProjectInfo.name || '',
-          code: currentProjectInfo.code || ''
+          code: currentProjectInfo.code || '',
         })
       )
     } catch {
@@ -85,7 +85,7 @@ export function useProjectListWorkspace({
       return {
         id: String(o.id || ''),
         name: String(o.name || ''),
-        code: String(o.code || '')
+        code: String(o.code || ''),
       }
     } catch {
       return null
@@ -170,8 +170,7 @@ export function useProjectListWorkspace({
   const handleOpenAuditByFileRecordId = async (payload) => {
     const fileRecordId =
       typeof payload === 'object' && payload != null ? payload.fileRecordId : payload
-    const focusUsageName =
-      typeof payload === 'object' && payload != null ? payload.usageName : ''
+    const focusUsageName = typeof payload === 'object' && payload != null ? payload.usageName : ''
     const fid = String(fileRecordId || '').trim()
     if (!fid) {
       ElMessage.warning('缺少文件信息，无法打开审核')
@@ -185,7 +184,7 @@ export function useProjectListWorkspace({
     await stack.openAuditByFileRecordId(fid, {
       force: true,
       skipArchiveNavigation: true,
-      focusUsageName: String(focusUsageName || '').trim()
+      focusUsageName: String(focusUsageName || '').trim(),
     })
     return true
   }
@@ -232,7 +231,7 @@ export function useProjectListWorkspace({
         id: '',
         name: '请选择项目',
         code: '-',
-        status: '-'
+        status: '-',
       })
       resetRefreshCdStatus()
     }
@@ -304,7 +303,7 @@ export function useProjectListWorkspace({
       qPid: route.query.projectId,
       filterPid: filterProject.value,
       cid: currentProjectInfo.id,
-      stackReady: Boolean(workspaceAuditStackRef.value?.openAuditByFileRecordId)
+      stackReady: Boolean(workspaceAuditStackRef.value?.openAuditByFileRecordId),
     }),
     () => {
       void tryConsumeDeepLinkOpenAudit()
@@ -373,7 +372,7 @@ export function useProjectListWorkspace({
             id: '',
             name: '请选择项目',
             code: '-',
-            status: '-'
+            status: '-',
           })
           filterProject.value = ''
         }
@@ -396,6 +395,6 @@ export function useProjectListWorkspace({
     handleGlobalSearch,
     loadActiveTabData,
     handleOpenAuditByFileRecordId,
-    handlePendingAuditConsumed
+    handlePendingAuditConsumed,
   }
 }

@@ -5,7 +5,7 @@ import {
   MISSING_USAGE_LABEL,
   groupRoomNumbersByUsageName,
   mergeUnknownUsagePolicyRows,
-  parseDistinctUnknownUsageNames
+  parseDistinctUnknownUsageNames,
 } from '@/composables/file-upload/surveyUsagePending'
 
 export { parseDistinctUnknownUsageNames as parseUnknownUsageNames }
@@ -13,11 +13,7 @@ export { parseDistinctUnknownUsageNames as parseUnknownUsageNames }
 /**
  * 智能审核对话框内：展示当前报告涉及的未知用途
  */
-export function useCalibrationUnknownUsagePolicy({
-  dialogOpen,
-  projectId,
-  auditSummaryData
-}) {
+export function useCalibrationUnknownUsagePolicy({ dialogOpen, projectId, auditSummaryData }) {
   const rows = ref([])
   const loading = ref(false)
 
@@ -78,6 +74,6 @@ export function useCalibrationUnknownUsagePolicy({
   return {
     calibrationUnknownRows: rows,
     calibrationUnknownLoading: loading,
-    reloadCalibrationUnknownRows: loadRows
+    reloadCalibrationUnknownRows: loadRows,
   }
 }

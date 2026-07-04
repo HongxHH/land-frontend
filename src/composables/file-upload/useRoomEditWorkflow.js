@@ -6,7 +6,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { queryRoomInfos } from '@/services/project.service'
 import {
   fetchRoomInfoById as fetchRoomInfoByIdRaw,
-  searchRoomInfosByPages as searchRoomInfosByPagesRaw
+  searchRoomInfosByPages as searchRoomInfosByPagesRaw,
 } from '@/composables/file-upload/roomInfoPageSearch.js'
 
 export function useRoomEditWorkflow(options = {}) {
@@ -24,7 +24,7 @@ export function useRoomEditWorkflow(options = {}) {
     batchUpdateLoading,
     usageCategoryMap,
     usageCategoryReverseMap,
-    auditSummaryData
+    auditSummaryData,
   } = options
 
   const localIsEditing = isEditing || ref(false)
@@ -51,7 +51,7 @@ export function useRoomEditWorkflow(options = {}) {
       pageNum,
       pageSize: getRoomPageSize(),
       sortField: 'id',
-      sortDirection: 'asc'
+      sortDirection: 'asc',
     })
     if (roomRes.data?.code !== 200) {
       return { records: [], total: 0, ok: false }
@@ -87,7 +87,7 @@ export function useRoomEditWorkflow(options = {}) {
       remark: normalizeDisplayField(row.remark),
       isCalculate: Number(row.isCalculate || 0),
       usageCategory: preset.usageCategory,
-      floorAreaType: preset.floorAreaType
+      floorAreaType: preset.floorAreaType,
     }
   }
 
@@ -99,7 +99,10 @@ export function useRoomEditWorkflow(options = {}) {
     }
 
     try {
-      const res = await axios.put('/api/project/room-info/update', buildRoomInfoUpdateDTO(sourceRow))
+      const res = await axios.put(
+        '/api/project/room-info/update',
+        buildRoomInfoUpdateDTO(sourceRow)
+      )
       if (res.data?.code !== 200) {
         ElMessage.error(res.data?.msg || '保存失败')
         return false
@@ -107,7 +110,7 @@ export function useRoomEditWorkflow(options = {}) {
       return reloadRoomAndSummaryData({
         refreshReport,
         silentRefresh,
-        savedRowId: sourceRow.id
+        savedRowId: sourceRow.id,
       })
     } catch (error) {
       console.error('保存户室数据失败:', error)
@@ -128,8 +131,13 @@ export function useRoomEditWorkflow(options = {}) {
       isCalculate: Number(item.isCalculate ?? 0),
       usageCategory: usageCategoryMap?.[item.usageCategory] || '未知',
       roomUsage: item.roomUsage || '-',
-      floorAreaType: item.floorAreaType === 'BUILDABLE' ? '计容' : item.floorAreaType === 'NON_BUILDABLE' ? '不计容' : '未知',
-      remark: item.remark || ''
+      floorAreaType:
+        item.floorAreaType === 'BUILDABLE'
+          ? '计容'
+          : item.floorAreaType === 'NON_BUILDABLE'
+            ? '不计容'
+            : '未知',
+      remark: item.remark || '',
     }))
 
   const resolveUsageCategoryForUpdate = (value) => {
@@ -158,7 +166,7 @@ export function useRoomEditWorkflow(options = {}) {
       OTHER_BUILDABLE: { roomUsage: '其他计容', floorAreaType: 'BUILDABLE' },
       COMMUNITY: { roomUsage: '社区用房', floorAreaType: 'NON_BUILDABLE' },
       OTHER_PUBLIC: { roomUsage: '其他公用', floorAreaType: 'NON_BUILDABLE' },
-      UNKNOWN: { roomUsage: '未知', floorAreaType: 'UNKNOWN' }
+      UNKNOWN: { roomUsage: '未知', floorAreaType: 'UNKNOWN' },
     }
     return { usageCategory: normalized, ...(presetMap[normalized] || presetMap.UNKNOWN) }
   }
@@ -177,7 +185,7 @@ export function useRoomEditWorkflow(options = {}) {
       projectId,
       surveyReportId,
       fileRecordId,
-      ok: Boolean(projectId && surveyReportId && fileRecordId)
+      ok: Boolean(projectId && surveyReportId && fileRecordId),
     }
   }
 
@@ -196,7 +204,11 @@ export function useRoomEditWorkflow(options = {}) {
         return
       }
 
-      for (let guard = 0; guard < 8 && result.records.length === 0 && result.total > 0 && page > 1; guard += 1) {
+      for (
+        let guard = 0;
+        guard < 8 && result.records.length === 0 && result.total > 0 && page > 1;
+        guard += 1
+      ) {
         page -= 1
         result = await fetchRoomInfoPage(page)
         if (!result.ok) break
@@ -311,7 +323,7 @@ export function useRoomEditWorkflow(options = {}) {
         pageNum,
         pageSize,
         sortField: 'id',
-        sortDirection: 'asc'
+        sortDirection: 'asc',
       })
       if (roomRes.data?.code !== 200) break
 
@@ -338,25 +350,43 @@ export function useRoomEditWorkflow(options = {}) {
 
     try {
       const summaryRes = await axios.post('/api/project/survey-reports/query', {
-        fileRecordId
+        fileRecordId,
       })
       const currentSummary = summaryRes?.data?.data?.records?.[0]
       if (!currentSummary || !auditSummaryData) return
 
-      auditSummaryData.pendingConfirmArea = Number(currentSummary.pendingConfirmArea || 0).toFixed(2)
+      auditSummaryData.pendingConfirmArea = Number(currentSummary.pendingConfirmArea || 0).toFixed(
+        2
+      )
       auditSummaryData.unknownUsages = currentSummary.unknownUsages || '[]'
       auditSummaryData.unknownUsageCount = Number(currentSummary.unknownUsageCount || 0)
       auditSummaryData.isVerified = Number(currentSummary.isVerified || 0)
       auditSummaryData.hasUnknownUsage = Number(currentSummary.hasUnknownUsage || 0)
       auditSummaryData.verificationErrorReason = currentSummary.verificationErrorReason || '-'
-      auditSummaryData.roomInfoBuildingAreaSum = Number(currentSummary.roomInfoBuildingAreaSum || 0).toFixed(2)
-      auditSummaryData.roomInfoInnerAreaSum = Number(currentSummary.roomInfoInnerAreaSum || 0).toFixed(2)
-      auditSummaryData.roomInfoBalconyAreaSum = Number(currentSummary.roomInfoBalconyAreaSum || 0).toFixed(2)
-      auditSummaryData.roomInfoSharedAreaSum = Number(currentSummary.roomInfoSharedAreaSum || 0).toFixed(2)
-      auditSummaryData.roomInfoBuildingAreaSumFromOcr = Number(currentSummary.roomInfoBuildingAreaSumFromOcr || 0).toFixed(2)
-      auditSummaryData.roomInfoInnerAreaSumFromOcr = Number(currentSummary.roomInfoInnerAreaSumFromOcr || 0).toFixed(2)
-      auditSummaryData.roomInfoBalconyAreaSumFromOcr = Number(currentSummary.roomInfoBalconyAreaSumFromOcr || 0).toFixed(2)
-      auditSummaryData.roomInfoSharedAreaSumFromOcr = Number(currentSummary.roomInfoSharedAreaSumFromOcr || 0).toFixed(2)
+      auditSummaryData.roomInfoBuildingAreaSum = Number(
+        currentSummary.roomInfoBuildingAreaSum || 0
+      ).toFixed(2)
+      auditSummaryData.roomInfoInnerAreaSum = Number(
+        currentSummary.roomInfoInnerAreaSum || 0
+      ).toFixed(2)
+      auditSummaryData.roomInfoBalconyAreaSum = Number(
+        currentSummary.roomInfoBalconyAreaSum || 0
+      ).toFixed(2)
+      auditSummaryData.roomInfoSharedAreaSum = Number(
+        currentSummary.roomInfoSharedAreaSum || 0
+      ).toFixed(2)
+      auditSummaryData.roomInfoBuildingAreaSumFromOcr = Number(
+        currentSummary.roomInfoBuildingAreaSumFromOcr || 0
+      ).toFixed(2)
+      auditSummaryData.roomInfoInnerAreaSumFromOcr = Number(
+        currentSummary.roomInfoInnerAreaSumFromOcr || 0
+      ).toFixed(2)
+      auditSummaryData.roomInfoBalconyAreaSumFromOcr = Number(
+        currentSummary.roomInfoBalconyAreaSumFromOcr || 0
+      ).toFixed(2)
+      auditSummaryData.roomInfoSharedAreaSumFromOcr = Number(
+        currentSummary.roomInfoSharedAreaSumFromOcr || 0
+      ).toFixed(2)
       enrichAuditSummaryFromVerificationReason(auditSummaryData)
     } catch (error) {
       console.error('重新加载汇总数据失败:', error)
@@ -389,7 +419,11 @@ export function useRoomEditWorkflow(options = {}) {
     }
   }
 
-  const reloadRoomAndSummaryData = async ({ refreshReport = false, silentRefresh = true, savedRowId } = {}) => {
+  const reloadRoomAndSummaryData = async ({
+    refreshReport = false,
+    silentRefresh = true,
+    savedRowId,
+  } = {}) => {
     if (refreshReport) {
       const refreshOk = await triggerSurveyReportRefresh({ silent: silentRefresh })
       if (!refreshOk) return false
@@ -461,7 +495,9 @@ export function useRoomEditWorkflow(options = {}) {
     const pageIds = new Set((records || []).map((row) => String(row.id)))
     const preserveId = String(localEditingRowId.value || '')
     const preserved = preserveId
-      ? roomInfoData.value.filter((row) => String(row.id) === preserveId && !pageIds.has(String(row.id)))
+      ? roomInfoData.value.filter(
+          (row) => String(row.id) === preserveId && !pageIds.has(String(row.id))
+        )
       : []
     roomInfoData.value = [...(records || []), ...preserved]
   }
@@ -470,7 +506,7 @@ export function useRoomEditWorkflow(options = {}) {
     const fresh = await fetchRoomInfoByIdRaw({
       roomInfoId,
       queryRoomInfos,
-      mapRoomInfoList
+      mapRoomInfoList,
     })
     if (!fresh) return null
     return ensureEditableRow(fresh)
@@ -488,7 +524,7 @@ export function useRoomEditWorkflow(options = {}) {
       signal,
       onProgress,
       queryRoomInfos,
-      mapRoomInfoList
+      mapRoomInfoList,
     })
   }
 
@@ -609,7 +645,7 @@ export function useRoomEditWorkflow(options = {}) {
         sharedArea: Number(payload.sharedArea || 0),
         roomUsage: preset.roomUsage,
         remark: payload.remark || '',
-        floorAreaType: preset.floorAreaType
+        floorAreaType: preset.floorAreaType,
       }
 
       const res = await axios.post('/api/project/room-info/create', body)
@@ -643,7 +679,7 @@ export function useRoomEditWorkflow(options = {}) {
       await ElMessageBox.confirm('确定删除该户室吗？删除后不可恢复。', '删除确认', {
         confirmButtonText: '确认删除',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       })
     } catch {
       return false
@@ -699,6 +735,6 @@ export function useRoomEditWorkflow(options = {}) {
     goRoomInfoPageSizeChange,
     fetchAllRoomInfoRows,
     searchRoomInfosByPages,
-    fetchRoomInfoById
+    fetchRoomInfoById,
   }
 }

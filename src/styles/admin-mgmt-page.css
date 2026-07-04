@@ -85,7 +85,7 @@
   font-size: var(--admin-ui-font-size);
 }
 
-.el-table.admin-mgmt-table .el-table__row:hover>td.el-table__cell {
+.el-table.admin-mgmt-table .el-table__row:hover > td.el-table__cell {
   background: #f0f7ff !important;
 }
 

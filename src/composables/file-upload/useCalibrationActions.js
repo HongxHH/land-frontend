@@ -6,7 +6,7 @@ export function useCalibrationActions({
   resetCalibrationState,
   refreshData,
   currentFile,
-  realSurveyReportId
+  realSurveyReportId,
 }) {
   const requestTimeout = 4000
 
@@ -19,14 +19,14 @@ export function useCalibrationActions({
       () =>
         axios.post('/api/file/audit/pass', null, {
           params: { fileId: fileRecordId },
-          timeout: requestTimeout
+          timeout: requestTimeout,
         }),
       () =>
         axios.post(
           '/api/project/survey-reports/audit-pass',
           {
             fileRecordId,
-            surveyReportId: realSurveyReportId?.value || null
+            surveyReportId: realSurveyReportId?.value || null,
           },
           { timeout: requestTimeout }
         ),
@@ -34,10 +34,10 @@ export function useCalibrationActions({
         axios.post('/api/project/survey-reports/audit-pass', null, {
           params: {
             fileRecordId,
-            surveyReportId: realSurveyReportId?.value || undefined
+            surveyReportId: realSurveyReportId?.value || undefined,
           },
-          timeout: requestTimeout
-        })
+          timeout: requestTimeout,
+        }),
     ]
 
     let lastError = null
@@ -83,6 +83,6 @@ export function useCalibrationActions({
   }
 
   return {
-    handleAuditPass
+    handleAuditPass,
   }
 }

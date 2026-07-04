@@ -6,21 +6,36 @@ import {
   resolveVisibleColumnDefs,
   formatSummaryCellValue,
   buildExcelHeaderPlan,
-  formatAreaDigits
+  formatAreaDigits,
 } from '@/composables/project-list/summaryExportColumnSchema.js'
 import { SUMMARY_COMPARISON_GROUP_META } from '@/composables/project-list/summaryComparisonGroupMeta.js'
 
 const comparisonGroupMeta = SUMMARY_COMPARISON_GROUP_META.map((item) => ({
   key: item.key,
-  title: item.printTitle || item.title
+  title: item.printTitle || item.title,
 }))
 
 const formatComparisonArea = (value) => formatAreaDigits(value, '-')
 
 const buildComparisonRows = (tripleLine) => [
-  ['建筑面积', formatComparisonArea(tripleLine?.totalBuilding?.contractAgreedArea), formatComparisonArea(tripleLine?.totalBuilding?.buildableArea), formatComparisonArea(tripleLine?.totalBuilding?.difference)],
-  ['商业面积', formatComparisonArea(tripleLine?.commercial?.contractAgreedArea), formatComparisonArea(tripleLine?.commercial?.buildableArea), formatComparisonArea(tripleLine?.commercial?.difference)],
-  ['住宅面积', formatComparisonArea(tripleLine?.residential?.contractAgreedArea), formatComparisonArea(tripleLine?.residential?.buildableArea), formatComparisonArea(tripleLine?.residential?.difference)]
+  [
+    '建筑面积',
+    formatComparisonArea(tripleLine?.totalBuilding?.contractAgreedArea),
+    formatComparisonArea(tripleLine?.totalBuilding?.buildableArea),
+    formatComparisonArea(tripleLine?.totalBuilding?.difference),
+  ],
+  [
+    '商业面积',
+    formatComparisonArea(tripleLine?.commercial?.contractAgreedArea),
+    formatComparisonArea(tripleLine?.commercial?.buildableArea),
+    formatComparisonArea(tripleLine?.commercial?.difference),
+  ],
+  [
+    '住宅面积',
+    formatComparisonArea(tripleLine?.residential?.contractAgreedArea),
+    formatComparisonArea(tripleLine?.residential?.buildableArea),
+    formatComparisonArea(tripleLine?.residential?.difference),
+  ],
 ]
 
 /** Excel 列宽（与打印比例大致一致，可按 id 微调） */
@@ -39,7 +54,7 @@ const EXCEL_WIDTH_BY_ID = {
   nonCalcOther: 11,
   areaConfirmationNoticeNo: 22,
   reportNo: 24,
-  remarks: 14
+  remarks: 14,
 }
 
 function colToA1(colIndex1Based) {
@@ -66,13 +81,13 @@ function styleHeaderCell(cell) {
   cell.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFF1F5F9' }
+    fgColor: { argb: 'FFF1F5F9' },
   }
   cell.border = {
     top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
     left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
     bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+    right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
   }
   cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
 }
@@ -86,7 +101,7 @@ export function useProjectExport({
   currentProjectInfo,
   areaComparison,
   selectedComparisonGroups,
-  summaryLayoutRows
+  summaryLayoutRows,
 }) {
   const runExportExcel = async () => {
     if (projectHasMissingUsage(displayTableData.value)) {
@@ -135,13 +150,13 @@ export function useProjectExport({
       row.eachCell((cell) => {
         cell.alignment = {
           horizontal: excelHorizontalAlign(),
-          vertical: 'middle'
+          vertical: 'middle',
         }
         cell.border = {
           top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
           left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
           bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
         }
       })
     })
@@ -156,7 +171,9 @@ export function useProjectExport({
     const calcTableStartRow = summaryLastRow + gapRows + 1
 
     let cursorRow = calcTableStartRow
-    const selectedGroups = comparisonGroupMeta.filter((group) => selectedComparisonGroups.value.includes(group.key))
+    const selectedGroups = comparisonGroupMeta.filter((group) =>
+      selectedComparisonGroups.value.includes(group.key)
+    )
     selectedGroups.forEach((group) => {
       worksheet.getCell(cursorRow, 1).value = `${group.title}（面积核算对比）`
       worksheet.getCell(cursorRow, 1).font = { bold: true }
@@ -170,7 +187,7 @@ export function useProjectExport({
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFF8FAFC' }
+          fgColor: { argb: 'FFF8FAFC' },
         }
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
       })
@@ -182,7 +199,7 @@ export function useProjectExport({
         dataRow.eachCell((cell, colNumber) => {
           cell.alignment = {
             horizontal: colNumber === 1 ? 'left' : 'right',
-            vertical: 'middle'
+            vertical: 'middle',
           }
         })
         cursorRow += 1
@@ -193,13 +210,13 @@ export function useProjectExport({
 
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     })
     saveAs(blob, `${currentProjectInfo.name || '项目'}房产实测汇总表.xlsx`)
     ElMessage.success('Excel 导出成功')
   }
 
   return {
-    runExportExcel
+    runExportExcel,
   }
 }

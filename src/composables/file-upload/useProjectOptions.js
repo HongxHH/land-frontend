@@ -9,7 +9,7 @@ export function useProjectOptions() {
 
   const newProjectForm = reactive({
     projectName: '',
-    projectTime: ''
+    projectTime: '',
   })
 
   const fetchProjectList = async () => {
@@ -18,7 +18,7 @@ export function useProjectOptions() {
       if (res.data.code === 200) {
         projectOptions.value = res.data.data.map((item) => ({
           id: String(item.id),
-          name: item.projectName
+          name: item.projectName,
         }))
       }
     } catch (error) {
@@ -28,12 +28,13 @@ export function useProjectOptions() {
 
   const handleCreateProject = () => {
     if (!newProjectForm.projectName) return ElMessage.warning('请输入项目名称')
-    if (!newProjectForm.projectTime) return ElMessage.warning('请选择项目时间（ISO 自然日，如 2025-11-15）')
+    if (!newProjectForm.projectTime)
+      return ElMessage.warning('请选择项目时间（ISO 自然日，如 2025-11-15）')
 
     const loadingInstance = ElMessage({
       message: '正在创建项目...',
       type: 'info',
-      duration: 0
+      duration: 0,
     })
 
     createProject(newProjectForm.projectName, newProjectForm.projectTime)
@@ -44,7 +45,7 @@ export function useProjectOptions() {
           const newId = String(res.data.data ? res.data.data.id : Date.now())
           projectOptions.value.push({
             id: newId,
-            name: newProjectForm.projectName
+            name: newProjectForm.projectName,
           })
           currentProject.value = newId
           showCreateProject.value = false
@@ -67,7 +68,6 @@ export function useProjectOptions() {
     showCreateProject,
     newProjectForm,
     fetchProjectList,
-    handleCreateProject
+    handleCreateProject,
   }
 }
-

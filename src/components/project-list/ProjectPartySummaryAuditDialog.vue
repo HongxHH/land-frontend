@@ -8,7 +8,10 @@
     class="party-summary-audit-dialog"
     @closed="handleClosed"
   >
-    <div ref="auditLayoutRef" class="audit-split-layout audit-split-layout--responsive party-audit-layout">
+    <div
+      ref="auditLayoutRef"
+      class="audit-split-layout audit-split-layout--responsive party-audit-layout"
+    >
       <section class="audit-split-layout__left audit-preview-shell" :style="leftPanelStyle">
         <AuditDocumentPreviewPanel
           :loading="metaLoading || mdLoading || excelPreviewLoading"
@@ -33,6 +36,7 @@
             </div>
           </template>
           <template #markdown>
+            <!-- eslint-disable-next-line vue/no-v-html -- recognitionHtml 经 renderRecognitionMarkdownHtml + DOMPurify 消毒 -->
             <div v-if="recognitionMdContent" class="audit-preview-md" v-html="recognitionHtml" />
             <div v-else class="audit-preview-empty">
               <el-empty description="暂无解析内容" />
@@ -51,60 +55,58 @@
 
       <section class="right-panel audit-split-layout__right">
         <div class="right-pane right-pane--main">
-            <div v-if="formEdit.id" class="main-form-edit-header">
-              <el-tag size="small" type="info" effect="plain">主表 id: {{ formEdit.id }}</el-tag>
-            </div>
-            <div class="main-form-edit-body">
-              <el-form label-position="top" class="main-form-edit-form">
-                <div
-                  v-for="block in declaredAreaBlocks"
-                  :key="block.key"
-                  class="edit-block"
-                >
-                  <div class="edit-block-title">
-                    <span class="edit-block-title__text">{{ block.title }}</span>
-                    <span class="edit-block-title__unit">㎡</span>
-                  </div>
-                  <el-row :gutter="12">
-                    <el-col
-                      v-for="field in block.fields"
-                      :key="field.model"
-                      :span="8"
-                    >
-                      <el-form-item :label="field.label">
-                        <el-input-number
-                          v-model="formEdit.declaredTotals[field.model]"
-                          :precision="2"
-                          :controls="false"
-                          align="center"
-                          placeholder="请输入"
-                          :class="['w100', 'area-input-number', { 'is-empty': isFieldEmpty(formEdit.declaredTotals[field.model]) }]"
-                        />
-                      </el-form-item>
-                    </el-col>
-                  </el-row>
+          <div v-if="formEdit.id" class="main-form-edit-header">
+            <el-tag size="small" type="info" effect="plain">主表 id: {{ formEdit.id }}</el-tag>
+          </div>
+          <div class="main-form-edit-body">
+            <el-form label-position="top" class="main-form-edit-form">
+              <div v-for="block in declaredAreaBlocks" :key="block.key" class="edit-block">
+                <div class="edit-block-title">
+                  <span class="edit-block-title__text">{{ block.title }}</span>
+                  <span class="edit-block-title__unit">㎡</span>
                 </div>
+                <el-row :gutter="12">
+                  <el-col v-for="field in block.fields" :key="field.model" :span="8">
+                    <el-form-item :label="field.label">
+                      <el-input-number
+                        v-model="formEdit.declaredTotals[field.model]"
+                        :precision="2"
+                        :controls="false"
+                        align="center"
+                        placeholder="请输入"
+                        :class="[
+                          'w100',
+                          'area-input-number',
+                          { 'is-empty': isFieldEmpty(formEdit.declaredTotals[field.model]) },
+                        ]"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </div>
 
-                <div class="edit-block edit-block--remark">
-                  <div class="edit-block-title edit-block-title--plain">备注</div>
-                  <el-form-item label-width="0">
-                    <el-input
-                      v-model.trim="formEdit.remark"
-                      type="textarea"
-                      :rows="2"
-                      maxlength="500"
-                      show-word-limit
-                      placeholder="可填写核对说明或补充信息"
-                      :class="['remark-input']"
-                    />
-                  </el-form-item>
-                </div>
-              </el-form>
-            </div>
-            <div class="main-form-edit-footer">
-              <el-button @click="dialogVisible = false">关闭</el-button>
-              <el-button type="primary" :loading="mainFormSaveLoading" @click="submitMainFormEdit">保存主表</el-button>
-            </div>
+              <div class="edit-block edit-block--remark">
+                <div class="edit-block-title edit-block-title--plain">备注</div>
+                <el-form-item label-width="0">
+                  <el-input
+                    v-model.trim="formEdit.remark"
+                    type="textarea"
+                    :rows="2"
+                    maxlength="500"
+                    show-word-limit
+                    placeholder="可填写核对说明或补充信息"
+                    :class="['remark-input']"
+                  />
+                </el-form-item>
+              </div>
+            </el-form>
+          </div>
+          <div class="main-form-edit-footer">
+            <el-button @click="dialogVisible = false">关闭</el-button>
+            <el-button type="primary" :loading="mainFormSaveLoading" @click="submitMainFormEdit"
+              >保存主表</el-button
+            >
+          </div>
         </div>
       </section>
     </div>
@@ -128,7 +130,7 @@ const props = defineProps({
   fileRecordId: { type: [String, Number], default: '' },
   initialFile: { type: Object, default: null },
   /** 主表表单初始数据（来自主表列表行）；缺省时打开后按 fileRecordId 从接口拉取 */
-  mainFormDraft: { type: Object, default: null }
+  mainFormDraft: { type: Object, default: null },
 })
 
 const emit = defineEmits(['update:modelValue', 'main-form-saved'])
@@ -137,13 +139,13 @@ const dialogTitle = computed(() => '项目方实测汇总表')
 
 const dialogVisible = computed({
   get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v)
+  set: (v) => emit('update:modelValue', v),
 })
 
 const leftView = ref('excel')
 const previewViews = [
   { id: 'excel', label: '原表预览' },
-  { id: 'markdown', label: '解析内容(MD)' }
+  { id: 'markdown', label: '解析内容(MD)' },
 ]
 const metaLoading = ref(false)
 const mdLoading = ref(false)
@@ -158,7 +160,7 @@ const fileMeta = reactive({
   fileType: '',
   fileSize: 0,
   uploadTime: '',
-  gridfsId: ''
+  gridfsId: '',
 })
 
 const excelPreviewSrc = ref(null)
@@ -205,7 +207,7 @@ const bindExcelViewResizeObserver = () => {
 }
 
 const { auditLayoutRef, leftPanelStyle, onSplitterMouseDown } = useAuditSplitPanel({
-  onSplitEnd: triggerSpreadsheetLayout
+  onSplitEnd: triggerSpreadsheetLayout,
 })
 
 onUnmounted(() => {
@@ -221,8 +223,8 @@ const declaredAreaBlocks = [
     fields: [
       { label: '合同约定', model: 'contractAgreedTotalBuildingArea' },
       { label: '计容面积', model: 'buildableTotalBuildingArea' },
-      { label: '差值', model: 'differenceTotalBuildingArea' }
-    ]
+      { label: '差值', model: 'differenceTotalBuildingArea' },
+    ],
   },
   {
     key: 'commercial',
@@ -230,8 +232,8 @@ const declaredAreaBlocks = [
     fields: [
       { label: '合同约定', model: 'contractAgreedCommercialArea' },
       { label: '计容面积', model: 'buildableCommercialArea' },
-      { label: '差值', model: 'differenceCommercialArea' }
-    ]
+      { label: '差值', model: 'differenceCommercialArea' },
+    ],
   },
   {
     key: 'residential',
@@ -239,9 +241,9 @@ const declaredAreaBlocks = [
     fields: [
       { label: '合同约定', model: 'contractAgreedResidentialArea' },
       { label: '计容面积', model: 'buildableResidentialArea' },
-      { label: '差值', model: 'differenceResidentialArea' }
-    ]
-  }
+      { label: '差值', model: 'differenceResidentialArea' },
+    ],
+  },
 ]
 
 const emptyDeclaredTotals = () => ({
@@ -253,20 +255,20 @@ const emptyDeclaredTotals = () => ({
   differenceCommercialArea: null,
   contractAgreedResidentialArea: null,
   buildableResidentialArea: null,
-  differenceResidentialArea: null
+  differenceResidentialArea: null,
 })
 
 const formEdit = reactive({
   id: null,
   remark: '',
-  declaredTotals: emptyDeclaredTotals()
+  declaredTotals: emptyDeclaredTotals(),
 })
 
 const resetMainFormEdit = () => {
   Object.assign(formEdit, {
     id: null,
     remark: '',
-    declaredTotals: emptyDeclaredTotals()
+    declaredTotals: emptyDeclaredTotals(),
   })
 }
 
@@ -275,11 +277,12 @@ const assignMainFormFromDraft = (draft) => {
     resetMainFormEdit()
     return
   }
-  const dt = draft.declaredTotals && typeof draft.declaredTotals === 'object' ? draft.declaredTotals : {}
+  const dt =
+    draft.declaredTotals && typeof draft.declaredTotals === 'object' ? draft.declaredTotals : {}
   Object.assign(formEdit, {
     id: draft.id ?? null,
     remark: draft.remark || '',
-    declaredTotals: { ...emptyDeclaredTotals(), ...dt }
+    declaredTotals: { ...emptyDeclaredTotals(), ...dt },
   })
 }
 
@@ -318,7 +321,7 @@ const fetchSummaryFormRow = async () => {
       sortField: 'updateTime',
       sortDirection: 'desc',
       projectId: Number(props.projectId),
-      fileRecordId: Number(props.fileRecordId)
+      fileRecordId: Number(props.fileRecordId),
     })
     if (res.data?.code !== 200) return null
     return Array.isArray(res.data?.data?.records) ? res.data.data.records[0] : null
@@ -340,7 +343,7 @@ const fetchFileMeta = async () => {
         fileType: fromProps.fileType || '',
         fileSize: fromProps.fileSize || 0,
         uploadTime: fromProps.uploadTime || '',
-        gridfsId: fromProps.gridfsId || ''
+        gridfsId: fromProps.gridfsId || '',
       })
       return
     }
@@ -357,7 +360,7 @@ const fetchFileMeta = async () => {
       fileType: hit.fileType || '',
       fileSize: hit.fileSize || 0,
       uploadTime: hit.uploadTime || '',
-      gridfsId: hit.gridfsId || ''
+      gridfsId: hit.gridfsId || '',
     })
   } catch (error) {
     console.error('查询项目方汇总表文件失败:', error)
@@ -394,7 +397,7 @@ const fetchMarkdown = async () => {
       pageSize: 20,
       sortField: 'createTime',
       sortDirection: 'desc',
-      loadGridFsPayload: true
+      loadGridFsPayload: true,
     })
     const hit = res.data?.data?.records?.[0]
     recognitionMdContent.value = hit?.markdownContent || '# 暂无解析内容'
@@ -447,16 +450,32 @@ const submitMainFormEdit = async () => {
       id: Number(formEdit.id),
       remark: formEdit.remark || null,
       declaredTotals: {
-        contractAgreedTotalBuildingArea: toNullableNumber(formEdit.declaredTotals.contractAgreedTotalBuildingArea),
-        buildableTotalBuildingArea: toNullableNumber(formEdit.declaredTotals.buildableTotalBuildingArea),
-        differenceTotalBuildingArea: toNullableNumber(formEdit.declaredTotals.differenceTotalBuildingArea),
-        contractAgreedCommercialArea: toNullableNumber(formEdit.declaredTotals.contractAgreedCommercialArea),
+        contractAgreedTotalBuildingArea: toNullableNumber(
+          formEdit.declaredTotals.contractAgreedTotalBuildingArea
+        ),
+        buildableTotalBuildingArea: toNullableNumber(
+          formEdit.declaredTotals.buildableTotalBuildingArea
+        ),
+        differenceTotalBuildingArea: toNullableNumber(
+          formEdit.declaredTotals.differenceTotalBuildingArea
+        ),
+        contractAgreedCommercialArea: toNullableNumber(
+          formEdit.declaredTotals.contractAgreedCommercialArea
+        ),
         buildableCommercialArea: toNullableNumber(formEdit.declaredTotals.buildableCommercialArea),
-        differenceCommercialArea: toNullableNumber(formEdit.declaredTotals.differenceCommercialArea),
-        contractAgreedResidentialArea: toNullableNumber(formEdit.declaredTotals.contractAgreedResidentialArea),
-        buildableResidentialArea: toNullableNumber(formEdit.declaredTotals.buildableResidentialArea),
-        differenceResidentialArea: toNullableNumber(formEdit.declaredTotals.differenceResidentialArea)
-      }
+        differenceCommercialArea: toNullableNumber(
+          formEdit.declaredTotals.differenceCommercialArea
+        ),
+        contractAgreedResidentialArea: toNullableNumber(
+          formEdit.declaredTotals.contractAgreedResidentialArea
+        ),
+        buildableResidentialArea: toNullableNumber(
+          formEdit.declaredTotals.buildableResidentialArea
+        ),
+        differenceResidentialArea: toNullableNumber(
+          formEdit.declaredTotals.differenceResidentialArea
+        ),
+      },
     }
     const res = await updateProjectPartySummaryForm(payload)
     if (res.data?.code !== 200) {
@@ -659,7 +678,9 @@ watch(leftView, (v) => {
   padding: 0 12px;
   background: #f8fafc;
   box-shadow: 0 0 0 1px #e2e8f0 inset;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .main-form-edit-form :deep(.area-input-number.is-empty .el-input__wrapper:not(.is-focus)) {
@@ -700,7 +721,9 @@ watch(leftView, (v) => {
   box-shadow: 0 0 0 1px #e2e8f0 inset;
   border: none;
   border-radius: 8px;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .main-form-edit-form :deep(.remark-input .el-textarea__inner:hover) {

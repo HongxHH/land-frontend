@@ -1,11 +1,14 @@
 import { computed, reactive, ref, toValue } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { canDeleteArchiveFile } from '@/composables/project-list/archiveFileRowPresent.js'
-import { getArchiveFileRecordId, normalizeArchiveQueryResult } from '@/composables/project-list/archiveFolderQuery.js'
+import {
+  getArchiveFileRecordId,
+  normalizeArchiveQueryResult,
+} from '@/composables/project-list/archiveFolderQuery.js'
 import { sortArchiveFilesVerifyFailedFirst } from '@/composables/project-list/archiveFolderPresent.js'
 import {
   buildOptimisticArchiveFileRow,
-  isActiveFileProcessState
+  isActiveFileProcessState,
 } from '@/utils/fileStatePresent.js'
 import {
   cancelParseByFileId,
@@ -13,7 +16,7 @@ import {
   deleteProjectArchive,
   getProjectArchives,
   parseFileById,
-  queryFiles
+  queryFiles,
 } from '@/services/file.service'
 
 const ARCHIVE_CACHE_TTL = 12000
@@ -43,22 +46,28 @@ export function useArchiveFolderExplorerData(deps) {
     verifyStatus: '',
     fileState: '',
     pageNum: 1,
-    pageSize: 20
+    pageSize: 20,
   })
 
   const treeProps = {
     label: 'name',
-    children: 'children'
+    children: 'children',
   }
 
   const projectNameText = computed(() => toValue(deps.projectName) || '未选择项目')
-  const selectedArchive = computed(() => archiveList.value.find((item) => item.id === selectedArchiveId.value))
-  const canDeleteSelectedArchive = computed(() => Boolean(toValue(deps.projectId) && selectedArchiveId.value))
+  const selectedArchive = computed(() =>
+    archiveList.value.find((item) => item.id === selectedArchiveId.value)
+  )
+  const canDeleteSelectedArchive = computed(() =>
+    Boolean(toValue(deps.projectId) && selectedArchiveId.value)
+  )
   const showThumbnailColumn = computed(
     () => String(selectedArchive.value?.kind || '').toUpperCase() !== 'PROJECT_PARTY_SURVEY_SUMMARY'
   )
   const canBatchParse = computed(() =>
-    selectedRows.value.some((row) => ['WAITING_PARSE', 'PARSE_FAIL', 'PARSE_COMPLETE'].includes(row.fileState))
+    selectedRows.value.some((row) =>
+      ['WAITING_PARSE', 'PARSE_FAIL', 'PARSE_COMPLETE'].includes(row.fileState)
+    )
   )
   const canBatchDelete = computed(() => selectedRows.value.some((row) => canDeleteArchiveFile(row)))
 
@@ -74,9 +83,9 @@ export function useArchiveFolderExplorerData(deps) {
           id: `archive-${item.id}`,
           archiveId: item.id,
           name: item.name,
-          nodeType: 'archive'
-        }))
-      }
+          nodeType: 'archive',
+        })),
+      },
     ]
   })
 
@@ -108,7 +117,9 @@ export function useArchiveFolderExplorerData(deps) {
 
   const prependUploadedArchiveFiles = (entries = []) => {
     if (!entries.length) return
-    const existingIds = new Set(archiveFiles.value.map((row) => String(getArchiveFileRecordId(row) || '')))
+    const existingIds = new Set(
+      archiveFiles.value.map((row) => String(getArchiveFileRecordId(row) || ''))
+    )
     const rows = []
     for (const entry of entries) {
       const fileId = entry?.fileId
@@ -119,7 +130,7 @@ export function useArchiveFolderExplorerData(deps) {
           fileId,
           fileName: entry.fileName,
           fileContextType: entry.fileContextType,
-          uploadUserName: entry.uploadUserName
+          uploadUserName: entry.uploadUserName,
         })
       )
     }
@@ -173,7 +184,7 @@ export function useArchiveFolderExplorerData(deps) {
       pageSize: queryForm.pageSize,
       keyword: queryForm.keyword || '',
       verifyStatus: queryForm.verifyStatus || '',
-      fileState: queryForm.fileState || ''
+      fileState: queryForm.fileState || '',
     })
 
     if (!force && archiveQueryCache.has(queryKey)) {
@@ -200,7 +211,7 @@ export function useArchiveFolderExplorerData(deps) {
         sortField: 'uploadTime',
         sortDirection: 'desc',
         projectId: Number(projectId),
-        archiveId: Number(selectedArchiveId.value)
+        archiveId: Number(selectedArchiveId.value),
       }
       if (queryForm.keyword) payload.originalName = queryForm.keyword
       if (queryForm.verifyStatus) payload.verifyStatus = queryForm.verifyStatus
@@ -216,7 +227,7 @@ export function useArchiveFolderExplorerData(deps) {
       archiveQueryCache.set(queryKey, {
         records,
         total: parsed.total,
-        cachedAt: Date.now()
+        cachedAt: Date.now(),
       })
     } catch (error) {
       if (currentSeq !== fileQuerySeq.value) return
@@ -295,16 +306,12 @@ export function useArchiveFolderExplorerData(deps) {
     if (!projectId || !selectedArchiveId.value) return
     const name = selectedArchiveName.value || '该归档夹'
     try {
-      await ElMessageBox.confirm(
-        `确定删除归档夹「${name}」吗？删除后不可恢复。`,
-        '删除归档夹',
-        {
-          type: 'warning',
-          confirmButtonText: '删除',
-          cancelButtonText: '取消',
-          confirmButtonClass: 'el-button--danger'
-        }
-      )
+      await ElMessageBox.confirm(`确定删除归档夹「${name}」吗？删除后不可恢复。`, '删除归档夹', {
+        type: 'warning',
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--danger',
+      })
     } catch {
       return
     }
@@ -482,7 +489,7 @@ export function useArchiveFolderExplorerData(deps) {
       await ElMessageBox.confirm(confirmText, '批量删除', {
         type: 'warning',
         confirmButtonText: '确认删除',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
       })
     } catch {
       return
@@ -516,7 +523,7 @@ export function useArchiveFolderExplorerData(deps) {
       await ElMessageBox.confirm(`确认解析选中的 ${ids.length} 个可解析文件吗？`, '批量解析', {
         type: 'info',
         confirmButtonText: '立即解析',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
       })
     } catch {
       return
@@ -599,6 +606,6 @@ export function useArchiveFolderExplorerData(deps) {
     handleBatchDelete,
     handleBatchParse,
     applyInitialArchiveId,
-    cleanupExplorer
+    cleanupExplorer,
   }
 }

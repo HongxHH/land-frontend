@@ -4,7 +4,7 @@ import { PARSE_SCENE_TO_STATE } from '@/composables/project-list/archiveFileRowP
 import { getArchiveFileRecordId } from '@/composables/project-list/archiveFolderQuery.js'
 import {
   fetchUnreadStationNotifications,
-  markStationNotificationsRead
+  markStationNotificationsRead,
 } from '@/services/station-notification.service'
 
 /** 归档 Tab：STOMP 实时推送、站内通知已读、列表增量刷新 */
@@ -82,7 +82,7 @@ export function useArchiveFolderRealtime(deps) {
         ...row,
         fileState: nextState,
         isVerified: payload?.isVerified ?? row.isVerified,
-        verificationErrorReason: payload?.verificationErrorReason ?? row.verificationErrorReason
+        verificationErrorReason: payload?.verificationErrorReason ?? row.verificationErrorReason,
       }
     })
     deps.setArchiveFiles?.(next)
@@ -93,7 +93,8 @@ export function useArchiveFolderRealtime(deps) {
     const scene = String(payload?.scene || '')
     if (!scene) return
 
-    const isParseTerminalScene = scene === 'PARSE_SUCCESS' || scene === 'PARSE_FAILED' || scene === 'PARSE_FAIL'
+    const isParseTerminalScene =
+      scene === 'PARSE_SUCCESS' || scene === 'PARSE_FAILED' || scene === 'PARSE_FAIL'
     const isParseProgressScene = scene === 'PARSE_START' || scene === 'PARSE_PENDING'
 
     const rowUpdated = applyRealtimeRowState(payload)
@@ -114,8 +115,8 @@ export function useArchiveFolderRealtime(deps) {
   const handleIncomingNotification = (payload) => {
     if (!payload || typeof payload !== 'object') return
     if (
-      String(payload?.projectId || '')
-      && String(payload.projectId) !== String(toValue(deps.projectId) || '')
+      String(payload?.projectId || '') &&
+      String(payload.projectId) !== String(toValue(deps.projectId) || '')
     ) {
       return
     }
@@ -147,7 +148,7 @@ export function useArchiveFolderRealtime(deps) {
         }
         const merged = {
           ...(parsed && typeof parsed === 'object' ? parsed : {}),
-          messageId: item?.messageId ?? item?.id ?? parsed?.messageId
+          messageId: item?.messageId ?? item?.id ?? parsed?.messageId,
         }
         if (String(merged?.projectId || '') && String(merged.projectId) !== pid) return
         handleIncomingNotification(merged)
@@ -192,17 +193,13 @@ export function useArchiveFolderRealtime(deps) {
     }
   }
 
-  const {
-    connectionState,
-    reconnectCount,
-    maxReconnectAttempts
-  } = useProjectStomp({
+  const { connectionState, reconnectCount, maxReconnectAttempts } = useProjectStomp({
     projectIdRef: () => toValue(deps.projectId),
     activeRef: () => Boolean(toValue(deps.active) && toValue(deps.projectId)),
     onFileUpdate: (payload) => handleIncomingNotification(payload),
     onConnected: async (projectId) => {
       await fetchUnreadNotifications(projectId)
-    }
+    },
   })
 
   const socketStatus = computed(() => connectionState.value)
@@ -239,6 +236,6 @@ export function useArchiveFolderRealtime(deps) {
     resetRealtimeState,
     cleanupRealtime,
     onTabActivated,
-    getRealtimePendingRefresh: () => realtimePendingRefresh
+    getRealtimePendingRefresh: () => realtimePendingRefresh,
   }
 }

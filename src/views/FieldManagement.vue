@@ -14,8 +14,12 @@
         </div>
         <div class="table-toolbar__actions">
           <span class="count">{{ knownCountText }}</span>
-          <el-button class="biz-btn" type="primary" plain :icon="Refresh" @click="handleRefresh">刷新</el-button>
-          <el-button class="biz-btn" type="primary" :icon="Plus" @click="openAddDialog">新增映射</el-button>
+          <el-button class="biz-btn" type="primary" plain :icon="Refresh" @click="handleRefresh"
+            >刷新</el-button
+          >
+          <el-button class="biz-btn" type="primary" :icon="Plus" @click="openAddDialog"
+            >新增映射</el-button
+          >
         </div>
       </div>
       <div class="table-container">
@@ -29,7 +33,12 @@
           v-loading="loading"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
-          <el-table-column prop="usagePattern" label="用途匹配模式" min-width="180" show-overflow-tooltip />
+          <el-table-column
+            prop="usagePattern"
+            label="用途匹配模式"
+            min-width="180"
+            show-overflow-tooltip
+          />
           <el-table-column label="用途类别" width="160" align="center" show-overflow-tooltip>
             <template #default="{ row }">
               {{ usageCategoryLabel(row.usageCategory) }}
@@ -59,10 +68,25 @@
                 >
                   涉及文件
                 </el-button>
-                <el-button class="op-btn audit-btn" type="primary" size="small" plain :icon="Edit" @click="openEditDialog(row)">编辑</el-button>
+                <el-button
+                  class="op-btn audit-btn"
+                  type="primary"
+                  size="small"
+                  plain
+                  :icon="Edit"
+                  @click="openEditDialog(row)"
+                  >编辑</el-button
+                >
                 <el-popconfirm title="确认删除该映射？" @confirm="handleDelete(row)">
                   <template #reference>
-                    <el-button class="op-btn delete-btn" type="danger" size="small" plain :icon="Delete">删除</el-button>
+                    <el-button
+                      class="op-btn delete-btn"
+                      type="danger"
+                      size="small"
+                      plain
+                      :icon="Delete"
+                      >删除</el-button
+                    >
                   </template>
                 </el-popconfirm>
               </span>
@@ -97,15 +121,28 @@
           v-loading="loading"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
-          <el-table-column prop="usageName" label="未知用途名称" min-width="160" show-overflow-tooltip />
+          <el-table-column
+            prop="usageName"
+            label="未知用途名称"
+            min-width="160"
+            show-overflow-tooltip
+          />
           <el-table-column prop="occurrenceCount" label="出现次数" width="100" align="center" />
           <el-table-column label="最近来源" min-width="200">
             <template #default="{ row }">
               <div v-if="row.recentProjectName || row.recentFileName" class="unknown-source-cell">
-                <div v-if="row.recentProjectName" class="unknown-source-line" :title="row.recentProjectName">
+                <div
+                  v-if="row.recentProjectName"
+                  class="unknown-source-line"
+                  :title="row.recentProjectName"
+                >
                   项目：{{ row.recentProjectName }}
                 </div>
-                <div v-if="row.recentFileName" class="unknown-source-line" :title="row.recentFileName">
+                <div
+                  v-if="row.recentFileName"
+                  class="unknown-source-line"
+                  :title="row.recentFileName"
+                >
                   文件：{{ row.recentFileName }}
                 </div>
               </div>
@@ -149,7 +186,14 @@
                 >
                   打开审核
                 </el-button>
-                <el-button class="op-btn parse-btn" type="primary" size="small" :icon="Check" @click="saveSpecialConfig(row)">保存</el-button>
+                <el-button
+                  class="op-btn parse-btn"
+                  type="primary"
+                  size="small"
+                  :icon="Check"
+                  @click="saveSpecialConfig(row)"
+                  >保存</el-button
+                >
               </span>
             </template>
           </el-table-column>
@@ -163,7 +207,11 @@
           <el-input v-model="addForm.usagePattern" placeholder="如：住宅、商业办公" />
         </el-form-item>
         <el-form-item label="用途类别" prop="usageCategory">
-          <el-select v-model="addForm.usageCategory" style="width: 100%" placeholder="请选择用途类别">
+          <el-select
+            v-model="addForm.usageCategory"
+            style="width: 100%"
+            placeholder="请选择用途类别"
+          >
             <el-option-group label="计容面积">
               <el-option
                 v-for="item in usageCategoryBuildableOptions"
@@ -198,13 +246,22 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="editDialogVisible" title="编辑用途映射" width="560px" @close="resetEditForm">
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑用途映射"
+      width="560px"
+      @close="resetEditForm"
+    >
       <el-form ref="editFormRef" :model="editForm" :rules="formRules" label-width="110px">
         <el-form-item label="用途匹配模式" prop="usagePattern">
           <el-input v-model="editForm.usagePattern" />
         </el-form-item>
         <el-form-item label="用途类别" prop="usageCategory">
-          <el-select v-model="editForm.usageCategory" style="width: 100%" placeholder="请选择用途类别">
+          <el-select
+            v-model="editForm.usageCategory"
+            style="width: 100%"
+            placeholder="请选择用途类别"
+          >
             <el-option-group label="计容面积">
               <el-option
                 v-for="item in usageCategoryBuildableOptions"
@@ -272,7 +329,7 @@ import {
   floorAreaTypeLabel,
   floorAreaTypeTagType,
   resolveFloorAreaTypeByCategory,
-  usageCategoryLabel
+  usageCategoryLabel,
 } from '@/constants/usageCategory.js'
 
 const router = useRouter()
@@ -289,7 +346,7 @@ const {
   closeDrawer: closeRelatedFilesDrawer,
   handleSearch: handleRelatedFilesSearch,
   handlePageChange: handleRelatedFilesPageChange,
-  handleSizeChange: handleRelatedFilesSizeChange
+  handleSizeChange: handleRelatedFilesSizeChange,
 } = useUsageConfigRelatedFiles()
 
 const loading = ref(false)
@@ -314,7 +371,7 @@ const categoryMap = TARGET_CATEGORY_MAP
 const formRules = reactive({
   usagePattern: [{ required: true, message: '请输入用途匹配模式', trigger: 'blur' }],
   usageCategory: [{ required: true, message: '请选择用途类别', trigger: 'change' }],
-  status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 })
 
 const usageCategoryBuildableOptions = USAGE_CATEGORY_BUILDABLE_OPTIONS
@@ -327,7 +384,7 @@ const addForm = reactive({
   priority: DEFAULT_USAGE_PRIORITY,
   status: '1',
   remark: '',
-  collectionName: ''
+  collectionName: '',
 })
 
 const editForm = reactive({
@@ -338,7 +395,7 @@ const editForm = reactive({
   priority: DEFAULT_USAGE_PRIORITY,
   status: '1',
   remark: '',
-  collectionName: ''
+  collectionName: '',
 })
 
 const formatTime = (timeStr) => {
@@ -347,7 +404,10 @@ const formatTime = (timeStr) => {
   return text.split('.')[0]
 }
 
-const normalizeSearchText = (value) => String(value ?? '').trim().toLowerCase()
+const normalizeSearchText = (value) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
 
 const rowMatchesKeyword = (parts, keyword) => {
   if (!keyword) return true
@@ -366,7 +426,7 @@ const filteredStandardFields = computed(() => {
         usageCategoryLabel(row.usageCategory, ''),
         floorAreaTypeLabel(row.floorAreaType, ''),
         Number(row.status) === 1 ? '启用' : '禁用',
-        row.remark
+        row.remark,
       ],
       keyword
     )
@@ -385,7 +445,7 @@ const filteredSpecialFields = computed(() => {
         row.recentFileName,
         TARGET_CATEGORY_LABEL_MAP[row.targetCategory],
         row.targetCategory,
-        formatTime(row.updateTime)
+        formatTime(row.updateTime),
       ],
       keyword
     )
@@ -414,7 +474,7 @@ const fetchUsageConfigList = async () => {
       standardFields.value = (res.data.data || []).map((item) => ({
         ...item,
         priority: Number(item.priority),
-        status: Number(item.status)
+        status: Number(item.status),
       }))
     }
   } catch (error) {
@@ -440,7 +500,7 @@ const fetchUnknownUsageList = async () => {
         fileRecordId: item.fileRecordId,
         recentFileName: item.recentFileName || '',
         recentProjectName: item.recentProjectName || '',
-        handleRemark: item.handleRemark || ''
+        handleRemark: item.handleRemark || '',
       }))
     }
   } catch (error) {
@@ -506,8 +566,8 @@ const goOpenSourceAudit = (row) => {
     name: 'ProjectList',
     query: {
       projectId: String(row.projectId),
-      openAuditFileId: String(row.fileRecordId)
-    }
+      openAuditFileId: String(row.fileRecordId),
+    },
   })
 }
 
@@ -524,7 +584,7 @@ const createUsageConfigFromUnknown = async (row) => {
       usageCategory,
       floorAreaType,
       isRegex: DEFAULT_IS_REGEX,
-      priority: 1000
+      priority: 1000,
     }
     const res = await axios.post('/api/usage-config/create-from-unknown', {}, { params })
     if (res.data.code !== 200) {
@@ -556,7 +616,7 @@ const resetAddForm = () => {
     priority: DEFAULT_USAGE_PRIORITY,
     status: '1',
     remark: '',
-    collectionName: ''
+    collectionName: '',
   })
 }
 
@@ -567,7 +627,7 @@ const submitAddForm = async () => {
     const payload = {
       ...addForm,
       isRegex: DEFAULT_IS_REGEX,
-      floorAreaType: resolveFloorAreaTypeByCategory(addForm.usageCategory)
+      floorAreaType: resolveFloorAreaTypeByCategory(addForm.usageCategory),
     }
     const ok = await addUsageConfig(payload)
     if (!ok) return
@@ -589,7 +649,7 @@ const openEditDialog = (row) => {
     priority: Number(row.priority),
     status: String(row.status),
     remark: row.remark || '',
-    collectionName: row.collectionName || ''
+    collectionName: row.collectionName || '',
   })
 }
 
@@ -603,7 +663,7 @@ const resetEditForm = () => {
     priority: DEFAULT_USAGE_PRIORITY,
     status: '1',
     remark: '',
-    collectionName: ''
+    collectionName: '',
   })
 }
 
@@ -614,7 +674,7 @@ const submitEditForm = async () => {
     const payload = {
       ...editForm,
       isRegex: DEFAULT_IS_REGEX,
-      floorAreaType: resolveFloorAreaTypeByCategory(editForm.usageCategory)
+      floorAreaType: resolveFloorAreaTypeByCategory(editForm.usageCategory),
     }
     const ok = await updateUsageConfig(editForm.id, payload)
     if (!ok) return
@@ -636,7 +696,7 @@ const handleDelete = async (row) => {
     await ElMessageBox.confirm('确认删除该映射？', '删除确认', {
       confirmButtonText: '确认',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     })
     const res = await axios.delete(`/api/usage-config/${row.id}`)
     if (res.data.code !== 200) {
@@ -719,7 +779,11 @@ onActivated(() => {
   gap: 12px;
   padding: 14px 16px;
   border-bottom: 1px solid rgba(219, 228, 239, 0.9);
-  background: linear-gradient(180deg, var(--home-header-grad-start, #f8fbff) 0%, var(--home-header-grad-end, #f1f6fc) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--home-header-grad-start, #f8fbff) 0%,
+    var(--home-header-grad-end, #f1f6fc) 100%
+  );
 }
 
 .table-toolbar .title {
@@ -799,5 +863,4 @@ onActivated(() => {
   color: #94a3b8;
   font-size: 15px;
 }
-
 </style>

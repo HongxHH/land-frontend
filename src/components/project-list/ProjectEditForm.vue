@@ -38,17 +38,18 @@
                 placeholder="请选择项目时间"
                 format="YYYY-MM-DD"
                 value-format="YYYY-MM-DD"
-                style="width: 100%;"
+                style="width: 100%"
                 clearable
                 @update:model-value="setFormField('projectTime', $event)"
               />
             </el-form-item>
-
           </div>
         </div>
 
         <div class="form-actions">
-          <el-button class="save-btn" type="primary" :loading="loading" @click="emit('submit')">保存修改</el-button>
+          <el-button class="save-btn" type="primary" :loading="loading" @click="emit('submit')"
+            >保存修改</el-button
+          >
         </div>
       </el-form>
     </div>
@@ -61,20 +62,20 @@ import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 const props = defineProps({
   form: {
     type: Object,
-    required: true
+    required: true,
   },
   rules: {
     type: Object,
-    required: true
+    required: true,
   },
   loading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   setFormRef: {
     type: Function,
-    default: () => {}
-  }
+    default: () => {},
+  },
 })
 
 const emit = defineEmits(['update:form', 'submit'])

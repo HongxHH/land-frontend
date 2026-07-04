@@ -14,7 +14,9 @@
     </el-form>
     <template #footer>
       <el-button native-type="button" @click="visible = false">取消</el-button>
-      <el-button native-type="button" type="primary" :loading="loading" @click="submit">创建</el-button>
+      <el-button native-type="button" type="primary" :loading="loading" @click="submit"
+        >创建</el-button
+      >
     </template>
   </el-dialog>
 </template>
@@ -27,7 +29,7 @@ import { createProjectArchive } from '@/services/file.service'
 const visible = defineModel({ type: Boolean, default: false })
 
 const props = defineProps({
-  projectId: { type: [String, Number], default: '' }
+  projectId: { type: [String, Number], default: '' },
 })
 
 const emit = defineEmits(['created'])
@@ -39,8 +41,8 @@ const form = ref({ name: '' })
 const rules = {
   name: [
     { required: true, message: '请输入归档夹名称', trigger: 'blur' },
-    { min: 2, max: 30, message: '名称长度需在 2 到 30 个字符', trigger: 'blur' }
-  ]
+    { min: 2, max: 30, message: '名称长度需在 2 到 30 个字符', trigger: 'blur' },
+  ],
 }
 
 const resetForm = () => {
@@ -60,7 +62,7 @@ const submit = async () => {
   try {
     const res = await createProjectArchive({
       projectId: Number(props.projectId),
-      name: form.value.name
+      name: form.value.name,
     })
     if (res.data?.code === 200) {
       ElMessage.success(res.data?.msg || '归档夹创建成功')

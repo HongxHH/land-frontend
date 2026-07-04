@@ -16,8 +16,15 @@
         </div>
       </div>
 
-      <div ref="auditLayoutRef" class="audit-split-layout audit-split-layout--responsive land-workspace-split">
-        <section class="pdf-panel audit-split-layout__left" :style="leftPanelStyle" v-loading="pdfLoading">
+      <div
+        ref="auditLayoutRef"
+        class="audit-split-layout audit-split-layout--responsive land-workspace-split"
+      >
+        <section
+          class="pdf-panel audit-split-layout__left"
+          :style="leftPanelStyle"
+          v-loading="pdfLoading"
+        >
           <iframe v-if="pdfUrl" class="pdf-frame" :src="pdfUrl" title="合同预览" />
           <el-empty v-else description="暂无可预览 PDF" />
         </section>
@@ -43,7 +50,12 @@
               :loading="fileOptionsLoading"
               @update:model-value="(v) => emit('update:selectedFileId', v)"
             >
-              <el-option v-for="item in fileOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option
+                v-for="item in fileOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
             </el-select>
           </div>
           <div class="form-meta">
@@ -65,7 +77,13 @@
             </div>
           </div>
 
-          <el-form :ref="setFormRef" :model="form" :rules="rules" label-position="top" class="land-form land-form-scroll">
+          <el-form
+            :ref="setFormRef"
+            :model="form"
+            :rules="rules"
+            label-position="top"
+            class="land-form land-form-scroll"
+          >
             <el-form-item label="地块编号" prop="parcelCode">
               <el-input
                 :model-value="form.parcelCode"
@@ -158,35 +176,35 @@ import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   form: {
     type: Object,
-    required: true
+    required: true,
   },
   rules: {
     type: Object,
-    required: true
+    required: true,
   },
   loading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   setFormRef: {
     type: Function,
-    default: () => {}
+    default: () => {},
   },
   pdfUrl: {
     type: String,
-    default: ''
+    default: '',
   },
   pdfLoading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   fileOptions: { type: Array, default: () => [] },
   fileOptionsLoading: { type: Boolean, default: false },
-  selectedFileId: { type: [String, Number], default: '' }
+  selectedFileId: { type: [String, Number], default: '' },
 })
 
 const emit = defineEmits(['update:modelValue', 'update:form', 'submit', 'update:selectedFileId'])
@@ -195,14 +213,14 @@ const setFormField = createFormFieldPatcher(props, emit, 'form')
 
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const { auditLayoutRef, leftPanelStyle, onSplitterMouseDown } = useAuditSplitPanel({
   defaultLeftPercent: 55,
   onSplitEnd: () => {
     window.dispatchEvent(new Event('resize'))
-  }
+  },
 })
 
 const plannedUseLabel = (value) => {

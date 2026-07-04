@@ -17,7 +17,7 @@ export function useAuditSplitPanel(options = {}) {
 
   const leftPanelStyle = computed(() => ({
     width: `${leftPanelPercent.value}%`,
-    flexShrink: 0
+    flexShrink: 0,
   }))
 
   let splitterListenersCleanup = null
@@ -128,6 +128,6 @@ export function useAuditSplitPanel(options = {}) {
     leftPanelPercent,
     leftPanelStyle,
     isSplitterDragging,
-    onSplitterMouseDown
+    onSplitterMouseDown,
   }
 }

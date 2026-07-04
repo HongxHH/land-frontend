@@ -5,7 +5,7 @@ import {
   isUploadAbortError,
   resolveUploadFileUid,
   runConcurrentUploads,
-  UPLOAD_FILE_STATUS
+  UPLOAD_FILE_STATUS,
 } from '@/composables/file-upload/useConcurrentFileUpload.js'
 import { useArchiveUploadMeter } from '@/composables/project-list/useArchiveUploadMeter.js'
 
@@ -17,7 +17,7 @@ export function useArchiveFolderUpload(deps) {
   const uploadForm = reactive({
     fileContextType: 'OTHER',
     phase: 1,
-    archiveId: null
+    archiveId: null,
   })
   const uploadFiles = ref([])
   const fileUploadStates = reactive(new Map())
@@ -31,14 +31,16 @@ export function useArchiveFolderUpload(deps) {
     uploadSpeedText,
     uploadEtaText,
     startUploadSpeedMeter,
-    stopUploadSpeedMeter
+    stopUploadSpeedMeter,
   } = useArchiveUploadMeter(uploadFiles, uploadUploadedBytes, uploadTotalBytes)
 
-  const hasActiveUpload = computed(() =>
-    uploadLoading.value ||
-    Array.from(fileUploadStates.values()).some((s) =>
-      s.status === UPLOAD_FILE_STATUS.UPLOADING || s.status === UPLOAD_FILE_STATUS.PROCESSING
-    )
+  const hasActiveUpload = computed(
+    () =>
+      uploadLoading.value ||
+      Array.from(fileUploadStates.values()).some(
+        (s) =>
+          s.status === UPLOAD_FILE_STATUS.UPLOADING || s.status === UPLOAD_FILE_STATUS.PROCESSING
+      )
   )
 
   const uploadPhaseLabel = computed(() => {
@@ -111,7 +113,7 @@ export function useArchiveFolderUpload(deps) {
           loaded: 0,
           total: Number(item?.raw?.size ?? item?.size ?? 0),
           fileId: null,
-          error: null
+          error: null,
         })
       }
     }
@@ -136,7 +138,7 @@ export function useArchiveFolderUpload(deps) {
     const selectedArchiveId = toValue(deps.selectedArchiveId)
     const params = {
       projectId: Number(projectId),
-      fileContextType: uploadForm.fileContextType
+      fileContextType: uploadForm.fileContextType,
     }
     if (params.fileContextType === 'SURVEY_REPORT') {
       params.phase = uploadForm.phase
@@ -170,9 +172,9 @@ export function useArchiveFolderUpload(deps) {
           fileId,
           fileName,
           fileContextType: uploadForm.fileContextType,
-          uploadUserName: toValue(deps.uploadUserName) || '—'
+          uploadUserName: toValue(deps.uploadUserName) || '—',
         })
-      }
+      },
     })
 
     uploadLoading.value = false
@@ -273,6 +275,6 @@ export function useArchiveFolderUpload(deps) {
     stopUploadSpeedMeter,
     syncUploadFormArchiveId: (archiveId) => {
       uploadForm.archiveId = archiveId ? Number(archiveId) : null
-    }
+    },
   }
 }

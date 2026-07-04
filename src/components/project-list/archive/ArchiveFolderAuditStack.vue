@@ -68,14 +68,14 @@
 import { defineAsyncComponent } from 'vue'
 import PlanningReviewAuditDialog from '@/components/project-list/PlanningReviewAuditDialog.vue'
 
-const CalibrationWorkspaceDialog = defineAsyncComponent(() =>
-  import('@/components/file-upload/CalibrationWorkspaceDialog.vue')
+const CalibrationWorkspaceDialog = defineAsyncComponent(
+  () => import('@/components/file-upload/CalibrationWorkspaceDialog.vue')
 )
 import CapacityIndicatorAuditDialog from '@/components/project-list/CapacityIndicatorAuditDialog.vue'
 import { useArchiveFolderAuditStack } from '@/composables/project-list/useArchiveFolderAuditStack.js'
 
-const ProjectPartySummaryAuditDialog = defineAsyncComponent(() =>
-  import('@/components/project-list/ProjectPartySummaryAuditDialog.vue')
+const ProjectPartySummaryAuditDialog = defineAsyncComponent(
+  () => import('@/components/project-list/ProjectPartySummaryAuditDialog.vue')
 )
 
 const props = defineProps({
@@ -90,7 +90,7 @@ const props = defineProps({
   fetchArchiveFiles: { type: Function, default: () => Promise.resolve() },
   fetchArchives: { type: Function, default: undefined },
   selectArchiveForAudit: { type: Function, default: undefined },
-  onContractArchiveAudit: { type: Function, default: undefined }
+  onContractArchiveAudit: { type: Function, default: undefined },
 })
 
 const emit = defineEmits(['audit-consumed'])
@@ -142,7 +142,7 @@ const {
   capacityIndicatorAuditInitialFile,
   handleAudit,
   openAuditByFileRecordId,
-  auditFocusUsageName
+  auditFocusUsageName,
 } = useArchiveFolderAuditStack({
   projectId: () => props.projectId,
   active: () => props.active,
@@ -156,12 +156,12 @@ const {
   fetchArchives: props.fetchArchives,
   selectArchiveForAudit: props.selectArchiveForAudit,
   onContractArchiveAudit: props.onContractArchiveAudit,
-  onAuditConsumed: () => emit('audit-consumed')
+  onAuditConsumed: () => emit('audit-consumed'),
 })
 
 defineExpose({
   handleAudit,
-  openAuditByFileRecordId
+  openAuditByFileRecordId,
 })
 </script>
 

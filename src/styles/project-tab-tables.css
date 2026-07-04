@@ -53,7 +53,7 @@
 /*
  * show-overflow-tooltip 会在表体 .cell 上写 inline width，导致与表头列宽不一致。
  */
-.el-table.project-tab-el-table td.el-table__cell>.cell.el-tooltip {
+.el-table.project-tab-el-table td.el-table__cell > .cell.el-tooltip {
   width: 100% !important;
   max-width: 100%;
 }
@@ -77,7 +77,7 @@
   white-space: nowrap;
 }
 
-.el-table.project-tab-el-table .tab-table-row-actions .el-button+.el-button {
+.el-table.project-tab-el-table .tab-table-row-actions .el-button + .el-button {
   margin-left: 0;
 }
 
@@ -92,7 +92,7 @@
   font-size: 15px;
 }
 
-.el-table.project-tab-el-table .el-table__body tr:hover>td.el-table__cell {
+.el-table.project-tab-el-table .el-table__body tr:hover > td.el-table__cell {
   background: var(--project-tab-table-row-hover) !important;
 }
 

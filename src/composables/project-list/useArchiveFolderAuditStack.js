@@ -4,9 +4,15 @@ import { useCalibrationState } from '@/composables/file-upload/useCalibrationSta
 import { useCalibrationViewer } from '@/composables/file-upload/useCalibrationViewer'
 import { useRoomEditWorkflow } from '@/composables/file-upload/useRoomEditWorkflow'
 import { useCalibrationActions } from '@/composables/file-upload/useCalibrationActions'
-import { useFileUploadConstants, useAuditSummaryDisplay } from '@/composables/file-upload/useFileUploadConstants'
+import {
+  useFileUploadConstants,
+  useAuditSummaryDisplay,
+} from '@/composables/file-upload/useFileUploadConstants'
 import { useRecognitionMarkdown } from '@/composables/file-upload/useRecognitionMarkdown'
-import { getArchiveFileRecordId, normalizeArchiveQueryResult } from '@/composables/project-list/archiveFolderQuery.js'
+import {
+  getArchiveFileRecordId,
+  normalizeArchiveQueryResult,
+} from '@/composables/project-list/archiveFolderQuery.js'
 import { queryPlanningReviewForms, queryCapacityIndicatorForms } from '@/services/project.service'
 import { queryFiles } from '@/services/file.service'
 import { getAuditStrategy, normalizeFileContextType } from '@/utils/fileContextTypeRegistry.js'
@@ -38,7 +44,7 @@ export function useArchiveFolderAuditStack(deps) {
     showCalibration,
     calibrationLoading,
     currentFile,
-    auditSummaryData
+    auditSummaryData,
   } = useCalibrationState()
   const { auditSummaryDisplay } = useAuditSummaryDisplay(auditSummaryData)
   const isEditing = ref(false)
@@ -63,7 +69,7 @@ export function useArchiveFolderAuditStack(deps) {
     resetCalibrationState,
     openCalibration,
     pdfLoaded,
-    pdfLoadError
+    pdfLoadError,
   } = useCalibrationViewer({
     currentProject,
     showCalibration,
@@ -76,7 +82,7 @@ export function useArchiveFolderAuditStack(deps) {
     roomInfoPageSize,
     roomSumInfo,
     auditSummaryData,
-    usageCategoryMap
+    usageCategoryMap,
   })
 
   const { recognitionHtml } = useRecognitionMarkdown({ recognitionMdContent })
@@ -98,7 +104,7 @@ export function useArchiveFolderAuditStack(deps) {
     searchRoomInfosByPages,
     loadMoreRoomInfo,
     roomInfoHasMore,
-    roomInfoLoadingMore
+    roomInfoLoadingMore,
   } = useRoomEditWorkflow({
     currentProject,
     realSurveyReportId,
@@ -113,7 +119,7 @@ export function useArchiveFolderAuditStack(deps) {
     batchUpdateLoading,
     usageCategoryMap,
     usageCategoryReverseMap,
-    auditSummaryData
+    auditSummaryData,
   })
 
   const { handleAuditPass } = useCalibrationActions({
@@ -121,7 +127,7 @@ export function useArchiveFolderAuditStack(deps) {
     resetCalibrationState,
     refreshData: refreshArchiveFiles,
     currentFile,
-    realSurveyReportId
+    realSurveyReportId,
   })
 
   const openPlanningReviewAudit = async (row) => {
@@ -142,7 +148,7 @@ export function useArchiveFolderAuditStack(deps) {
         sortField: 'updateTime',
         sortDirection: 'desc',
         projectId: Number(projectId),
-        fileRecordId: Number(fileRecordId)
+        fileRecordId: Number(fileRecordId),
       })
       if (res.data?.code !== 200) {
         ElMessage.warning(res.data?.msg || '查询规划复核表失败')
@@ -191,7 +197,7 @@ export function useArchiveFolderAuditStack(deps) {
         sortField: 'updateTime',
         sortDirection: 'desc',
         projectId: Number(projectId),
-        fileRecordId: Number(fileRecordId)
+        fileRecordId: Number(fileRecordId),
       })
       if (res.data?.code !== 200) {
         ElMessage.warning(res.data?.msg || '查询容量指标核查表失败')
@@ -250,7 +256,7 @@ export function useArchiveFolderAuditStack(deps) {
       name: row?.originalName || row?.name || '-',
       fileId: row?.fileId || row?.gridfsId || row?.sourceGridfsId || '',
       preprocessGridfsId: row?.preprocessGridfsId || '',
-      status: row?.fileState || row?.status || ''
+      status: row?.fileState || row?.status || '',
     }
     if (!currentRow.fileId) {
       ElMessage.warning('该文件缺少可预览的源文件ID，无法进入审核')
@@ -271,7 +277,7 @@ export function useArchiveFolderAuditStack(deps) {
         sortField: 'uploadTime',
         sortDirection: 'desc',
         projectId: Number(projectId),
-        fileId: targetId
+        fileId: targetId,
       })
       const directParsed = normalizeArchiveQueryResult(directRes.data?.data)
       const directRow = directParsed.records?.[0]
@@ -296,7 +302,7 @@ export function useArchiveFolderAuditStack(deps) {
         sortField: 'uploadTime',
         sortDirection: 'desc',
         projectId: Number(projectId),
-        fileId: targetId
+        fileId: targetId,
       })
       const directParsed = normalizeArchiveQueryResult(directRes.data?.data)
       const directRow = directParsed.records?.[0]
@@ -306,7 +312,7 @@ export function useArchiveFolderAuditStack(deps) {
         return {
           archiveId: archive?.id || archiveId || null,
           archiveName: archive?.name || '',
-          row: directRow
+          row: directRow,
         }
       }
     } catch (error) {
@@ -321,15 +327,17 @@ export function useArchiveFolderAuditStack(deps) {
           sortField: 'uploadTime',
           sortDirection: 'desc',
           projectId: Number(projectId),
-          archiveId: Number(archive.id)
+          archiveId: Number(archive.id),
         })
         const parsed = normalizeArchiveQueryResult(res.data?.data)
-        const found = parsed.records.find((item) => String(getArchiveFileRecordId(item)) === targetId)
+        const found = parsed.records.find(
+          (item) => String(getArchiveFileRecordId(item)) === targetId
+        )
         if (found) {
           return {
             archiveId: archive.id,
             archiveName: archive.name,
-            row: found
+            row: found,
           }
         }
       } catch (error) {
@@ -352,7 +360,9 @@ export function useArchiveFolderAuditStack(deps) {
     if (!active && !force) return
 
     const archiveFiles = toValue(deps.archiveFiles) || []
-    const localFound = archiveFiles.find((item) => String(getArchiveFileRecordId(item)) === targetId)
+    const localFound = archiveFiles.find(
+      (item) => String(getArchiveFileRecordId(item)) === targetId
+    )
     if (localFound) {
       await handleAudit(localFound)
       deps.onAuditConsumed?.()
@@ -453,6 +463,6 @@ export function useArchiveFolderAuditStack(deps) {
     capacityIndicatorAuditInitialFile,
     handleAudit,
     openAuditByFileRecordId,
-    auditFocusUsageName
+    auditFocusUsageName,
   }
 }

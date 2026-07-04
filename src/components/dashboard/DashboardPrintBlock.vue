@@ -25,24 +25,24 @@
 defineProps({
   isPrinting: {
     type: Boolean,
-    default: false
+    default: false,
   },
   printTitle: {
     type: String,
-    default: '项目详情打印报表'
+    default: '项目详情打印报表',
   },
   printTime: {
     type: String,
-    default: ''
+    default: '',
   },
   headers: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   records: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 </script>
 

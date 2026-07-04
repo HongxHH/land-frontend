@@ -58,7 +58,7 @@ defineProps({
   tableRowClassName: { type: Function, required: true },
   currentPage: { type: Number, default: 1 },
   pageSize: { type: Number, default: 10 },
-  total: { type: Number, default: 0 }
+  total: { type: Number, default: 0 },
 })
 
 defineEmits([
@@ -76,6 +76,6 @@ defineEmits([
   'open-calibration',
   'delete-file',
   'size-change',
-  'current-change'
+  'current-change',
 ])
 </script>

@@ -3,7 +3,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import { downloadGridFsFile, getFilesByProject, queryFiles } from '@/services/file.service'
 
-export function useContractLandManagement({ filterProject, currentProjectInfo, onContractLandChanged }) {
+export function useContractLandManagement({
+  filterProject,
+  currentProjectInfo,
+  onContractLandChanged,
+}) {
   const contractLandList = ref([])
   const selectedContract = reactive({ id: '', contractNumber: '', fileRecordId: '' })
   const currentLandParcelList = ref([])
@@ -28,11 +32,11 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
     contractNumber: '',
     transferor: '',
     transferee: '',
-    remark: ''
+    remark: '',
   })
 
   const contractFormRules = reactive({
-    contractNumber: [{ required: true, message: '请输入合同编号', trigger: 'blur' }]
+    contractNumber: [{ required: true, message: '请输入合同编号', trigger: 'blur' }],
   })
 
   const landParcelDialogVisible = ref(false)
@@ -52,14 +56,14 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
     residentialArea: null,
     commercialArea: null,
     commercialResidentialRatio: null,
-    remark: ''
+    remark: '',
   })
 
   const landParcelFormRules = reactive({
     parcelCode: [{ required: true, message: '请输入地块编号', trigger: 'blur' }],
     plannedUse: [{ required: true, message: '请选择规划用途', trigger: 'change' }],
     totalArea: [{ required: true, message: '请输入地块总面积', trigger: 'blur' }],
-    commercialResidentialRatio: [{ required: true, message: '商住比必填', trigger: 'blur' }]
+    commercialResidentialRatio: [{ required: true, message: '商住比必填', trigger: 'blur' }],
   })
 
   const normalizeRatio = (value) => {
@@ -107,7 +111,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
       商住混合: 'COMMERCIAL_AND_RESIDENTIAL',
       RESIDENTIAL: 'RESIDENTIAL',
       COMMERCIAL: 'COMMERCIAL',
-      COMMERCIAL_AND_RESIDENTIAL: 'COMMERCIAL_AND_RESIDENTIAL'
+      COMMERCIAL_AND_RESIDENTIAL: 'COMMERCIAL_AND_RESIDENTIAL',
     }
     return mapping[value] || value || ''
   }
@@ -131,7 +135,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
         pageNum: 1,
         pageSize: 1,
         projectId: Number(currentProjectInfo.id || filterProject.value || 0),
-        fileId: String(targetId)
+        fileId: String(targetId),
       })
       const file = res?.data?.data?.records?.[0]
       if (!file?.gridfsId) return
@@ -161,13 +165,13 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
         CONTRACT: '合同',
         DATA_FILE: '数据文件',
         SURVEY_REPORT: '实测报告',
-        OTHER: '其他'
+        OTHER: '其他',
       }
       contractFileOptions.value = records
         .map((item) => ({
           value: String(item.id),
           label: `[${contextLabelMap[String(item?.fileContextType || '')] || '文件'}] ${item.originalName || `文件-${item.id}`}`,
-          uploadTime: item.uploadTime || ''
+          uploadTime: item.uploadTime || '',
         }))
         .sort((a, b) => String(b.uploadTime).localeCompare(String(a.uploadTime)))
     } catch (error) {
@@ -193,7 +197,9 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
   let contractListRequestSeq = 0
 
   const isAbortError = (error) =>
-    error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError' || error?.name === 'AbortError'
+    error?.code === 'ERR_CANCELED' ||
+    error?.name === 'CanceledError' ||
+    error?.name === 'AbortError'
 
   const fetchContractListByProjectId = async (projectId) => {
     if (!projectId) return false
@@ -209,7 +215,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
         {
           projectId: Number(projectId),
           current: 1,
-          size: 100
+          size: 100,
         },
         { signal }
       )
@@ -228,7 +234,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
           residentialArea: contract.residentialArea || null,
           commercialArea: contract.commercialArea || null,
           plannedUse: contract.plannedUse || '',
-          remark: contract.remark || ''
+          remark: contract.remark || '',
         }))
 
         Object.assign(selectedContract, { id: '', contractNumber: '', fileRecordId: '' })
@@ -269,7 +275,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
     Object.assign(selectedContract, {
       id: row.id,
       contractNumber: row.contractNumber || '',
-      fileRecordId: row.fileRecordId || ''
+      fileRecordId: row.fileRecordId || '',
     })
 
     await fetchLandParcelByContractId(row.id)
@@ -282,7 +288,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
       contractNumber: '',
       transferor: '',
       transferee: '',
-      remark: ''
+      remark: '',
     })
     contractFormRef.value?.clearValidate()
     contractDialogVisible.value = true
@@ -303,7 +309,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
       contractNumber: row.contractNumber || '',
       transferor: row.transferor || '',
       transferee: row.transferee || '',
-      remark: row.remark || ''
+      remark: row.remark || '',
     })
     contractFormRef.value?.clearValidate()
     openContractWorkspace(row)
@@ -331,7 +337,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
         contractNumber: contractForm.contractNumber,
         transferor: contractForm.transferor,
         transferee: contractForm.transferee,
-        remark: contractForm.remark
+        remark: contractForm.remark,
       }
 
       const res = await axios.put('/api/project/contract-info/update', requestData)
@@ -369,7 +375,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
       residentialArea: null,
       commercialArea: null,
       commercialResidentialRatio: null,
-      remark: ''
+      remark: '',
     })
     landParcelFormRef.value?.clearValidate()
     loadProjectContractFiles()
@@ -389,7 +395,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
       residentialArea: row.residentialArea || null,
       commercialArea: row.commercialArea || null,
       commercialResidentialRatio: row.commercialResidentialRatio || null,
-      remark: row.remark || ''
+      remark: row.remark || '',
     })
     landParcelFormRef.value?.clearValidate()
     loadProjectContractFiles()
@@ -400,7 +406,11 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
 
   const submitLandParcelForm = async () => {
     if (!landParcelFormRef.value) return
-    if (landParcelForm.commercialResidentialRatio === null || landParcelForm.commercialResidentialRatio === '' || Number.isNaN(Number(landParcelForm.commercialResidentialRatio))) {
+    if (
+      landParcelForm.commercialResidentialRatio === null ||
+      landParcelForm.commercialResidentialRatio === '' ||
+      Number.isNaN(Number(landParcelForm.commercialResidentialRatio))
+    ) {
       ElMessage.warning('商住比必填，不填写无法保存')
       return
     }
@@ -436,7 +446,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
           residentialArea: Number(landParcelForm.residentialArea || 0),
           commercialArea: Number(landParcelForm.commercialArea || 0),
           commercialResidentialRatio: normalizedRatio,
-          remark: landParcelForm.remark
+          remark: landParcelForm.remark,
         }
         res = await axios.post('/api/project/land-parcel/create', createData)
       } else {
@@ -449,7 +459,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
           residentialArea: Number(landParcelForm.residentialArea || 0),
           commercialArea: Number(landParcelForm.commercialArea || 0),
           commercialResidentialRatio: normalizedRatio,
-          remark: landParcelForm.remark
+          remark: landParcelForm.remark,
         }
         res = await axios.put('/api/project/land-parcel/update', updateData)
       }
@@ -458,12 +468,14 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
         landParcelDialogVisible.value = false
         const keepSelectedContractId = String(selectedContract.id || '')
         await fetchContractListByProjectId(currentProjectInfo.id)
-        const matchedContract = contractLandList.value.find((item) => String(item.id) === keepSelectedContractId)
+        const matchedContract = contractLandList.value.find(
+          (item) => String(item.id) === keepSelectedContractId
+        )
         if (matchedContract) {
           Object.assign(selectedContract, {
             id: matchedContract.id,
             contractNumber: matchedContract.contractNumber || '',
-            fileRecordId: matchedContract.fileRecordId || ''
+            fileRecordId: matchedContract.fileRecordId || '',
           })
           await fetchLandParcelByContractId(matchedContract.id)
         } else {
@@ -490,7 +502,7 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
           confirmButtonText: '确认删除',
           cancelButtonText: '取消',
           type: 'warning',
-          dangerMode: true
+          dangerMode: true,
         }
       )
 
@@ -515,28 +527,26 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
 
   const deleteLandParcel = async (row) => {
     try {
-      await ElMessageBox.confirm(
-        '确定要删除该地块信息吗？此操作不可撤销。',
-        '删除确认',
-        {
-          confirmButtonText: '确认删除',
-          cancelButtonText: '取消',
-          type: 'warning',
-          dangerMode: true
-        }
-      )
+      await ElMessageBox.confirm('确定要删除该地块信息吗？此操作不可撤销。', '删除确认', {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        dangerMode: true,
+      })
 
       const res = await axios.delete(`/api/project/land-parcel/${row.id}`)
 
       if (res.data.code === 200) {
         const keepSelectedContractId = String(selectedContract.id || '')
         await fetchContractListByProjectId(currentProjectInfo.id)
-        const matchedContract = contractLandList.value.find((item) => String(item.id) === keepSelectedContractId)
+        const matchedContract = contractLandList.value.find(
+          (item) => String(item.id) === keepSelectedContractId
+        )
         if (matchedContract) {
           Object.assign(selectedContract, {
             id: matchedContract.id,
             contractNumber: matchedContract.contractNumber || '',
-            fileRecordId: matchedContract.fileRecordId || ''
+            fileRecordId: matchedContract.fileRecordId || '',
           })
           await fetchLandParcelByContractId(matchedContract.id)
         } else {
@@ -616,6 +626,6 @@ export function useContractLandManagement({ filterProject, currentProjectInfo, o
     editLandParcel,
     deleteLandParcel,
     loadProjectContractFiles,
-    handleSelectPreviewFile
+    handleSelectPreviewFile,
   }
 }

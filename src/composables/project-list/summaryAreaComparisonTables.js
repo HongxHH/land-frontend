@@ -15,20 +15,20 @@ function buildComparisonRows(tripleLine) {
       label: '建筑面积',
       contractAgreedArea: formatComparisonArea(tripleLine?.totalBuilding?.contractAgreedArea),
       buildableArea: formatComparisonArea(tripleLine?.totalBuilding?.buildableArea),
-      difference: formatComparisonArea(tripleLine?.totalBuilding?.difference)
+      difference: formatComparisonArea(tripleLine?.totalBuilding?.difference),
     },
     {
       label: '商业面积',
       contractAgreedArea: formatComparisonArea(tripleLine?.commercial?.contractAgreedArea),
       buildableArea: formatComparisonArea(tripleLine?.commercial?.buildableArea),
-      difference: formatComparisonArea(tripleLine?.commercial?.difference)
+      difference: formatComparisonArea(tripleLine?.commercial?.difference),
     },
     {
       label: '住宅面积',
       contractAgreedArea: formatComparisonArea(tripleLine?.residential?.contractAgreedArea),
       buildableArea: formatComparisonArea(tripleLine?.residential?.buildableArea),
-      difference: formatComparisonArea(tripleLine?.residential?.difference)
-    }
+      difference: formatComparisonArea(tripleLine?.residential?.difference),
+    },
   ]
 }
 
@@ -42,6 +42,6 @@ export function buildSelectedComparisonGroups(areaComparison, selectedKeys) {
   return SUMMARY_COMPARISON_GROUP_META.filter((meta) => keys.includes(meta.key)).map((meta) => ({
     key: meta.key,
     title: meta.printTitle || meta.title,
-    rows: buildComparisonRows(areaComparison?.[meta.key])
+    rows: buildComparisonRows(areaComparison?.[meta.key]),
   }))
 }

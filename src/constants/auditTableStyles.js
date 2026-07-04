@@ -4,10 +4,10 @@ export const AUDIT_TABLE_HEADER_STYLE = {
   color: '#334155',
   fontWeight: '600',
   fontSize: '11px',
-  padding: '6px 4px'
+  padding: '6px 4px',
 }
 
 export const AUDIT_TABLE_CELL_STYLE = {
   fontSize: '12px',
-  padding: '5px 4px'
+  padding: '5px 4px',
 }

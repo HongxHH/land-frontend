@@ -2,7 +2,10 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectOptions } from '@/composables/file-upload/useProjectOptions'
 import { useFileTableQuery } from '@/composables/file-upload/useFileTableQuery'
-import { useFileUploadConstants, useAuditSummaryDisplay } from '@/composables/file-upload/useFileUploadConstants'
+import {
+  useFileUploadConstants,
+  useAuditSummaryDisplay,
+} from '@/composables/file-upload/useFileUploadConstants'
 import { useFileUploadOperations } from '@/composables/file-upload/useFileUploadOperations'
 import { useCalibrationState } from '@/composables/file-upload/useCalibrationState'
 import { useCalibrationViewer } from '@/composables/file-upload/useCalibrationViewer'
@@ -24,7 +27,7 @@ export function useFileUploadPage() {
     showCreateProject,
     newProjectForm,
     fetchProjectList,
-    handleCreateProject
+    handleCreateProject,
   } = useProjectOptions()
 
   const {
@@ -41,7 +44,7 @@ export function useFileUploadPage() {
     resetFilter,
     handleSizeChange,
     handleCurrentChange,
-    handleRefresh
+    handleRefresh,
   } = useFileTableQuery(currentProject)
 
   const {
@@ -67,12 +70,12 @@ export function useFileUploadPage() {
     confirmUpload,
     retryUploadFile,
     startProcessing,
-    cancelProcessing
+    cancelProcessing,
   } = useFileUploadOperations({
     currentProject,
     projectOptions,
     refreshData,
-    prependUploadedFiles
+    prependUploadedFiles,
   })
 
   const isEditing = ref(false)
@@ -88,7 +91,7 @@ export function useFileUploadPage() {
     showCalibration,
     calibrationLoading,
     currentFile,
-    auditSummaryData
+    auditSummaryData,
   } = useCalibrationState()
   const { auditSummaryDisplay } = useAuditSummaryDisplay(auditSummaryData)
 
@@ -105,7 +108,7 @@ export function useFileUploadPage() {
     resetCalibrationState,
     openCalibration,
     pdfLoaded,
-    pdfLoadError
+    pdfLoadError,
   } = useCalibrationViewer({
     currentProject,
     showCalibration,
@@ -118,7 +121,7 @@ export function useFileUploadPage() {
     roomInfoPageSize,
     roomSumInfo,
     auditSummaryData,
-    usageCategoryMap
+    usageCategoryMap,
   })
 
   const { recognitionHtml } = useRecognitionMarkdown({ recognitionMdContent })
@@ -131,7 +134,7 @@ export function useFileUploadPage() {
     fileTableData,
     stopPolling,
     calibrationPdfUrl,
-    clearUploadSelection
+    clearUploadSelection,
   })
 
   const { handleAuditPass } = useCalibrationActions({
@@ -139,7 +142,7 @@ export function useFileUploadPage() {
     resetCalibrationState,
     refreshData,
     currentFile,
-    realSurveyReportId
+    realSurveyReportId,
   })
 
   const {
@@ -155,7 +158,7 @@ export function useFileUploadPage() {
     searchRoomInfosByPages,
     loadMoreRoomInfo,
     roomInfoHasMore,
-    roomInfoLoadingMore
+    roomInfoLoadingMore,
   } = useRoomEditWorkflow({
     currentProject,
     realSurveyReportId,
@@ -169,7 +172,7 @@ export function useFileUploadPage() {
     batchUpdateLoading,
     usageCategoryMap,
     usageCategoryReverseMap,
-    auditSummaryData
+    auditSummaryData,
   })
 
   // 从归档页跳转到审核页时，自动带入项目ID
@@ -283,7 +286,6 @@ export function useFileUploadPage() {
     loadMoreRoomInfo,
     roomInfoHasMore,
     roomInfoLoadingMore,
-    handleAuditPass
+    handleAuditPass,
   }
 }
-

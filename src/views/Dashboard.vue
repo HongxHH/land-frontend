@@ -22,7 +22,9 @@
               clearable
               @keyup.enter="handleSearch"
             >
-              <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
+              <template #prefix
+                ><el-icon><OfficeBuilding /></el-icon
+              ></template>
             </el-input>
             <el-date-picker
               v-model="queryForm.projectTimeRange"
@@ -50,7 +52,9 @@
           </el-tooltip>
         </div>
         <div class="filter-actions">
-          <el-button class="biz-btn action-primary" :loading="tableLoading" @click="handleSearch">查询</el-button>
+          <el-button class="biz-btn action-primary" :loading="tableLoading" @click="handleSearch"
+            >查询</el-button
+          >
           <el-tooltip content="创建新的征收/开发项目档案" placement="top">
             <el-button class="create-btn ghost-cta" @click="handleCreateProject">
               <el-icon class="btn-ico"><Plus /></el-icon>
@@ -69,10 +73,16 @@
           <div class="selected-count">已勾选：{{ selectedRows.length }} 个</div>
         </div>
         <div class="table-actions">
-          <el-button class="biz-btn action-ghost" :disabled="selectedRows.length === 0" @click="handlePrintSelected">
+          <el-button
+            class="biz-btn action-ghost"
+            :disabled="selectedRows.length === 0"
+            @click="handlePrintSelected"
+          >
             打印报表
           </el-button>
-          <el-button class="biz-btn action-ghost" :loading="tableLoading" @click="fetchList">刷新</el-button>
+          <el-button class="biz-btn action-ghost" :loading="tableLoading" @click="fetchList"
+            >刷新</el-button
+          >
         </div>
       </div>
 
@@ -86,13 +96,23 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="48" align="center" />
-        <el-table-column prop="projectName" label="项目名称" min-width="220" show-overflow-tooltip />
+        <el-table-column
+          prop="projectName"
+          label="项目名称"
+          min-width="220"
+          show-overflow-tooltip
+        />
         <el-table-column prop="projectTime" label="项目时间" min-width="120" align="center">
           <template #default="{ row }">
             {{ formatProjectTimeForDisplay(row.projectTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="surveyReportFileCount" label="实测报告数" width="120" align="center" />
+        <el-table-column
+          prop="surveyReportFileCount"
+          label="实测报告数"
+          width="120"
+          align="center"
+        />
         <el-table-column prop="contractFileCount" label="合同文件数" width="120" align="center" />
         <el-table-column prop="transferor" label="出让方" min-width="160" show-overflow-tooltip />
         <el-table-column prop="transferee" label="受让方" min-width="180" show-overflow-tooltip />
@@ -106,8 +126,12 @@
         >
           <template #default="{ row }">
             <div class="project-table-actions">
-              <el-button class="biz-btn action-primary btn-sm" @click="goProject(row)">进入项目</el-button>
-              <el-button class="biz-btn action-danger btn-sm" @click="handleDeleteProject(row)">删除项目</el-button>
+              <el-button class="biz-btn action-primary btn-sm" @click="goProject(row)"
+                >进入项目</el-button
+              >
+              <el-button class="biz-btn action-danger btn-sm" @click="handleDeleteProject(row)"
+                >删除项目</el-button
+              >
             </div>
           </template>
         </el-table-column>
@@ -155,7 +179,7 @@ const queryForm = reactive({
   pageNum: 1,
   pageSize: 20,
   projectName: '',
-  projectTimeRange: []
+  projectTimeRange: [],
 })
 
 const tableLoading = ref(false)
@@ -181,7 +205,7 @@ const buildPayload = () => {
     sortDirection: 'desc',
     projectName: queryForm.projectName || undefined,
     projectTimeStart: startIso,
-    projectTimeEnd: endIso
+    projectTimeEnd: endIso,
   }
 }
 
@@ -231,7 +255,7 @@ const goProject = (row) => {
   }
   router.push({
     name: 'ProjectList',
-    query: { projectId: String(projectId) }
+    query: { projectId: String(projectId) },
   })
 }
 
@@ -268,7 +292,7 @@ const handleDeleteProject = async (row) => {
       {
         confirmButtonText: '确定删除',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }
     )
     const res = await deleteProjectById(projectId)
@@ -424,7 +448,9 @@ onMounted(() => {
   color: #ef4444;
   background: transparent;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .filter-clear-x:hover:not(:disabled) {

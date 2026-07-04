@@ -11,8 +11,8 @@
 defineProps({
   currentFile: {
     type: Object,
-    default: null
-  }
+    default: null,
+  },
 })
 </script>
 

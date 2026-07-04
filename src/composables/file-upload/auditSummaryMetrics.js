@@ -1,16 +1,44 @@
 /** 与后端 SurveyReportCalculationServiceImpl 校验文案一致 */
 const AREA_REASON_PATTERNS = [
-  { key: 'building', title: '建筑面积(㎡)', re: /建筑面积总和\(([\d.]+)\)与OCR识别结果\(([\d.]+)\)/ },
+  {
+    key: 'building',
+    title: '建筑面积(㎡)',
+    re: /建筑面积总和\(([\d.]+)\)与OCR识别结果\(([\d.]+)\)/,
+  },
   { key: 'inner', title: '套内面积(㎡)', re: /套内面积总和\(([\d.]+)\)与OCR识别结果\(([\d.]+)\)/ },
-  { key: 'balcony', title: '阳台面积(㎡)', re: /阳台面积总和\(([\d.]+)\)与OCR识别结果\(([\d.]+)\)/ },
-  { key: 'shared', title: '分摊面积(㎡)', re: /分摊面积总和\(([\d.]+)\)与OCR识别结果\(([\d.]+)\)/ }
+  {
+    key: 'balcony',
+    title: '阳台面积(㎡)',
+    re: /阳台面积总和\(([\d.]+)\)与OCR识别结果\(([\d.]+)\)/,
+  },
+  { key: 'shared', title: '分摊面积(㎡)', re: /分摊面积总和\(([\d.]+)\)与OCR识别结果\(([\d.]+)\)/ },
 ]
 
 const METRIC_FIELD_MAP = [
-  { key: 'building', title: '建筑面积(㎡)', manualKey: 'roomInfoBuildingAreaSum', ocrKey: 'roomInfoBuildingAreaSumFromOcr' },
-  { key: 'inner', title: '套内面积(㎡)', manualKey: 'roomInfoInnerAreaSum', ocrKey: 'roomInfoInnerAreaSumFromOcr' },
-  { key: 'balcony', title: '阳台面积(㎡)', manualKey: 'roomInfoBalconyAreaSum', ocrKey: 'roomInfoBalconyAreaSumFromOcr' },
-  { key: 'shared', title: '分摊面积(㎡)', manualKey: 'roomInfoSharedAreaSum', ocrKey: 'roomInfoSharedAreaSumFromOcr' }
+  {
+    key: 'building',
+    title: '建筑面积(㎡)',
+    manualKey: 'roomInfoBuildingAreaSum',
+    ocrKey: 'roomInfoBuildingAreaSumFromOcr',
+  },
+  {
+    key: 'inner',
+    title: '套内面积(㎡)',
+    manualKey: 'roomInfoInnerAreaSum',
+    ocrKey: 'roomInfoInnerAreaSumFromOcr',
+  },
+  {
+    key: 'balcony',
+    title: '阳台面积(㎡)',
+    manualKey: 'roomInfoBalconyAreaSum',
+    ocrKey: 'roomInfoBalconyAreaSumFromOcr',
+  },
+  {
+    key: 'shared',
+    title: '分摊面积(㎡)',
+    manualKey: 'roomInfoSharedAreaSum',
+    ocrKey: 'roomInfoSharedAreaSumFromOcr',
+  },
 ]
 
 export const AREA_COMPARE_TOLERANCE = 0.01
@@ -72,7 +100,7 @@ export function buildSummaryMetrics(auditSummaryData, tolerance = AREA_COMPARE_T
       manual: manual.toFixed(2),
       ocr: ocr.toFixed(2),
       delta,
-      mismatch: Math.abs(delta) > tolerance
+      mismatch: Math.abs(delta) > tolerance,
     }
   })
 }

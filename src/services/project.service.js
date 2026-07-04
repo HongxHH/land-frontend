@@ -5,7 +5,7 @@ export const getProjectList = async () => {
     pageNum: 1,
     pageSize: 500,
     sortField: 'updateTime',
-    sortDirection: 'desc'
+    sortDirection: 'desc',
   })
   const code = Number(res?.data?.code)
   if (code !== 200) {
@@ -16,8 +16,8 @@ export const getProjectList = async () => {
     ...res,
     data: {
       ...res.data,
-      data: records
-    }
+      data: records,
+    },
   }
 }
 
@@ -32,7 +32,7 @@ export const queryProjectAreaComparison = (projectId, config = {}) =>
 
 export const createProject = (projectName, projectTime) =>
   axios.post('/api/project/create', null, {
-    params: { projectName, projectTime }
+    params: { projectName, projectTime },
   })
 
 export const refreshSurveyReportsByProject = (projectId) =>
@@ -56,8 +56,7 @@ export const queryOperationAuditLogs = (payload) =>
 export const queryProjectDetails = (payload, config = {}) =>
   axios.post('/api/project/projects/query/detail', payload, config)
 
-export const deleteProjectById = (projectId) =>
-  axios.delete(`/api/project/${projectId}`)
+export const deleteProjectById = (projectId) => axios.delete(`/api/project/${projectId}`)
 
 export const queryPlanningReviewForms = (payload) =>
   axios.post('/api/project/planning-review-forms/query', payload)

@@ -1,0 +1,233 @@
+﻿.summary-panel--modern.project-tab-panel {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 48%, #f1f5f9 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 14px 40px -22px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+
+.summary-table-wrap {
+  position: relative;
+  background: #fff;
+}
+
+.summary-table-client-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 4px 0;
+}
+
+.project-name-trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.project-name-link {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.project-name-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-ico {
+  flex-shrink: 0;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+}
+
+.summary-modern-table .summary-col-project-name .cell {
+  overflow: hidden;
+}
+
+.summary-modern-table .summary-col-project-name .project-name-link .el-link__inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* 宽表悬浮层：覆盖在表格之上，pointer-events:none 让点击穿透到单元格；按钮/下拉单独开启 */
+.table-x-float-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.table-x-float-layer__edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.table-x-float-layer__edge--left {
+  left: 0;
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.06), transparent);
+}
+
+.table-x-float-layer__edge--right {
+  right: 0;
+  background: linear-gradient(270deg, rgba(15, 23, 42, 0.06), transparent);
+}
+
+.table-x-float-layer__edge.is-active {
+  opacity: 1;
+}
+
+.table-x-float-layer__fab {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  box-shadow: 0 8px 24px -8px rgba(29, 78, 216, 0.55);
+  border: none;
+}
+
+.table-x-float-layer__fab--left {
+  left: 6px;
+}
+
+.table-x-float-layer__fab--right {
+  right: 6px;
+}
+
+.summary-modern-table .el-table__inner-wrapper::before {
+  display: none;
+}
+
+.summary-modern-table th.el-table__cell {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  font-weight: 700;
+  color: #334155;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* 勿对 th .cell 使用 flex，会破坏 el-table 表头/表体布局导致整表不渲染 */
+.summary-modern-table td.el-table__cell>.cell.el-tooltip {
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.summary-modern-table th.el-table__cell>.cell {
+  text-align: center;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* 表体与未单独指定对齐的列：内容居中（覆盖面积列默认右对齐） */
+.summary-modern-table--cell-center td.el-table__cell>.cell {
+  text-align: center !important;
+}
+
+/* 状态标签列：禁用单元格省略号，避免「已通过」等被裁成「已通过…」 */
+.summary-modern-table td.summary-col-status-tag>.cell {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.summary-modern-table td.summary-col-status-tag .el-tag {
+  max-width: 100%;
+}
+
+.summary-modern-table--cell-center td.el-table__cell.is-right>.cell {
+  text-align: center !important;
+}
+
+/* 仅「校验不通过」：逐格底色（与未知用途行区分） */
+.summary-modern-table .el-table__body tr.summary-row-unverified:not(.summary-row-unknown-usage)>td.el-table__cell {
+  background-color: #fff1f2 !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unverified:not(.summary-row-unknown-usage):hover>td.el-table__cell {
+  background-color: #ffe4e6 !important;
+}
+
+/*
+ * 含未知用途：整行统一底色（tr），单元格透明，避免每格 inset 阴影/底色叠加发乌。
+ * 左侧强调线仅画在首列单元格上一条。
+ */
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage>td.el-table__cell {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage.el-table__row--striped>td.el-table__cell {
+  background-color: transparent !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage {
+  background-color: #fffbeb !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage:hover {
+  background-color: #fff3cd !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage:hover>td.el-table__cell {
+  background-color: transparent !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage.summary-row-unverified {
+  background-color: #fff4e6 !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage.summary-row-unverified:hover {
+  background-color: #ffe8cc !important;
+}
+
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage>td.el-table__cell:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.unknown-usages-cell-text {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.unknown-usages-cell-text--missing {
+  color: #cf1322;
+  font-weight: 600;
+}
+
+@media (max-width: 1200px) {
+  .summary-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary-hero__actions {
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}

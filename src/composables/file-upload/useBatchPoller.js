@@ -43,9 +43,7 @@ export function useBatchPoller(apiCheckFunction, onPollingEnd, options = {}) {
           rawList = res.data.data.list
         }
 
-        const hasPending = rawList.some((item) =>
-          isActiveFileProcessState(item.fileState)
-        )
+        const hasPending = rawList.some((item) => isActiveFileProcessState(item.fileState))
 
         if (typeof onPollTick === 'function') {
           onPollTick(rawList)

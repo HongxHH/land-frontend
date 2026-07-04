@@ -135,10 +135,13 @@ import ArchiveFolderUploadDialog from '@/components/project-list/archive/Archive
 import ArchiveFolderParseFlowDialog from '@/components/project-list/archive/ArchiveFolderParseFlowDialog.vue'
 import ArchiveFolderCreateDialog from '@/components/project-list/archive/ArchiveFolderCreateDialog.vue'
 
-const ArchiveFilePreviewDialog = defineAsyncComponent(() =>
-  import('@/components/project-list/ArchiveFilePreviewDialog.vue')
+const ArchiveFilePreviewDialog = defineAsyncComponent(
+  () => import('@/components/project-list/ArchiveFilePreviewDialog.vue')
 )
-import { canPreviewArchiveFile, useArchiveFilePreview } from '@/composables/project-list/useArchiveFilePreview'
+import {
+  canPreviewArchiveFile,
+  useArchiveFilePreview,
+} from '@/composables/project-list/useArchiveFilePreview'
 import { useArchiveParseFlow } from '@/composables/project-list/useArchiveParseFlow.js'
 import { sortArchiveFilesVerifyFailedFirst } from '@/composables/project-list/archiveFolderPresent.js'
 import { useArchiveFolderExplorerData } from '@/composables/project-list/useArchiveFolderExplorerData.js'
@@ -151,27 +154,25 @@ import { resolveUploadFileContextType } from '@/utils/fileContextTypeRegistry.js
 const props = defineProps({
   projectId: {
     type: [String, Number],
-    default: ''
+    default: '',
   },
   projectName: {
     type: String,
-    default: ''
+    default: '',
   },
   initialArchiveId: {
     type: [String, Number],
-    default: ''
+    default: '',
   },
   active: {
     type: Boolean,
-    default: false
+    default: false,
   },
   fileAuditHandler: {
     type: Function,
-    default: undefined
-  }
+    default: undefined,
+  },
 })
-const emit = defineEmits(['contract-archive-audit'])
-
 const createDialogVisible = ref(false)
 const filePanelRef = ref(null)
 const tabContentRef = ref(null)
@@ -179,11 +180,8 @@ const tabContentRef = ref(null)
 const updateTableBodyHeight = () => filePanelRef.value?.updateTableBodyHeight?.()
 const bindTableWrapResizeObserver = () => filePanelRef.value?.bindTableWrapResizeObserver?.()
 
-const {
-  explorerHeight,
-  updateExplorerHeight,
-  bindExplorerHeightObserver
-} = useArchiveExplorerHeight(() => tabContentRef.value)
+const { explorerHeight, updateExplorerHeight, bindExplorerHeightObserver } =
+  useArchiveExplorerHeight(() => tabContentRef.value)
 
 const refreshExplorerLayout = () => {
   updateExplorerHeight()
@@ -217,7 +215,6 @@ const {
   prependUploadedArchiveFiles,
   startFileStatePolling,
   fetchArchives,
-  selectArchiveForAudit,
   confirmDeleteSelectedArchive,
   handleNodeClick,
   handleSelectionChange,
@@ -233,12 +230,12 @@ const {
   handleBatchDelete,
   handleBatchParse,
   applyInitialArchiveId,
-  cleanupExplorer
+  cleanupExplorer,
 } = useArchiveFolderExplorerData({
   projectId: () => props.projectId,
   projectName: () => props.projectName,
   initialArchiveId: () => props.initialArchiveId,
-  syncUploadContextByArchive: () => syncUploadContextByArchive()
+  syncUploadContextByArchive: () => syncUploadContextByArchive(),
 })
 
 const {
@@ -263,7 +260,7 @@ const {
   handleBatchUpload,
   retryUploadFile,
   handleCancelUpload,
-  stopUploadSpeedMeter
+  stopUploadSpeedMeter,
 } = useArchiveFolderUpload({
   projectId: () => props.projectId,
   selectedArchiveId: () => selectedArchiveId.value,
@@ -275,7 +272,7 @@ const {
     queryForm.pageNum = 1
     await fetchArchiveFiles({ force: true })
     startFileStatePolling()
-  }
+  },
 })
 
 syncUploadContextByArchive = () => {
@@ -290,7 +287,7 @@ const {
   flushReadAckNow,
   resetRealtimeState,
   cleanupRealtime,
-  onTabActivated
+  onTabActivated,
 } = useArchiveFolderRealtime({
   projectId: () => props.projectId,
   active: () => props.active,
@@ -300,7 +297,7 @@ const {
   },
   selectedArchiveId: () => selectedArchiveId.value,
   fetchArchiveFiles,
-  clearArchiveQueryCache
+  clearArchiveQueryCache,
 })
 
 const {
@@ -308,7 +305,7 @@ const {
   treePanelWidth,
   handleSplitterMouseDown,
   handleWindowResize,
-  cleanupSplitter
+  cleanupSplitter,
 } = useArchiveFolderSplitter({ onResize: refreshExplorerLayout })
 
 const {
@@ -317,7 +314,7 @@ const {
   parseFlowLoading,
   openParseFlowDialog,
   refreshParseFlowDialog,
-  stopParseFlowAutoRefresh
+  stopParseFlowAutoRefresh,
 } = useArchiveParseFlow({ isActive: () => props.active })
 
 const {
@@ -330,7 +327,7 @@ const {
   excelPreviewSrc,
   openArchivePreview,
   handlePreviewClosed,
-  downloadPreviewFile
+  downloadPreviewFile,
 } = useArchiveFilePreview()
 
 const showPreviewButton = (row) => canPreviewArchiveFile(row)
@@ -410,7 +407,7 @@ watch(
 )
 
 defineExpose({
-  refreshFiles
+  refreshFiles,
 })
 
 onMounted(() => {
@@ -518,7 +515,10 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   background: #cbd5e1;
   opacity: 0.55;
-  transition: background-color 0.15s ease, width 0.15s ease, opacity 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    width 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .splitter-handle:hover {

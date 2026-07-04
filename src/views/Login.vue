@@ -7,50 +7,37 @@
         </div>
       </template>
 
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="rules"
-        label-width="0px"
-        size="large"
-      >
+      <el-form ref="loginFormRef" :model="loginForm" :rules="rules" label-width="0px" size="large">
         <el-form-item prop="username">
-          <el-input 
-            v-model="loginForm.username" 
+          <el-input
+            v-model="loginForm.username"
             placeholder="请输入管理员账号"
-            :prefix-icon="User" 
+            :prefix-icon="User"
           />
         </el-form-item>
 
         <el-form-item prop="password">
-          <el-input 
-            v-model="loginForm.password" 
-            type="password" 
+          <el-input
+            v-model="loginForm.password"
+            type="password"
             placeholder="请输入密码"
             :prefix-icon="Lock"
             show-password
-            @keyup.enter="handleLogin" 
+            @keyup.enter="handleLogin"
           />
         </el-form-item>
 
         <el-form-item>
-          <el-button 
-            type="primary" 
-            class="login-btn" 
-            :loading="isLoading" 
-            @click="handleLogin"
-          >
+          <el-button type="primary" class="login-btn" :loading="isLoading" @click="handleLogin">
             {{ isLoading ? '登录中...' : '立即登录' }}
           </el-button>
         </el-form-item>
       </el-form>
-      
-
 
       <div class="footer-links">
         <router-link to="/register">没有账号？立即注册</router-link>
       </div>
-    </el-card> 
+    </el-card>
   </div>
 </template>
 
@@ -70,15 +57,15 @@ const isLoading = ref(false)
 
 const loginForm = reactive({
   username: '',
-  password: ''
+  password: '',
 })
 
 const rules = {
   username: [{ required: true, message: '请输入管理员账号', trigger: 'blur' }],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 3, message: '密码长度不能小于3位', trigger: 'blur' }
-  ]
+    { min: 3, message: '密码长度不能小于3位', trigger: 'blur' },
+  ],
 }
 
 const handleLogin = async () => {
@@ -92,7 +79,7 @@ const handleLogin = async () => {
   try {
     const { data } = await axios.post('/api/auth/login', {
       username: loginForm.username.trim(),
-      password: loginForm.password
+      password: loginForm.password,
     })
     if (Number(data.code) !== 200) {
       ElMessage.error(data.msg || '登录失败')
@@ -133,14 +120,40 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   /* 保持你刚才截图里那个好看的背景 */
-  background: linear-gradient(to bottom right, #2c3e50, #4ca1af); 
+  background: linear-gradient(to bottom right, #2c3e50, #4ca1af);
 }
-.login-card { width: 400px; border-radius: 8px; }
-.card-header { text-align: center; }
-.logo-text { font-size: 20px; font-weight: bold; color: #303133; }
-.login-btn { width: 100%; font-weight: bold; }
-.tips { text-align: center; font-size: 12px; color: #909399; margin-top: 10px; }
-.footer-links { text-align: center; margin-top: 14px; font-size: 14px; }
-.footer-links a { color: #409eff; text-decoration: none; }
-.footer-links a:hover { text-decoration: underline; }
+.login-card {
+  width: 400px;
+  border-radius: 8px;
+}
+.card-header {
+  text-align: center;
+}
+.logo-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #303133;
+}
+.login-btn {
+  width: 100%;
+  font-weight: bold;
+}
+.tips {
+  text-align: center;
+  font-size: 12px;
+  color: #909399;
+  margin-top: 10px;
+}
+.footer-links {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 14px;
+}
+.footer-links a {
+  color: #409eff;
+  text-decoration: none;
+}
+.footer-links a:hover {
+  text-decoration: underline;
+}
 </style>

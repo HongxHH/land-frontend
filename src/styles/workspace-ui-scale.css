@@ -21,6 +21,7 @@
 
 .workspace-ui-scale .pr-btn,
 .workspace-ui-scale .ch-btn,
+.workspace-ui-scale .project-tab-hero__btn,
 .workspace-ui-scale .biz-btn,
 .workspace-ui-scale .query-btn,
 .workspace-ui-scale .primary-cta,
@@ -63,6 +64,7 @@
 
 .workspace-ui-scale .contracts-hero__title,
 .workspace-ui-scale .planning-hero__title,
+.workspace-ui-scale .project-tab-hero__title,
 .workspace-ui-scale .panel-header h3,
 .workspace-ui-scale .table-title {
   font-size: 22px;
@@ -70,17 +72,20 @@
 
 .workspace-ui-scale .contracts-hero__eyebrow,
 .workspace-ui-scale .planning-hero__eyebrow,
+.workspace-ui-scale .project-tab-hero__eyebrow,
 .workspace-ui-scale .panel-header p {
   font-size: 14px;
 }
 
 .workspace-ui-scale .contract-stat-tile__value,
-.workspace-ui-scale .planning-stat-tile__value {
+.workspace-ui-scale .planning-stat-tile__value,
+.workspace-ui-scale .project-tab-hero__stat-value {
   font-size: 22px;
 }
 
 .workspace-ui-scale .contract-stat-tile__label,
-.workspace-ui-scale .planning-stat-tile__label {
+.workspace-ui-scale .planning-stat-tile__label,
+.workspace-ui-scale .project-tab-hero__stat-label {
   font-size: 13px;
 }
 
@@ -93,36 +98,44 @@
 }
 
 /* 房产实测汇总表 */
-.workspace-ui-scale .summary-hero__title {
+.workspace-ui-scale .summary-hero__title,
+.workspace-ui-scale .project-tab-hero__project {
   font-size: 20px;
 }
 
-.workspace-ui-scale .summary-hero__eyebrow {
+.workspace-ui-scale .summary-hero__eyebrow,
+.workspace-ui-scale .project-tab-hero__search-hint {
   font-size: 12px;
 }
 
-.workspace-ui-scale .summary-hero__search-hint {
+.workspace-ui-scale .summary-hero__search-hint,
+.workspace-ui-scale .project-tab-hero__search-hint {
   font-size: 13px;
   padding: 4px 9px;
 }
 
-.workspace-ui-scale .stat-tile {
+.workspace-ui-scale .stat-tile,
+.workspace-ui-scale .project-tab-hero__stat-tile {
   padding: 8px 10px;
 }
 
-.workspace-ui-scale .stat-tile__value {
+.workspace-ui-scale .stat-tile__value,
+.workspace-ui-scale .project-tab-hero__stat-value {
   font-size: 18px;
 }
 
-.workspace-ui-scale .stat-tile__label {
+.workspace-ui-scale .stat-tile__label,
+.workspace-ui-scale .project-tab-hero__stat-label {
   font-size: 12px;
 }
 
-.workspace-ui-scale .stat-tile__unit {
+.workspace-ui-scale .stat-tile__unit,
+.workspace-ui-scale .project-tab-hero__stat-unit {
   font-size: 12px;
 }
 
-.workspace-ui-scale .summary-hero__search-input :deep(.el-input__wrapper) {
+.workspace-ui-scale .summary-hero__search-input :deep(.el-input__wrapper),
+.workspace-ui-scale .project-tab-hero__search-input .el-input__wrapper {
   min-height: 36px;
   font-size: 14px;
 }

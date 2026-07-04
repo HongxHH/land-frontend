@@ -19,7 +19,7 @@
 
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important;   /* ✅ 不允许整页滚 */
+  overflow: hidden !important; /* ✅ 不允许整页滚 */
 }
 
 /* header 固定 */
@@ -41,13 +41,10 @@
   min-height: 0;
   padding: 0 !important;
 
-  overflow: hidden !important;   /* ✅ body 不滚 */
+  overflow: hidden !important; /* ✅ body 不滚 */
   display: flex;
-  flex-direction: column;        /* ✅ split-view 才能按高度伸展 */
+  flex-direction: column; /* ✅ split-view 才能按高度伸展 */
 }
-
-
-
 
 .split-view.audit-split-layout {
   flex: 1 1 auto;
@@ -77,7 +74,7 @@
   height: 100%;
 }
 
-.right-panel{
+.right-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -88,34 +85,34 @@
   box-sizing: border-box;
 }
 
-.cali-right-panel{
+.cali-right-panel {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;   /* ✅不滚 */
+  overflow: hidden; /* ✅不滚 */
   display: flex;
   flex-direction: column;
 }
 
 /* summary 固定高度，不参与滚动，避免展开详情时挤压下方表格 */
-.sum-info-section{
+.sum-info-section {
   flex: 0 0 auto;
   padding-right: 2px;
 }
 
 /* 表格容器占剩余高度，但自身不滚 */
-.room-table-wrap{
+.room-table-wrap {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;   /* ✅不滚 */
+  overflow: hidden; /* ✅不滚 */
   display: flex;
   flex-direction: column;
 }
 
 /* el-table 必须拿到高度（不然 body-wrapper 没法算出滚动区） */
-:deep(.room-table){
+:deep(.room-table) {
   flex: 1 1 auto;
   min-height: 0;
-  height: 0;          /* ✅关键：让它吃剩余高度 */
+  height: 0; /* ✅关键：让它吃剩余高度 */
 }
 
 :deep(.room-table--readable.el-table) {
@@ -127,23 +124,24 @@
   width: 100% !important;
 }
 
-:deep(.room-table .el-table__inner-wrapper){
+:deep(.room-table .el-table__inner-wrapper) {
   height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
-:deep(.room-table .el-table__body-wrapper){
+:deep(.room-table .el-table__body-wrapper) {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto !important;
 }
 /* 如果内部用了 el-scrollbar，补齐高度 */
-:deep(.room-table .el-scrollbar){ height: 100%; }
-:deep(.room-table .el-scrollbar__wrap){ overflow: auto !important; }
-
-
-
+:deep(.room-table .el-scrollbar) {
+  height: 100%;
+}
+:deep(.room-table .el-scrollbar__wrap) {
+  overflow: auto !important;
+}
 
 .cali-audit-strip {
   display: flex;
@@ -479,7 +477,6 @@
   word-break: break-all;
 }
 
-
 .verify-tip-block {
   display: block;
   padding: 8px 10px;
@@ -765,10 +762,6 @@
   padding: 10px 16px 14px;
   border-top: 1px solid #edf2f8;
 }
-
-
-
-
 
 @media (max-width: 1280px) {
   .split-view.audit-split-layout--calibration .audit-preview-shell {

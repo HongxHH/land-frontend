@@ -9,7 +9,7 @@ const PRINT_FIELDS = [
   { label: '合同约定商业面积', key: 'contractAgreedCommercialArea' },
   { label: '合同约定住宅面积', key: 'contractAgreedResidentialArea' },
   { label: '出让方', key: 'transferor' },
-  { label: '受让方', key: 'transferee' }
+  { label: '受让方', key: 'transferee' },
 ]
 
 const isEmpty = (value) => value === null || value === undefined || value === ''
@@ -28,11 +28,11 @@ export const useDashboardPrint = () => {
     )
     return {
       headers,
-      records
+      records,
     }
   }
 
   return {
-    buildPrintData
+    buildPrintData,
   }
 }

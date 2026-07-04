@@ -7,7 +7,7 @@ export const UPLOAD_FILE_STATUS = {
   PROCESSING: 'processing',
   DONE: 'done',
   ERROR: 'error',
-  CANCELLED: 'cancelled'
+  CANCELLED: 'cancelled',
 }
 
 export function isUploadAbortError(error) {
@@ -24,10 +24,7 @@ function resolveRawFile(fileItem) {
 
 function extractErrorMessage(error) {
   return (
-    error?.response?.data?.msg ||
-    error?.response?.data?.message ||
-    error?.message ||
-    '文件上传失败'
+    error?.response?.data?.msg || error?.response?.data?.message || error?.message || '文件上传失败'
   )
 }
 
@@ -40,7 +37,7 @@ function createInitialState(fileItem) {
     loaded: 0,
     total: Number.isFinite(total) ? total : 0,
     fileId: null,
-    error: null
+    error: null,
   }
 }
 
@@ -54,7 +51,7 @@ export async function runConcurrentUploads({
   signal,
   onFileState,
   onFileSuccess,
-  uploadApi = uploadFile
+  uploadApi = uploadFile,
 }) {
   if (!files?.length) {
     return { successCount: 0, errorCount: 0, cancelled: false }
@@ -110,9 +107,7 @@ export async function runConcurrentUploads({
       state.status = UPLOAD_FILE_STATUS.PROCESSING
       notify(uid)
 
-      const params = typeof buildParams === 'function'
-        ? buildParams(fileItem)
-        : buildParams?.()
+      const params = typeof buildParams === 'function' ? buildParams(fileItem) : buildParams?.()
       const res = await uploadApi(formData, {
         params,
         signal,
@@ -125,7 +120,7 @@ export async function runConcurrentUploads({
             state.progress = Math.min(99, Math.round((loaded / total) * 100))
           }
           notify(uid)
-        }
+        },
       })
 
       if (res.data?.code === 200) {
@@ -143,7 +138,7 @@ export async function runConcurrentUploads({
             uid,
             fileId: state.fileId,
             fileName: res.data?.data?.fileName ?? raw?.name ?? '',
-            response: res.data
+            response: res.data,
           })
         }
       } else {
@@ -181,9 +176,9 @@ export async function runConcurrentUploads({
   if (signal?.aborted) {
     for (const [uid, state] of states) {
       if (
-        state.status === UPLOAD_FILE_STATUS.PENDING
-        || state.status === UPLOAD_FILE_STATUS.UPLOADING
-        || state.status === UPLOAD_FILE_STATUS.PROCESSING
+        state.status === UPLOAD_FILE_STATUS.PENDING ||
+        state.status === UPLOAD_FILE_STATUS.UPLOADING ||
+        state.status === UPLOAD_FILE_STATUS.PROCESSING
       ) {
         state.status = UPLOAD_FILE_STATUS.CANCELLED
         notify(uid)

@@ -32,6 +32,6 @@ export function usePrint() {
 
   return {
     isPrinting,
-    triggerPrint
+    triggerPrint,
   }
 }

@@ -64,6 +64,6 @@ export function useArchiveFileTableHeight() {
     tableBodyHeight,
     updateTableBodyHeight,
     bindTableWrapResizeObserver,
-    disconnectTableWrapObserver
+    disconnectTableWrapObserver,
   }
 }
