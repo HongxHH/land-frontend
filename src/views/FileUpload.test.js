@@ -33,6 +33,8 @@ const componentMocks = vi.hoisted(() => ({
 }))
 
 vi.mock('element-plus/dist/locale/zh-cn.mjs', () => ({ default: {} }))
+vi.mock('element-plus/es/components/base/style/css', () => ({}))
+vi.mock('element-plus/es/components/base/style/css.mjs', () => ({}))
 
 vi.mock('@/components/file-upload/UploadActionHeader.vue', () => ({ default: componentMocks.UploadActionHeader }))
 vi.mock('@/components/file-upload/FileUploadTaskPanel.vue', () => ({ default: componentMocks.FileUploadTaskPanel }))
