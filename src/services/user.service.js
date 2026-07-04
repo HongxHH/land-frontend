@@ -18,3 +18,11 @@ export const updateProfile = (payload) => axios.put('/api/auth/profile', payload
  */
 export const listUsersPage = (params) =>
   axios.get('/api/user/list', { params }).then((r) => r.data)
+
+/**
+ * @param {number|string} userId
+ * @param {string} password
+ * @returns {Promise<{ code: number, msg?: string }>}
+ */
+export const updateUserPassword = (userId, password) =>
+  axios.put(`/api/user/password/${userId}`, { password }).then((r) => r.data)

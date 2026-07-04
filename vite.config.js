@@ -18,10 +18,6 @@ export default defineConfig({
       resolvers: [elementPlusResolver]
     })
   ],
-  test: {
-    environment: 'jsdom',
-    include: ['src/**/*.test.js'],
-  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

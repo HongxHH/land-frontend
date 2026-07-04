@@ -13,7 +13,7 @@ export function useFileUploadOperations({ currentProject, projectOptions, refres
   const { startPolling, stopPolling, isPolling } = useBatchPoller(
     checkBatchStatus,
     refreshData,
-    { onPollTick: () => refreshData(), pollIntervalMs: 5000 }
+    { onPollTick: () => refreshData(), pollIntervalMs: 3000 }
   )
 
   const {

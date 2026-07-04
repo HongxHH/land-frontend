@@ -45,13 +45,12 @@
         </el-form-item>
       </el-form>
       
-      <div class="tips">
-        <span>可使用已注册或管理员创建的账号登录</span>
-      </div>
+
+
       <div class="footer-links">
         <router-link to="/register">没有账号？立即注册</router-link>
       </div>
-    </el-card>
+    </el-card> 
   </div>
 </template>
 

@@ -42,16 +42,20 @@ export function getUserDisplayName() {
   return username || '用户'
 }
 
-/** 与后端 SysUserController @SaCheckRole(SUPER_ADMIN|ADMIN|DEVELOPER) 对齐；写操作仍仅管理员 */
+/** 与后端 SysUserController @SaCheckRole(SUPER_ADMIN|DEVELOPER) 对齐；写操作仅超级管理员 */
 export function canAccessUserManagement() {
   const userType = getUserSession()?.userType
-  return userType === 'SUPER_ADMIN' || userType === 'ADMIN' || userType === 'DEVELOPER'
+  return userType === 'SUPER_ADMIN' || userType === 'DEVELOPER'
 }
 
-/** 可修改用户权限类型、启用/禁用、删除等写操作 */
+/** 用户管理写操作：创建/删除/启停/改权限类型等，仅超级管理员 */
 export function canManageUsers() {
-  const userType = getUserSession()?.userType
-  return userType === 'SUPER_ADMIN' || userType === 'ADMIN'
+  return getUserSession()?.userType === 'SUPER_ADMIN'
+}
+
+/** 重置他人密码，仅超级管理员 */
+export function canResetUserPassword() {
+  return getUserSession()?.userType === 'SUPER_ADMIN'
 }
 
 /** 与任务监控页 / 相关 API @SaCheckRole(DEVELOPER) 对齐 */

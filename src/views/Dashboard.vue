@@ -397,14 +397,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow: hidden;
 }
 
 .filter-row {
-  /* 仅「项目名称 + 月范围」两列；勿保留第三列空轨，否则与右侧按钮之间会出现大块留白 */
+  /* 项目名称 + 日期范围；第二列用 1fr，避免 EP 默认 350px 超出栅格后与右侧虚线分界重叠 */
   flex: 1 1 auto;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(260px, 320px);
+  grid-template-columns: minmax(160px, 1fr) minmax(220px, 1fr);
   gap: 10px;
   align-items: center;
 }
@@ -465,6 +466,21 @@ onMounted(() => {
 .filter-item {
   width: 100%;
   min-width: 0;
+  max-width: 100%;
+}
+
+/* EP daterange 默认 width:350px（双 class 特异性高于 .filter-item），须强制适配栅格 */
+.filter-card :deep(.filter-item.el-date-editor.el-input__wrapper) {
+  width: 100%;
+  max-width: 100%;
+  --el-date-editor-width: 100%;
+  box-sizing: border-box;
+}
+
+.filter-card :deep(.filter-item.el-date-editor .el-range-input) {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 4.5em;
 }
 
 .filter-actions {
@@ -473,8 +489,8 @@ onMounted(() => {
   justify-content: center;
   flex-shrink: 0;
   gap: 8px;
-  padding-left: 8px;
-  margin-left: 2px;
+  padding-left: 10px;
+  margin-left: 4px;
   border-left: 1px dashed #d3ddea;
 }
 

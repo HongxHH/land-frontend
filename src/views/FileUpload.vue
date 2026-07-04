@@ -77,6 +77,7 @@
     </div>
 
     <CalibrationWorkspaceDialog
+      v-if="showCalibration"
       v-model="showCalibration"
       :project-id="currentProject"
       :current-file="currentFile"
@@ -115,13 +116,16 @@
 
 <script setup>
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UploadActionHeader from '@/components/file-upload/UploadActionHeader.vue'
 import FileUploadTaskPanel from '@/components/file-upload/FileUploadTaskPanel.vue'
 import CreateProjectDialog from '@/components/file-upload/CreateProjectDialog.vue'
 import BatchUploadDialog from '@/components/file-upload/BatchUploadDialog.vue'
-import CalibrationWorkspaceDialog from '@/components/file-upload/CalibrationWorkspaceDialog.vue'
+
+const CalibrationWorkspaceDialog = defineAsyncComponent(() =>
+  import('@/components/file-upload/CalibrationWorkspaceDialog.vue')
+)
 import { useFileUploadPage } from '@/composables/file-upload/useFileUploadPage'
 const route = useRoute()
 const router = useRouter()

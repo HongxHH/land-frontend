@@ -110,8 +110,11 @@ export async function runConcurrentUploads({
       state.status = UPLOAD_FILE_STATUS.PROCESSING
       notify(uid)
 
+      const params = typeof buildParams === 'function'
+        ? buildParams(fileItem)
+        : buildParams?.()
       const res = await uploadApi(formData, {
-        params: buildParams(),
+        params,
         signal,
         onUploadProgress: (event) => {
           const total = Number(event.total || state.total || 0)

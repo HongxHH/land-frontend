@@ -3,7 +3,8 @@ import { ElMessage } from 'element-plus'
 import { queryFiles } from '@/services/file.service'
 import {
   buildOptimisticUploadTableRow,
-  formatUploadTimeForDisplay
+  formatUploadTimeForDisplay,
+  sortFilesAttentionFirst
 } from '@/utils/fileStatePresent.js'
 
 function mapApiFileToTableRow(item) {
@@ -20,7 +21,10 @@ function mapApiFileToTableRow(item) {
     uploadTime: item.uploadTime ? formatUploadTimeForDisplay(item.uploadTime) : '未知时间',
     type: fileType,
     phase: item.phase ?? null,
+    fileContextType: item.fileContextType || null,
+    autoParseQueuedAt: item.autoParseQueuedAt ?? null,
     status: item.fileState || 'WAITING_PARSE',
+    isVerified: item.isVerified,
     errorMessage: item.parseMessage,
     thumbnailUrl: item.thumbGridfsId
       ? `/api/file/download/gridfs/${item.thumbGridfsId}`
@@ -58,7 +62,7 @@ export function useFileTableQuery(currentProject) {
       )
     }
     if (!toPrepend.length) return
-    fileTableData.value = [...toPrepend, ...fileTableData.value]
+    fileTableData.value = sortFilesAttentionFirst([...toPrepend, ...fileTableData.value])
     total.value += toPrepend.length
   }
 
@@ -105,7 +109,7 @@ export function useFileTableQuery(currentProject) {
         })
       }
 
-      fileTableData.value = list
+      fileTableData.value = sortFilesAttentionFirst(list)
     } catch (error) {
       console.error(error)
     } finally {

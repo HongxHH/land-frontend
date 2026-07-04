@@ -144,10 +144,10 @@
                 title="点击查看解析流程"
                 @click.stop="emit('open-parse-flow', row)"
               >
-                {{ getArchiveFileStateLabel(row.fileState) }}
+                {{ getArchiveFileStateLabel(row.fileState, row) }}
               </el-tag>
               <el-tag v-else :type="getArchiveStateTagType(row.fileState)" size="small" effect="light">
-                {{ getArchiveFileStateLabel(row.fileState) }}
+                {{ getArchiveFileStateLabel(row.fileState, row) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -495,6 +495,14 @@ defineExpose({
 
 :deep(.table-wrap .el-table .archive-file-row--verify-failed:hover > td.el-table__cell) {
   background: #ffefeb !important;
+}
+
+:deep(.table-wrap .el-table .archive-file-row--parse-failed > td.el-table__cell) {
+  background: #fff5f5 !important;
+}
+
+:deep(.table-wrap .el-table .archive-file-row--parse-failed:hover > td.el-table__cell) {
+  background: #ffe8e8 !important;
 }
 
 .thumb {

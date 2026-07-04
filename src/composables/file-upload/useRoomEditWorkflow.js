@@ -574,16 +574,6 @@ export function useRoomEditWorkflow(options = {}) {
       return
     }
 
-    try {
-      await ElMessageBox.confirm('确认保存当前户室修改吗？', '提示', {
-        confirmButtonText: '确认保存',
-        cancelButtonText: '取消',
-        type: 'primary'
-      })
-    } catch {
-      return
-    }
-
     localBatchUpdateLoading.value = true
     try {
       const ok = await persistRoomRow(targetRow, { refreshReport: true, silentRefresh: true })

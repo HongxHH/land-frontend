@@ -1,6 +1,7 @@
 <template>
   <div class="archive-audit-stack">
     <CalibrationWorkspaceDialog
+      v-if="showCalibration"
       v-model="showCalibration"
       :project-id="projectId"
       :focus-usage-name="auditFocusUsageName"
@@ -65,8 +66,11 @@
 
 <script setup>
 import { defineAsyncComponent } from 'vue'
-import CalibrationWorkspaceDialog from '@/components/file-upload/CalibrationWorkspaceDialog.vue'
 import PlanningReviewAuditDialog from '@/components/project-list/PlanningReviewAuditDialog.vue'
+
+const CalibrationWorkspaceDialog = defineAsyncComponent(() =>
+  import('@/components/file-upload/CalibrationWorkspaceDialog.vue')
+)
 import CapacityIndicatorAuditDialog from '@/components/project-list/CapacityIndicatorAuditDialog.vue'
 import { useArchiveFolderAuditStack } from '@/composables/project-list/useArchiveFolderAuditStack.js'
 

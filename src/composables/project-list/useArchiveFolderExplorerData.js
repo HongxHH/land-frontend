@@ -100,10 +100,10 @@ export function useArchiveFolderExplorerData(deps) {
       await fetchArchiveFiles({ force: true })
       const stillPending = archiveFiles.value.some((row) => isActiveFileProcessState(row.fileState))
       if (stillPending) {
-        fileStatePollTimer = setTimeout(tick, 5000)
+        fileStatePollTimer = setTimeout(tick, 3000)
       }
     }
-    fileStatePollTimer = setTimeout(tick, 5000)
+    fileStatePollTimer = setTimeout(tick, 3000)
   }
 
   const prependUploadedArchiveFiles = (entries = []) => {

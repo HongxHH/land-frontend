@@ -1,6 +1,13 @@
 /** 归档 Tab：筛选选项、格式化与表格展示辅助 */
 
-import { getFileStateTagType } from '@/utils/fileStatePresent.js'
+import {
+  FILE_STATE_FILTER_OPTIONS,
+  getFileStateTagType,
+  isFileAttentionFirst,
+  isFileParseFailed,
+  isFileVerifyFailed,
+  sortFilesAttentionFirst
+} from '@/utils/fileStatePresent.js'
 
 export const ARCHIVE_VERIFY_STATUS_OPTIONS = [
   { label: '已通过', value: 'PASSED' },
@@ -8,19 +15,8 @@ export const ARCHIVE_VERIFY_STATUS_OPTIONS = [
   { label: '未校验', value: 'UNVERIFIED' }
 ]
 
-export const ARCHIVE_FILE_STATE_OPTIONS = [
-  { label: '后处理中', value: 'WAITING_POST_PROCESS' },
-  { label: '上传中', value: 'UPLOADING' },
-  { label: '待解析', value: 'WAITING_PARSE' },
-  { label: '排队中', value: 'PENDING' },
-  { label: '解析中', value: 'PARSING' },
-  { label: '解析失败', value: 'PARSE_FAIL' },
-  { label: '解析完成', value: 'PARSE_COMPLETE' },
-  { label: '不可解析', value: 'UNPARSEABLE' },
-  { label: '审核中', value: 'AUDITING' },
-  { label: '审核通过', value: 'AUDIT_PASS' },
-  { label: '审核失败', value: 'AUDIT_FAIL' }
-]
+/** 与后端 FileStateEnum 对齐的文件状态筛选项 */
+export const ARCHIVE_FILE_STATE_OPTIONS = FILE_STATE_FILTER_OPTIONS
 
 export function formatArchiveFileSize(bytes) {
   const value = Number(bytes || 0)
@@ -41,8 +37,7 @@ export function getArchiveStateTagType(state) {
 }
 
 export function isArchiveVerifyFailed(row) {
-  const value = row?.isVerified
-  return value === 0 || value === '0' || value === false
+  return isFileVerifyFailed(row)
 }
 
 export function getArchiveVerifyStatus(row) {
@@ -56,21 +51,14 @@ export function getArchiveVerifyStatus(row) {
   return { label: '未校验', type: 'info' }
 }
 
-/** 当前页内将校验未通过的文件排在前面，组内保持接口返回顺序 */
-export function sortArchiveFilesVerifyFailedFirst(records) {
-  if (!Array.isArray(records) || records.length < 2) return records ?? []
-  if (!records.some(isArchiveVerifyFailed)) return records
-  const failed = []
-  const rest = []
-  for (const row of records) {
-    if (isArchiveVerifyFailed(row)) failed.push(row)
-    else rest.push(row)
-  }
-  return [...failed, ...rest]
-}
+/** @deprecated 使用 sortFilesAttentionFirst；保留别名兼容旧引用 */
+export const sortArchiveFilesVerifyFailedFirst = sortFilesAttentionFirst
 
 export function archiveFileTableRowClassName({ row }) {
-  return isArchiveVerifyFailed(row) ? 'archive-file-row--verify-failed' : ''
+  if (isFileAttentionFirst(row)) {
+    return isFileParseFailed(row) ? 'archive-file-row--parse-failed' : 'archive-file-row--verify-failed'
+  }
+  return ''
 }
 
 function shouldSkipArchiveThumbnail(row) {

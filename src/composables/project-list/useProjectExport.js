@@ -1,4 +1,5 @@
 ﻿import { saveAs } from 'file-saver'
+import '@/utils/ensureBufferPolyfill.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { projectHasMissingUsage } from '@/composables/file-upload/surveyUsagePending.js'
 import {

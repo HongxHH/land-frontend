@@ -46,6 +46,22 @@
         header-align="center"
         show-overflow-tooltip
       />
+      <el-table-column label="密码" width="150" align="center" header-align="center">
+        <template #default="{ row }">
+          <div class="user-password-cell">
+            <span class="user-password-mask">******</span>
+            <el-button
+              v-if="canResetUserPassword"
+              link
+              type="primary"
+              size="small"
+              @click="openPasswordDialog(row)"
+            >
+              重置
+            </el-button>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" width="100" align="center" header-align="center">
         <template #default="{ row }">
           <el-switch
@@ -83,17 +99,54 @@
       />
     </div>
 
+    <el-dialog
+      v-model="passwordDialogVisible"
+      class="app-form-dialog"
+      title="重置用户密码"
+      width="440px"
+      destroy-on-close
+      @closed="resetPasswordForm"
+    >
+      <p v-if="passwordTarget" class="password-dialog-tip">
+        为用户「{{ passwordTarget.username }}」（{{ passwordTarget.realName || '—' }}）设置新密码
+      </p>
+      <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="88px">
+        <el-form-item label="新密码" prop="password">
+          <el-input
+            v-model="passwordForm.password"
+            type="password"
+            show-password
+            placeholder="6-20 位"
+            autocomplete="new-password"
+          />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="password2">
+          <el-input
+            v-model="passwordForm.password2"
+            type="password"
+            show-password
+            placeholder="再次输入新密码"
+            autocomplete="new-password"
+            @keyup.enter="submitPasswordReset"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="savingPassword" @click="submitPasswordReset">确定</el-button>
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { USER_TYPE_OPTIONS, userTypeLabel } from '@/constants/userTypes'
-import { canManageUsers as canManageUsersFn } from '@/utils/auth-session.js'
-import { listUsersPage } from '@/services/user.service'
+import { setUserSession } from '@/utils/auth-session.js'
+import { listUsersPage, updateUserPassword } from '@/services/user.service'
 
 const loading = ref(false)
 const rows = ref([])
@@ -104,35 +157,65 @@ const keyword = ref('')
 const togglingId = ref(null)
 const me = ref(null)
 const assigningTypeId = ref(null)
-
-const canManageUsers = computed(() => canManageUsersFn())
-
-const canAssignUserTypes = computed(() => {
-  const t = me.value?.userType
-  return t === 'SUPER_ADMIN' || t === 'ADMIN'
+const passwordDialogVisible = ref(false)
+const passwordTarget = ref(null)
+const passwordFormRef = ref(null)
+const savingPassword = ref(false)
+const passwordForm = reactive({
+  password: '',
+  password2: ''
 })
 
-/** 下拉可选类型：管理员不出现「超级管理员」选项 */
-const userTypeSelectOptions = computed(() => {
-  if (me.value?.userType === 'SUPER_ADMIN') return USER_TYPE_OPTIONS
-  return USER_TYPE_OPTIONS.filter((o) => o.value !== 'SUPER_ADMIN')
-})
+const passwordRules = {
+  password: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度 6-20 位', trigger: 'blur' }
+  ],
+  password2: [
+    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    {
+      validator: (_r, v, cb) => {
+        if (v !== passwordForm.password) cb(new Error('两次密码不一致'))
+        else cb()
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+/** 以 /api/auth/me 为准，避免 sessionStorage 中 userType 过期导致按钮不显示 */
+const isSuperAdmin = computed(() => me.value?.userType === 'SUPER_ADMIN')
+const canManageUsers = computed(() => isSuperAdmin.value)
+const canResetUserPassword = computed(() => isSuperAdmin.value)
+const canAssignUserTypes = computed(() => isSuperAdmin.value)
+
+const userTypeSelectOptions = computed(() => USER_TYPE_OPTIONS)
 
 function showUserTypeEditor(row) {
   if (!canAssignUserTypes.value || !me.value) return false
   if (row.id === me.value.id) return false
-  if (me.value.userType === 'ADMIN' && row.userType === 'SUPER_ADMIN') return false
   return true
 }
 
-/** 历史 DEPT_USER 在下拉中与 USER 等价展示 */
+function openPasswordDialog(row) {
+  passwordTarget.value = row
+  resetPasswordForm()
+  passwordDialogVisible.value = true
+}
+
+function resetPasswordForm() {
+  passwordForm.password = ''
+  passwordForm.password2 = ''
+  passwordFormRef.value?.clearValidate()
+}
+
+/** 历史 DEPT_USER、ADMIN 在下拉中与 USER 等价展示 */
 function normalizeUserTypeForSelect(userType) {
-  return userType === 'DEPT_USER' ? 'USER' : userType
+  return userType === 'DEPT_USER' || userType === 'ADMIN' ? 'USER' : userType
 }
 
 function tagType(userType) {
   if (userType === 'SUPER_ADMIN') return 'danger'
-  if (userType === 'ADMIN') return 'warning'
   if (userType === 'DEVELOPER') return 'success'
   return 'info'
 }
@@ -192,6 +275,7 @@ async function loadMe() {
       return
     }
     me.value = data.data || null
+    if (me.value) setUserSession(me.value)
   } catch {
     me.value = null
   }
@@ -215,6 +299,36 @@ async function onUserTypeChange(row, newType) {
   }
 }
 
+async function submitPasswordReset() {
+  if (!passwordFormRef.value || !passwordTarget.value) return
+  try {
+    await passwordFormRef.value.validate()
+  } catch {
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定重置用户「${passwordTarget.value.username}」的密码？`, '确认', {
+      type: 'warning'
+    })
+  } catch {
+    return
+  }
+  savingPassword.value = true
+  try {
+    const data = await updateUserPassword(passwordTarget.value.id, passwordForm.password)
+    if (Number(data.code) !== 200) {
+      ElMessage.error(data.msg || '密码更新失败')
+      return
+    }
+    ElMessage.success(data.msg || '密码已更新')
+    passwordDialogVisible.value = false
+  } catch (e) {
+    ElMessage.error(e.response?.data?.msg || e.message || '密码更新失败')
+  } finally {
+    savingPassword.value = false
+  }
+}
+
 async function onDelete(row) {
   try {
     await ElMessageBox.confirm(`确定删除用户「${row.username}」？`, '确认', { type: 'warning' })
@@ -234,8 +348,8 @@ async function onDelete(row) {
   }
 }
 
-onMounted(() => {
-  loadMe()
+onMounted(async () => {
+  await loadMe()
   loadList()
 })
 </script>
@@ -269,9 +383,26 @@ onMounted(() => {
   width: 160px;
 }
 
-/* 主表固定列总宽：90 + 140 + 120 + 100 + 170 = 620px，中间三列均分剩余宽度 */
+.user-password-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-password-mask {
+  color: #909399;
+  letter-spacing: 2px;
+}
+
+.password-dialog-tip {
+  margin: 0 0 16px;
+  color: #606266;
+  font-size: 14px;
+}
+
+/* 主表固定列总宽：90 + 140 + 120 + 150 + 100 + 170 = 770px，中间三列均分剩余宽度 */
 .user-list-table {
-  --user-list-fixed-cols-width: 620px;
+  --user-list-fixed-cols-width: 770px;
 }
 
 .user-list-table :deep(.el-table__header-wrapper table),

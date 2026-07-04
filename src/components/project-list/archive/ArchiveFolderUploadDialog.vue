@@ -12,12 +12,28 @@
     @closed="emit('closed')"
   >
     <el-form label-position="top">
-      <el-form-item label="文件归类">
-        <el-input :model-value="lockedFileContextLabel" disabled />
-      </el-form-item>
-      <el-form-item label="目标归档夹">
-        <el-input :model-value="selectedArchiveName || '—'" disabled />
-      </el-form-item>
+      <div class="upload-target-summary" role="status" aria-live="polite">
+        <div class="upload-target-summary__title">上传目标</div>
+        <div class="upload-target-summary__grid">
+          <div class="upload-target-summary__item">
+            <div class="upload-target-summary__label">
+              <el-icon class="upload-target-summary__icon" aria-hidden="true"><Document /></el-icon>
+              文件归类
+            </div>
+            <div class="upload-target-summary__value">{{ lockedFileContextLabel }}</div>
+          </div>
+          <div class="upload-target-summary__item upload-target-summary__item--folder">
+            <div class="upload-target-summary__label">
+              <el-icon class="upload-target-summary__icon" aria-hidden="true"><FolderOpened /></el-icon>
+              目标归档夹
+            </div>
+            <div class="upload-target-summary__value upload-target-summary__value--folder">
+              {{ selectedArchiveName || '—' }}
+            </div>
+          </div>
+        </div>
+        <p class="upload-target-summary__hint">由当前选中的归档夹决定，上传前请确认无误</p>
+      </div>
       <el-form-item v-if="uploadForm.fileContextType === 'SURVEY_REPORT'" label="期数（实测报告必填）">
         <el-input-number
           :model-value="uploadForm.phase"
@@ -104,7 +120,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { UploadFilled } from '@element-plus/icons-vue'
+import { Document, FolderOpened, UploadFilled } from '@element-plus/icons-vue'
 import UploadFileRow from '@/components/file-upload/UploadFileRow.vue'
 import {
   archiveUploadFileDisplayName,

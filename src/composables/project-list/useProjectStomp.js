@@ -1,3 +1,4 @@
+import '@/utils/ensureBufferPolyfill.js'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import SockJS from 'sockjs-client/dist/sockjs'
 import { Client } from '@stomp/stompjs'

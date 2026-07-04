@@ -1,4 +1,5 @@
 import { defineAsyncComponent } from 'vue'
+import '@/utils/ensureBufferPolyfill.js'
 
 let cssLoaded = false
 

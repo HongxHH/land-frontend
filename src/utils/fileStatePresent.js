@@ -1,17 +1,66 @@
 /** 文件处理状态：列表展示文案、标签类型与轮询判定 */
 
+import { isAutoParseFileContext } from '@/utils/autoParseContext.js'
+
 export const FILE_STATE_LABELS = {
   UPLOADING: '上传中',
   WAITING_POST_PROCESS: '后处理中',
   WAITING_PARSE: '待解析',
   PENDING: '排队中',
   PARSING: '解析中',
+  UPLOAD_FAIL: '上传失败',
   PARSE_FAIL: '解析失败',
   PARSE_COMPLETE: '解析完成',
   UNPARSEABLE: '不可解析',
   AUDITING: '审核中',
   AUDIT_PASS: '审核通过',
   AUDIT_FAIL: '审核失败'
+}
+
+/**
+ * 与后端 FileStateEnum 完全一致（筛选、查询参数用）。
+ * 列表行展示仍可用 getFileStateLabel 做 WAITING_PARSE 细分文案。
+ */
+export const BACKEND_FILE_STATE_CODES = [
+  'UPLOADING',
+  'WAITING_POST_PROCESS',
+  'WAITING_PARSE',
+  'PENDING',
+  'PARSING',
+  'UPLOAD_FAIL',
+  'PARSE_FAIL',
+  'PARSE_COMPLETE',
+  'UNPARSEABLE',
+  'AUDITING',
+  'AUDIT_PASS',
+  'AUDIT_FAIL'
+]
+
+/** 筛选下拉文案（固定枚举含义，不做自动解析上下文细分） */
+const FILE_STATE_FILTER_LABELS = {
+  WAITING_POST_PROCESS: '后处理中',
+  WAITING_PARSE: '等待解析',
+  PENDING: '解析排队中',
+  UNPARSEABLE: '不可解析',
+  AUDITING: '待审核',
+  AUDIT_FAIL: '审核不通过'
+}
+
+export const FILE_STATE_FILTER_OPTIONS = BACKEND_FILE_STATE_CODES.map((value) => ({
+  value,
+  label: FILE_STATE_FILTER_LABELS[value] ?? FILE_STATE_LABELS[value] ?? value
+}))
+
+/** @typedef {{ fileContextType?: string, autoParseQueuedAt?: string|null }} FileStateLabelContext */
+
+function resolveWaitingParseLabel(context) {
+  if (!isAutoParseFileContext(context?.fileContextType)) {
+    return FILE_STATE_LABELS.WAITING_PARSE
+  }
+  if (context?.autoParseQueuedAt) {
+    return '自动解析排队中'
+  }
+  return '等待自动解析'
 }
 
 /** 上传后处理、解析排队/进行中：需要轮询刷新 */
@@ -23,8 +72,28 @@ export const ACTIVE_FILE_PROCESS_STATES = [
   'PARSING'
 ]
 
-export function getFileStateLabel(state) {
+/**
+ * @param {string} state
+ * @param {FileStateLabelContext} [context]
+ */
+export function getFileStateLabel(state, context) {
+  if (state === 'WAITING_PARSE') {
+    return resolveWaitingParseLabel(context)
+  }
   return FILE_STATE_LABELS[state] || state || '-'
+}
+
+/**
+ * @param {{ fileState?: string, status?: string, fileContextType?: string }} row
+ */
+export function getParseButtonText(row) {
+  const state = row?.fileState ?? row?.status
+  if (state === 'PARSE_FAIL') return '重试解析'
+  if (state === 'PARSE_COMPLETE') return '重新解析'
+  if (state === 'WAITING_PARSE' && isAutoParseFileContext(row?.fileContextType)) {
+    return '提前解析'
+  }
+  return '开始解析'
 }
 
 export function getFileStateTagType(state) {
@@ -48,6 +117,36 @@ export function getFileStateDotColor(state) {
 
 export function isActiveFileProcessState(state) {
   return ACTIVE_FILE_PROCESS_STATES.includes(state)
+}
+
+/** @param {{ isVerified?: number|string|boolean }} row */
+export function isFileVerifyFailed(row) {
+  const value = row?.isVerified
+  return value === 0 || value === '0' || value === false
+}
+
+/** @param {{ fileState?: string, status?: string }} row */
+export function isFileParseFailed(row) {
+  const state = row?.fileState ?? row?.status
+  return state === 'PARSE_FAIL'
+}
+
+/** 解析失败或校验未通过：列表优先展示 */
+export function isFileAttentionFirst(row) {
+  return isFileParseFailed(row) || isFileVerifyFailed(row)
+}
+
+/** 当前页内将解析失败或校验未通过的文件排在前面，组内保持接口返回顺序 */
+export function sortFilesAttentionFirst(records) {
+  if (!Array.isArray(records) || records.length < 2) return records ?? []
+  if (!records.some(isFileAttentionFirst)) return records
+  const priority = []
+  const rest = []
+  for (const row of records) {
+    if (isFileAttentionFirst(row)) priority.push(row)
+    else rest.push(row)
+  }
+  return [...priority, ...rest]
 }
 
 export function mapFileContextTypeToTableType(fileContextType) {
@@ -83,6 +182,8 @@ export function buildOptimisticUploadTableRow({
     uploadTime,
     type: mapFileContextTypeToTableType(fileContextType),
     phase,
+    fileContextType: fileContextType || null,
+    autoParseQueuedAt: null,
     status: fileState,
     errorMessage: null,
     thumbnailUrl: PLACEHOLDER_THUMB,
@@ -102,6 +203,7 @@ export function buildOptimisticArchiveFileRow({
     originalName: fileName || '未命名文件',
     fileContextType,
     fileState,
+    autoParseQueuedAt: null,
     uploadTime: new Date().toISOString(),
     uploadUserName,
     _optimistic: true

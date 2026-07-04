@@ -68,11 +68,11 @@
             placement="top"
           >
             <el-tag :type="getFileStateTagType(row.status)" size="small" effect="light">
-              {{ statusMap[row.status]?.text || getFileStateLabel(row.status) }}
+              {{ statusMap[row.status]?.text || getFileStateLabel(row.status, { fileContextType: row.fileContextType, autoParseQueuedAt: row.autoParseQueuedAt }) }}
             </el-tag>
           </el-tooltip>
           <el-tag v-else :type="getFileStateTagType(row.status)" size="small" effect="light">
-            {{ statusMap[row.status]?.text || getFileStateLabel(row.status) }}
+            {{ statusMap[row.status]?.text || getFileStateLabel(row.status, { fileContextType: row.fileContextType, autoParseQueuedAt: row.autoParseQueuedAt }) }}
           </el-tag>
         </template>
       </el-table-column>

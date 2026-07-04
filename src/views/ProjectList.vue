@@ -259,26 +259,70 @@
         @update:selected-file-id="handleSelectPreviewFile"
       />
 
-      <el-dialog v-model="showCreateProjectDialog" class="app-form-dialog" title="新建项目" width="500px">
-        <el-form label-position="top">
-          <el-form-item label="项目名称" required>
-            <el-input v-model.trim="newProjectForm.projectName" placeholder="请输入项目名称" maxlength="30" />
-          </el-form-item>
-          <el-form-item label="项目时间" required>
-            <el-date-picker
-              v-model="newProjectForm.projectTime"
-              type="date"
-              value-format="YYYY-MM-DD"
-              format="YYYY-MM-DD"
-              placeholder="请选择项目时间"
-              style="width: 100%;"
-            />
-          </el-form-item>
-        </el-form>
+      <el-dialog
+        v-model="showCreateProjectDialog"
+        class="app-form-dialog create-project-wizard-dialog"
+        title="新建项目"
+        width="680px"
+        :close-on-click-modal="!isCreateProjectBusy"
+        :close-on-press-escape="!isCreateProjectBusy"
+        :show-close="!isCreateProjectBusy"
+        @closed="resetCreateProjectWizard"
+      >
+        <div class="create-project-wizard-body" :class="{ 'is-uploading': smartFolderUploadLoading }">
+          <el-form label-position="top" class="create-project-wizard-form">
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="项目名称" required>
+                  <el-input
+                    v-model.trim="newProjectForm.projectName"
+                    placeholder="请输入项目名称"
+                    maxlength="30"
+                    :disabled="isCreateProjectBusy"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="项目时间" required>
+                  <el-date-picker
+                    v-model="newProjectForm.projectTime"
+                    type="date"
+                    value-format="YYYY-MM-DD"
+                    format="YYYY-MM-DD"
+                    placeholder="请选择项目时间"
+                    style="width: 100%;"
+                    :disabled="isCreateProjectBusy"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+
+          <SmartFolderImportDialog
+            embedded
+            :scanned-entries="scannedEntries"
+            :grouped-entries="groupedEntries"
+            :survey-phase="surveyPhase"
+            :selected-count="selectedCount"
+            :has-scan-result="hasScanResult"
+            :upload-loading="smartFolderUploadLoading"
+            :scan-loading="smartFolderScanLoading"
+            :upload-progress="smartFolderUploadProgress"
+            :get-file-upload-state="getSmartFolderUploadState"
+            :upload-items="smartFolderUploadItems"
+            @update:survey-phase="(val) => (surveyPhase = val)"
+            @folder-input-change="handleFolderInputChange"
+            @folder-drop="handleFolderDrop"
+            @toggle-selected="setEntrySelected"
+            @change-context-type="setEntryContextType"
+          />
+        </div>
         <template #footer>
-          <el-button @click="showCreateProjectDialog = false">取消</el-button>
-          <el-button type="primary" :loading="createProjectLoading" @click="handleCreateProjectFromTab">
-            立即创建
+          <el-button :disabled="isCreateProjectBusy" @click="handleCreateProjectCancel">
+            取消
+          </el-button>
+          <el-button type="primary" :loading="isCreateProjectBusy" @click="handleCreateProjectSubmit">
+            {{ createSubmitLabel }}
           </el-button>
         </template>
       </el-dialog>
@@ -289,12 +333,8 @@
 <script setup>
 import {
   ref,
-  onMounted,
   computed,
   watch,
-  onUnmounted,
-  onActivated,
-  onDeactivated,
   nextTick,
   defineAsyncComponent
 } from 'vue'
@@ -317,7 +357,9 @@ import { resolveVisibleColumnDefs } from '@/composables/project-list/summaryExpo
 import { loadSummaryLayoutFromStorage } from '@/composables/project-list/summaryExportLayoutStorage.js'
 import { useProjectDetailDialog } from '@/composables/project-list/useProjectDetailDialog'
 import { getArchiveFileRecordId } from '@/composables/project-list/archiveFolderQuery.js'
-import { isProjectWorkspaceTab } from '@/utils/fileContextTypeRegistry.js'
+import SmartFolderImportDialog from '@/components/project-list/SmartFolderImportDialog.vue'
+import { useSmartFolderImport } from '@/composables/project-list/useSmartFolderImport.js'
+import { useProjectListWorkspace } from '@/composables/project-list/useProjectListWorkspace.js'
 
 /** 归档 Tab 与其余 Tab / 弹窗异步分包，减轻首次进入「项目信息」的解析与下载耗时 */
 const ArchiveFolderTab = defineAsyncComponent(() => import('@/components/project-list/ArchiveFolderTab.vue'))
@@ -388,62 +430,54 @@ const handleSummaryAfterExportRequest = () => {
 
 const route = useRoute()
 const router = useRouter()
-const initialArchiveId = ref(
-  String(route.query.fromAuditReturn || '') === '1' ? String(route.query.archiveId || '') : ''
-)
-const initialReturnTab = ref(
-  String(route.query.fromAuditReturn || '') === '1' ? String(route.query.tab || 'archives') : ''
-)
 const archiveTabRef = ref(null)
 const workspaceAuditStackRef = ref(null)
-
-const AUDIT_STACK_WAIT_MS = 8000
-const AUDIT_STACK_POLL_MS = 32
-
-async function waitForWorkspaceAuditStack() {
-  const deadline = Date.now() + AUDIT_STACK_WAIT_MS
-  while (Date.now() < deadline) {
-    if (
-      currentProjectInfo.id &&
-      typeof workspaceAuditStackRef.value?.openAuditByFileRecordId === 'function'
-    ) {
-      return workspaceAuditStackRef.value
-    }
-    await nextTick()
-    await new Promise((resolve) => setTimeout(resolve, AUDIT_STACK_POLL_MS))
-  }
-  if (
-    currentProjectInfo.id &&
-    typeof workspaceAuditStackRef.value?.openAuditByFileRecordId === 'function'
-  ) {
-    return workspaceAuditStackRef.value
-  }
-  return null
-}
-
-/** keep-alive 下离开路由时暂停 Tab 内轮询 / STOMP 等 */
-const pageRouteActive = ref(true)
-onActivated(() => {
-  pageRouteActive.value = true
-  void tryConsumeDeepLinkOpenAudit()
-})
-onDeactivated(() => {
-  pageRouteActive.value = false
-  clearRefreshTimer()
-})
-
-// 组件卸载时清理事件，避免内存泄漏
-onUnmounted(() => {
-  clearRefreshTimer()
-})
+const workspaceQueryLoading = ref(false)
 
 // 页面状态
 const activeTab = ref('archives')
 const showCreateProjectDialog = ref(false)
 const createProjectLoading = ref(false)
+const {
+  scannedEntries,
+  groupedEntries,
+  surveyPhase,
+  selectedCount,
+  hasScanResult,
+  uploadLoading: smartFolderUploadLoading,
+  uploadProgress: smartFolderUploadProgress,
+  scanLoading: smartFolderScanLoading,
+  importedRootFolderName,
+  resetScan: resetSmartFolderScan,
+  handleFolderInputChange,
+  handleFolderDrop,
+  setEntrySelected,
+  setEntryContextType,
+  getFileUploadState: getSmartFolderUploadState,
+  uploadToProject,
+  buildUploadItems
+} = useSmartFolderImport()
+const smartFolderUploadItems = computed(() => buildUploadItems())
+const isCreateProjectBusy = computed(() => createProjectLoading.value || smartFolderUploadLoading.value)
+const createSubmitLabel = computed(() => {
+  if (smartFolderUploadLoading.value) return '上传中…'
+  if (createProjectLoading.value) return '创建中…'
+  return selectedCount.value > 0 ? '创建并上传' : '立即创建'
+})
 const newProjectForm = ref({
   projectName: '',
   projectTime: ''
+})
+
+const applySuggestedProjectName = (folderName) => {
+  const suggested = String(folderName || '').trim()
+  if (!suggested) return
+  if ((newProjectForm.value.projectName || '').trim()) return
+  newProjectForm.value.projectName = suggested.slice(0, 30)
+}
+
+watch(importedRootFolderName, (name) => {
+  applySuggestedProjectName(name)
 })
 
 
@@ -483,148 +517,7 @@ const {
   applyProjectMeta
 } = useProjectSelector()
 
-const projectOptionsLoaded = ref(false)
-const projectOptionsLoading = ref(false)
-/** 首进页面：拉项目列表 + 恢复选中项期间的全局反馈，避免误以为卡死 */
-const projectWorkspaceBootstrapping = ref(false)
-const workspaceQueryLoading = ref(false)
-let projectOptionsLoadingPromise = null
-
-const ensureProjectOptionsLoaded = async () => {
-  if (projectOptionsLoaded.value) return true
-  if (projectOptionsLoadingPromise) return projectOptionsLoadingPromise
-  projectOptionsLoading.value = true
-  projectOptionsLoadingPromise = fetchProjectList()
-    .then(() => {
-      projectOptionsLoaded.value = true
-      return true
-    })
-    .finally(() => {
-      projectOptionsLoading.value = false
-      projectOptionsLoadingPromise = null
-    })
-  return projectOptionsLoadingPromise
-}
-
 const applyCurrentProjectMeta = (projectId) => applyProjectMeta(projectId)
-
-/** 与 projectFilterStatus 配套：在拉取项目列表前恢复 currentProjectInfo，使归档 Tab 可与列表请求并行 */
-const PROJECT_FILTER_DISPLAY_META = 'projectFilterDisplayMeta'
-
-function persistProjectFilterDisplayMeta() {
-  try {
-    const id = String(currentProjectInfo.id || '')
-    if (!id) return
-    localStorage.setItem(
-      PROJECT_FILTER_DISPLAY_META,
-      JSON.stringify({
-        id,
-        name: currentProjectInfo.name || '',
-        code: currentProjectInfo.code || ''
-      })
-    )
-  } catch {
-    /* ignore */
-  }
-}
-
-function readProjectFilterDisplayMeta() {
-  try {
-    const raw = localStorage.getItem(PROJECT_FILTER_DISPLAY_META)
-    if (!raw) return null
-    const o = JSON.parse(raw)
-    if (!o || typeof o !== 'object') return null
-    return {
-      id: String(o.id || ''),
-      name: String(o.name || ''),
-      code: String(o.code || '')
-    }
-  } catch {
-    return null
-  }
-}
-
-function applyCachedProjectWorkspaceMeta(projectId) {
-  const idStr = String(projectId || '')
-  if (!idStr) return false
-  const cached = readProjectFilterDisplayMeta()
-  if (!cached || cached.id !== idStr) return false
-  filterProject.value = idStr
-  currentProjectInfo.id = idStr
-  currentProjectInfo.name = cached.name || '…'
-  currentProjectInfo.code = cached.code || `XM-${idStr.padStart(3, '0')}`
-  currentProjectInfo.status = '已归档'
-  return true
-}
-
-const handlePendingAuditConsumed = () => {
-  const q = { ...route.query }
-  if (q.openAuditFileId) {
-    delete q.openAuditFileId
-    router.replace({ query: q })
-  }
-}
-
-let deepLinkAuditOpening = false
-
-const handleOpenAuditByFileRecordId = async (payload) => {
-  const fileRecordId =
-    typeof payload === 'object' && payload != null
-      ? payload.fileRecordId
-      : payload
-  const focusUsageName =
-    typeof payload === 'object' && payload != null ? payload.usageName : ''
-  const fid = String(fileRecordId || '').trim()
-  if (!fid) {
-    ElMessage.warning('缺少文件信息，无法打开审核')
-    return false
-  }
-  const stack = await waitForWorkspaceAuditStack()
-  if (!stack) {
-    ElMessage.warning('审核组件尚未就绪，请稍后再试')
-    return false
-  }
-  await stack.openAuditByFileRecordId(fid, {
-    force: true,
-    skipArchiveNavigation: true,
-    focusUsageName: String(focusUsageName || '').trim()
-  })
-  return true
-}
-
-const tryConsumeDeepLinkOpenAudit = async () => {
-  const fid = String(route.query.openAuditFileId || '').trim()
-  const expectPid = String(route.query.projectId || '').trim()
-  if (!fid || !expectPid) return
-  if (String(filterProject.value) !== expectPid) return
-  if (!currentProjectInfo.id || String(currentProjectInfo.id) !== expectPid) return
-  if (deepLinkAuditOpening) return
-  deepLinkAuditOpening = true
-  try {
-    const ok = await handleOpenAuditByFileRecordId(fid)
-    if (ok) {
-      const q = { ...route.query }
-      delete q.openAuditFileId
-      await router.replace({ query: q })
-    }
-  } finally {
-    deepLinkAuditOpening = false
-  }
-}
-
-watch(
-  () => ({
-    openFid: route.query.openAuditFileId,
-    qPid: route.query.projectId,
-    filterPid: filterProject.value,
-    cid: currentProjectInfo.id,
-    stackReady: Boolean(workspaceAuditStackRef.value?.openAuditByFileRecordId)
-  }),
-  () => {
-    void tryConsumeDeepLinkOpenAudit()
-  },
-  { flush: 'post', immediate: true }
-)
 
 const {
   detailDialogVisible,
@@ -688,6 +581,7 @@ const {
   currentProjectInfo,
   fetchSurveyReports
 })
+
 const parsedRefreshLoading = ref(false)
 const handleRefreshParsedOnly = async () => {
   if (!currentProjectInfo.id) {
@@ -797,25 +691,36 @@ const handleContractArchiveAudit = async (row) => {
   editContract(match)
 }
 
-/** 仅加载当前激活 Tab 所需数据，避免切项目时全量请求 */
-const loadActiveTabData = async (projectId) => {
-  const pid = String(projectId || '')
-  if (!pid) return
-  if (activeTab.value !== 'contractLandEdit' && activeTab.value !== 'summary') return
-
-  workspaceQueryLoading.value = true
-  try {
-    if (activeTab.value === 'contractLandEdit') {
-      await fetchContractListByProjectId(pid)
-      return
-    }
-    if (activeTab.value === 'summary') {
-      await fetchSurveyReports(pid)
-    }
-  } finally {
-    workspaceQueryLoading.value = false
-  }
-}
+const {
+  initialArchiveId,
+  pageRouteActive,
+  projectOptionsLoading,
+  projectWorkspaceBootstrapping,
+  ensureProjectOptionsLoaded,
+  handleGlobalSearch,
+  loadActiveTabData,
+  handleOpenAuditByFileRecordId,
+  handlePendingAuditConsumed
+} = useProjectListWorkspace({
+  route,
+  router,
+  activeTab,
+  filterProject,
+  currentProjectInfo,
+  projectOptions,
+  fetchProjectList,
+  ensureProjectOption,
+  applyProjectMeta: applyCurrentProjectMeta,
+  fetchSurveyReports,
+  fetchContractListByProjectId,
+  resetSummaryMetrics,
+  restoreRefreshCdStatus,
+  clearRefreshTimer,
+  resetRefreshCdStatus,
+  showCreateProjectDialog,
+  workspaceAuditStackRef,
+  workspaceQueryLoading
+})
 
 const {
   projectEditLoading,
@@ -832,30 +737,30 @@ const {
   reloadActiveTabData: loadActiveTabData
 })
 
-const handleGlobalSearch = async () => {
-  const projectId = String(filterProject.value || '')
-  if (!projectId) {
-    ElMessage.warning('请先选择项目')
-    return
-  }
-  await ensureProjectOptionsLoaded()
-  await ensureProjectOption(projectId)
-  const found = applyCurrentProjectMeta(projectId)
-  if (!found) {
-    ElMessage.warning('当前项目不存在或列表尚未同步，请稍后重试')
-    return
-  }
-  persistProjectFilterDisplayMeta()
-  await loadActiveTabData(projectId)
-  if (activeTab.value === 'summary') {
-    restoreRefreshCdStatus(projectId)
-  } else {
-    clearRefreshTimer()
-    resetRefreshCdStatus()
+const resetCreateProjectWizard = () => {
+  newProjectForm.value = { projectName: '', projectTime: '' }
+  resetSmartFolderScan()
+}
+
+const enterCreatedProject = async (projectId, projectName) => {
+  showCreateProjectDialog.value = false
+  resetCreateProjectWizard()
+
+  await fetchProjectList()
+  const targetId = projectId || projectOptions.value.find((item) => item.name === projectName)?.id
+  if (targetId) {
+    filterProject.value = targetId
+    activeTab.value = 'archives'
+    await handleGlobalSearch()
   }
 }
 
-const handleCreateProjectFromTab = async () => {
+const handleCreateProjectCancel = () => {
+  if (isCreateProjectBusy.value) return
+  showCreateProjectDialog.value = false
+}
+
+const handleCreateProjectSubmit = async () => {
   const projectName = (newProjectForm.value.projectName || '').trim()
   const projectTime = (newProjectForm.value.projectTime || '').trim()
   if (!projectName) {
@@ -868,22 +773,36 @@ const handleCreateProjectFromTab = async () => {
   }
 
   createProjectLoading.value = true
+  let projectId = null
   try {
     const res = await createProject(projectName, projectTime)
-    if (res.data?.code === 200) {
-      ElMessage.success(res.data?.msg || '项目创建成功')
-      showCreateProjectDialog.value = false
-      newProjectForm.value = { projectName: '', projectTime: '' }
-
-      await fetchProjectList()
-      const target = projectOptions.value.find((item) => item.name === projectName)
-      if (target?.id) {
-        filterProject.value = target.id
-        await handleGlobalSearch()
-      }
-    } else {
+    if (res.data?.code !== 200) {
       ElMessage.warning(res.data?.msg || '项目创建失败')
+      return
     }
+
+    projectId = res.data?.data?.id ?? null
+    const shouldUpload = hasScanResult.value && selectedCount.value > 0
+
+    if (shouldUpload && projectId) {
+      createProjectLoading.value = false
+      const result = await uploadToProject(projectId)
+      if (result.cancelled) {
+        ElMessage.info('项目已创建，上传已取消')
+        await enterCreatedProject(projectId, projectName)
+        return
+      }
+      if (result.successCount === 0) {
+        ElMessage.warning('项目已创建，但文件未能上传成功')
+        await enterCreatedProject(projectId, projectName)
+        return
+      }
+      await enterCreatedProject(projectId, projectName)
+      return
+    }
+
+    ElMessage.success(res.data?.msg || '项目创建成功')
+    await enterCreatedProject(projectId, projectName)
   } catch (error) {
     console.error('项目创建失败:', error)
     ElMessage.error(error?.response?.data?.msg || '项目创建失败')
@@ -891,154 +810,6 @@ const handleCreateProjectFromTab = async () => {
     createProjectLoading.value = false
   }
 }
-
-// 持久化项目选择状态
-watch(filterProject, (newVal, oldVal) => {
-  if (newVal) {
-    localStorage.setItem('projectFilterStatus', newVal);
-   
-    // 切换项目时，清除旧项目的冷却缓存
-    if (oldVal) {
-      const oldCdKey = `refresh_cd_${oldVal}`;
-      localStorage.removeItem(oldCdKey);
-    }
-  } else if (!currentProjectInfo.id) {
-    // 仅在没有已加载项目时，才视为退出工作区（清空输入框不应触发）
-    localStorage.removeItem('projectFilterStatus')
-    localStorage.removeItem(PROJECT_FILTER_DISPLAY_META)
-  resetSummaryMetrics();
- 
-    Object.assign(currentProjectInfo, {
-      id: '',
-      name: '请选择项目',
-      code: '-',
-      status: '-'
-    });
-    resetRefreshCdStatus();
-  }
-})
-
-watch(
-  () => route.query.tab,
-  async () => {
-    const fromAuditReturn = String(route.query.fromAuditReturn || '') === '1'
-    if (!fromAuditReturn) return
-
-    const tabName = String(route.query.tab || '')
-    if (isProjectWorkspaceTab(tabName)) {
-      activeTab.value = tabName
-      initialReturnTab.value = tabName
-    }
-    if (route.query.archiveId) {
-      initialArchiveId.value = String(route.query.archiveId)
-    }
-
-    const cleanQuery = { ...route.query }
-    delete cleanQuery.fromAuditReturn
-    delete cleanQuery.tab
-    await router.replace({ query: cleanQuery })
-  },
-  { immediate: true }
-)
-
-watch(
-  () => route.query.projectId,
-  async (projectId) => {
-    const pid = String(projectId || '')
-    if (!pid) return
-    if (filterProject.value !== pid) {
-      filterProject.value = pid
-    }
-    await handleGlobalSearch()
-  }
-)
-
-watch(
-  () => route.query.openCreate,
-  async (openCreate) => {
-    if (String(openCreate || '') !== '1') return
-    showCreateProjectDialog.value = true
-    const q = { ...route.query }
-    delete q.openCreate
-    await router.replace({ query: q })
-  },
-  { immediate: true }
-)
-
-watch(activeTab, async (tab) => {
-  if (!currentProjectInfo.id) return
-  if (tab === 'contractLandEdit' || tab === 'summary') {
-    await loadActiveTabData(currentProjectInfo.id)
-  }
-  if (tab === 'summary') {
-    restoreRefreshCdStatus(currentProjectInfo.id)
-  } else {
-    clearRefreshTimer()
-    resetRefreshCdStatus()
-  }
-})
-
-// 页面初始化：恢复项目选择并加载数据
-onMounted(async () => {
-  if (initialReturnTab.value && isProjectWorkspaceTab(initialReturnTab.value)) {
-    activeTab.value = initialReturnTab.value
-    initialReturnTab.value = ''
-  } else if (String(route.query.tab || '').trim()) {
-    const tabFromQuery = String(route.query.tab)
-    if (isProjectWorkspaceTab(tabFromQuery)) {
-      activeTab.value = tabFromQuery
-    }
-  } else {
-    activeTab.value = 'archives'
-  }
-
-  const queryProjectId = route.query.projectId
-  const savedProjectId = localStorage.getItem('projectFilterStatus')
-  let targetProjectId = ''
-
-  projectWorkspaceBootstrapping.value = true
-  try {
-    if (queryProjectId) {
-      targetProjectId = String(queryProjectId)
-      if (!applyCachedProjectWorkspaceMeta(targetProjectId)) {
-        filterProject.value = targetProjectId
-      }
-    } else if (savedProjectId) {
-      applyCachedProjectWorkspaceMeta(savedProjectId)
-    }
-
-    await ensureProjectOptionsLoaded()
-
-    if (queryProjectId) {
-      targetProjectId = String(queryProjectId)
-      filterProject.value = targetProjectId
-      await handleGlobalSearch()
-    } else if (savedProjectId) {
-      const exists = projectOptions.value.some((p) => String(p.id) === String(savedProjectId))
-      if (exists) {
-        targetProjectId = String(savedProjectId)
-        filterProject.value = targetProjectId
-        await handleGlobalSearch()
-      } else {
-        localStorage.removeItem('projectFilterStatus')
-        localStorage.removeItem(PROJECT_FILTER_DISPLAY_META)
-        Object.assign(currentProjectInfo, {
-          id: '',
-          name: '请选择项目',
-          code: '-',
-          status: '-'
-        })
-        filterProject.value = ''
-      }
-    }
-
-    if (targetProjectId && activeTab.value === 'summary') {
-      restoreRefreshCdStatus(targetProjectId)
-    }
-  } finally {
-    projectWorkspaceBootstrapping.value = false
-  }
-})
 
 </script>
 
@@ -1158,5 +929,42 @@ onMounted(async () => {
   background: var(--biz-btn-soft-bg);
   border-color: #c8ddf1;
   color: var(--biz-btn-soft-text);
+}
+
+.create-project-wizard-body {
+  max-height: min(72vh, 720px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+.create-project-wizard-body.is-uploading {
+  overflow: visible;
+}
+
+.create-project-wizard-form {
+  margin-bottom: 0;
+}
+
+.create-project-wizard-form :deep(.el-row) {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100%;
+}
+
+.create-project-wizard-form :deep(.el-row > .el-col:first-child) {
+  padding-left: 0 !important;
+}
+
+.create-project-wizard-form :deep(.el-row > .el-col:last-child) {
+  padding-right: 0 !important;
+}
+
+.create-project-wizard-form :deep(.el-form-item) {
+  margin-bottom: 12px;
+}
+
+.create-project-wizard-dialog :deep(.el-dialog__body) {
+  overflow-x: hidden;
 }
 </style>

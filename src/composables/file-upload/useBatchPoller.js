@@ -2,7 +2,7 @@ import { ref, onUnmounted } from 'vue'
 import { isActiveFileProcessState } from '@/utils/fileStatePresent.js'
 
 export function useBatchPoller(apiCheckFunction, onPollingEnd, options = {}) {
-  const pollIntervalMs = options.pollIntervalMs ?? 5000
+  const pollIntervalMs = options.pollIntervalMs ?? 3000
   const onPollTick = options.onPollTick ?? null
   const isPolling = ref(false)
   const pollTimer = ref(null)

@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <div class="logo-text">用户注册</div>
-          <div class="sub">注册账号默认为「普通用户」，管理员等类型由超级管理员在后台分配</div>
+          <div class="sub">注册账号默认为「普通用户」，其他类型由超级管理员在后台分配</div>
         </div>
       </template>
 

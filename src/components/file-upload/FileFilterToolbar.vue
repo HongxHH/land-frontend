@@ -52,13 +52,12 @@
         style="width: 150px"
         @update:model-value="(val) => $emit('update:filterStatus', val)"
       >
-        <el-option label="后处理中" value="WAITING_POST_PROCESS" />
-        <el-option label="解析失败" value="PARSE_FAIL" />
-        <el-option label="解析中" value="PARSING" />
-        <el-option label="排队中" value="PENDING" />
-        <el-option label="待解析" value="WAITING_PARSE" />
-        <el-option label="解析完成" value="PARSE_COMPLETE" />
-        <el-option label="待审核" value="UNPARSEABLE" />
+        <el-option
+          v-for="item in fileStateFilterOptions"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        />
       </el-select>
 
       <el-button type="primary" icon="Search" @click="$emit('search')" style="width: 90px">
@@ -77,6 +76,9 @@
 
 <script setup>
 import { Search } from '@element-plus/icons-vue'
+import { FILE_STATE_FILTER_OPTIONS } from '@/utils/fileStatePresent.js'
+
+const fileStateFilterOptions = FILE_STATE_FILTER_OPTIONS
 
 defineProps({
   selectedRowsLength: {

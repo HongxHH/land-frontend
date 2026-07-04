@@ -51,11 +51,5 @@ export default [
       'vue/v-slot-style': 'off',
     },
   },
-  {
-    files: ['src/**/*.test.js'],
-    languageOptions: {
-      globals: browserGlobals,
-    },
-  },
   eslintConfigPrettier,
 ]
