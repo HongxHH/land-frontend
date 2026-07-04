@@ -76,6 +76,7 @@ export function useFileUploadPage() {
   })
 
   const isEditing = ref(false)
+  const editingRowId = ref('')
   const batchUpdateLoading = ref(false)
 
   const {
@@ -148,6 +149,10 @@ export function useFileUploadPage() {
     handleSaveData,
     syncRoomRow,
     handleRefreshSurveyReport,
+    handleCreateRoom,
+    handleDeleteRoom,
+    roomCreateLoading,
+    roomDeleteLoading,
     reportRefreshLoading,
     goRoomInfoPage,
     goRoomInfoPageSizeChange,
@@ -166,6 +171,7 @@ export function useFileUploadPage() {
     roomInfoPageNum,
     roomInfoPageSize,
     isEditing,
+    editingRowId,
     batchUpdateLoading,
     usageCategoryMap,
     usageCategoryReverseMap,
@@ -253,11 +259,16 @@ export function useFileUploadPage() {
     resetCalibrationState,
     currentFile,
     isEditing,
+    editingRowId,
     enterEditMode,
     exitEditMode,
     handleSaveData,
     syncRoomRow,
     handleRefreshSurveyReport,
+    handleCreateRoom,
+    handleDeleteRoom,
+    roomCreateLoading,
+    roomDeleteLoading,
     reportRefreshLoading,
     calibrationLoading,
     currentViewType,

@@ -81,11 +81,16 @@
       :project-id="currentProject"
       :current-file="currentFile"
       :is-editing="isEditing"
+      :editing-row-id="editingRowId"
       :start-row-edit="enterEditMode"
       :exit-edit-mode="exitEditMode"
       :handle-save-data="handleSaveData"
       :sync-room-row="syncRoomRow"
       :handle-refresh-survey-report="handleRefreshSurveyReport"
+      :handle-create-room="handleCreateRoom"
+      :handle-delete-room="handleDeleteRoom"
+      :room-create-loading="roomCreateLoading"
+      :room-delete-loading="roomDeleteLoading"
       :report-refresh-loading="reportRefreshLoading"
       :handle-audit-pass="handleAuditPass"
       :calibration-loading="calibrationLoading"
@@ -173,11 +178,16 @@ const {
   resetCalibrationState,
   currentFile,
   isEditing,
+  editingRowId,
   enterEditMode,
   exitEditMode,
   handleSaveData,
   syncRoomRow,
   handleRefreshSurveyReport,
+  handleCreateRoom,
+  handleDeleteRoom,
+  roomCreateLoading,
+  roomDeleteLoading,
   reportRefreshLoading,
   handleAuditPass,
   calibrationLoading,
