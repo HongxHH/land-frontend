@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
-import FileUpload from '@/views/FileUpload.vue'
 
 const pageState = vi.hoisted(() => ({
   handleCreateRoom: vi.fn(),
@@ -11,7 +10,37 @@ const pageState = vi.hoisted(() => ({
   handleSaveData: vi.fn()
 }))
 
+const componentMocks = vi.hoisted(() => ({
+  UploadActionHeader: { name: 'UploadActionHeader', template: '<div />' },
+  FileUploadTaskPanel: { name: 'FileUploadTaskPanel', template: '<div />' },
+  CreateProjectDialog: { name: 'CreateProjectDialog', template: '<div />' },
+  BatchUploadDialog: { name: 'BatchUploadDialog', template: '<div />' },
+  CalibrationWorkspaceDialog: {
+    name: 'CalibrationWorkspaceDialog',
+    props: {
+      modelValue: Boolean,
+      editingRowId: [String, Number],
+      handleCreateRoom: Function,
+      handleDeleteRoom: Function,
+      roomCreateLoading: Boolean,
+      roomDeleteLoading: Boolean,
+      startRowEdit: Function,
+      exitEditMode: Function,
+      handleSaveData: Function
+    },
+    template: '<section data-testid="calibration-dialog" />'
+  }
+}))
+
 vi.mock('element-plus/dist/locale/zh-cn.mjs', () => ({ default: {} }))
+
+vi.mock('@/components/file-upload/UploadActionHeader.vue', () => ({ default: componentMocks.UploadActionHeader }))
+vi.mock('@/components/file-upload/FileUploadTaskPanel.vue', () => ({ default: componentMocks.FileUploadTaskPanel }))
+vi.mock('@/components/file-upload/CreateProjectDialog.vue', () => ({ default: componentMocks.CreateProjectDialog }))
+vi.mock('@/components/file-upload/BatchUploadDialog.vue', () => ({ default: componentMocks.BatchUploadDialog }))
+vi.mock('@/components/file-upload/CalibrationWorkspaceDialog.vue', () => ({
+  default: componentMocks.CalibrationWorkspaceDialog
+}))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
@@ -101,37 +130,16 @@ vi.mock('@/composables/file-upload/useFileUploadPage', () => ({
   })
 }))
 
-const CalibrationWorkspaceDialogStub = defineComponent({
-  name: 'CalibrationWorkspaceDialog',
-  props: {
-    modelValue: Boolean,
-    editingRowId: [String, Number],
-    handleCreateRoom: Function,
-    handleDeleteRoom: Function,
-    roomCreateLoading: Boolean,
-    roomDeleteLoading: Boolean,
-    startRowEdit: Function,
-    exitEditMode: Function,
-    handleSaveData: Function
-  },
-  template: '<section data-testid="calibration-dialog" />'
-})
-
 describe('FileUpload calibration dialog integration', () => {
-  it('passes room edit and mutation workflow props to the calibration dialog', () => {
+  it('passes room edit and mutation workflow props to the calibration dialog', async () => {
+    const { default: FileUpload } = await import('@/views/FileUpload.vue')
     const wrapper = mount(FileUpload, {
       global: {
-        stubs: {
-          UploadActionHeader: true,
-          FileUploadTaskPanel: true,
-          CreateProjectDialog: true,
-          BatchUploadDialog: true,
-          CalibrationWorkspaceDialog: CalibrationWorkspaceDialogStub
-        }
+        stubs: {}
       }
     })
 
-    const dialog = wrapper.findComponent(CalibrationWorkspaceDialogStub)
+    const dialog = wrapper.findComponent(componentMocks.CalibrationWorkspaceDialog)
     expect(dialog.exists()).toBe(true)
     expect(dialog.props('editingRowId')).toBe('room-42')
     expect(dialog.props('handleCreateRoom')).toBe(pageState.handleCreateRoom)
