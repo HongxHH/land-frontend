@@ -30,6 +30,47 @@ export function useCalibrationViewer({
   const calibrationPdfUrl = ref('')
   const pdfLoading = ref(false)
   const realSurveyReportId = ref(null)
+  const openGeneration = ref(0)
+
+  const isCurrentGeneration = (generation) => generation === openGeneration.value
+
+  const replaceCalibrationPdfUrl = (url = '') => {
+    if (calibrationPdfUrl.value && calibrationPdfUrl.value !== url && URL?.revokeObjectURL) {
+      URL.revokeObjectURL(calibrationPdfUrl.value)
+    }
+    calibrationPdfUrl.value = url
+  }
+
+  const resetAuditSummaryData = () => {
+    Object.assign(auditSummaryData, {
+      pendingConfirmArea: '0.00',
+      unknownUsages: '[]',
+      unknownUsageCount: 0,
+      isVerified: 0,
+      hasUnknownUsage: 0,
+      verificationErrorReason: '-',
+      roomInfoBuildingAreaSum: '0.00',
+      roomInfoInnerAreaSum: '0.00',
+      roomInfoBalconyAreaSum: '0.00',
+      roomInfoSharedAreaSum: '0.00',
+      roomInfoBuildingAreaSumFromOcr: '0.00',
+      roomInfoInnerAreaSumFromOcr: '0.00',
+      roomInfoBalconyAreaSumFromOcr: '0.00',
+      roomInfoSharedAreaSumFromOcr: '0.00',
+    })
+  }
+
+  const resetLoadedBusinessData = () => {
+    resetAuditSummaryData()
+    roomInfoData.value = []
+    realSurveyReportId.value = null
+    if (roomInfoTotal) roomInfoTotal.value = 0
+    if (roomInfoPageNum) roomInfoPageNum.value = 1
+    roomSumInfo.buildingAreaSum = '0.00'
+    roomSumInfo.innerAreaSum = '0.00'
+    roomSumInfo.balconyAreaSum = '0.00'
+    roomSumInfo.sharedAreaSum = '0.00'
+  }
 
   const loadRecognitionMd = async (fileRecordId) => {
     if (!fileRecordId) {
@@ -71,7 +112,6 @@ export function useCalibrationViewer({
     try {
       const pdfRes = await downloadGridFsFile(gridfsId, { responseType: 'blob' })
       const blob = new Blob([pdfRes.data], { type: 'application/pdf' })
-      if (calibrationPdfUrl.value) URL.revokeObjectURL(calibrationPdfUrl.value)
       return URL.createObjectURL(blob)
     } catch (error) {
       ElMessage.warning('PDF预览失败')
@@ -98,8 +138,7 @@ export function useCalibrationViewer({
 
       const newPdfUrl = await getPdfBlobUrl(targetGridfsId)
       if (newPdfUrl) {
-        if (calibrationPdfUrl.value) URL.revokeObjectURL(calibrationPdfUrl.value)
-        calibrationPdfUrl.value = newPdfUrl
+        replaceCalibrationPdfUrl(newPdfUrl)
         currentViewType.value = viewType
       } else {
         ElMessage.warning('目标文件加载失败')
@@ -110,38 +149,25 @@ export function useCalibrationViewer({
   }
 
   const resetCalibrationState = () => {
+    openGeneration.value += 1
     currentViewType.value = 'original'
     preprocessGridfsId.value = ''
-    calibrationPdfUrl.value = ''
+    replaceCalibrationPdfUrl('')
     recognitionMdContent.value = ''
-
-    Object.assign(auditSummaryData, {
-      pendingConfirmArea: '0.00',
-      unknownUsages: '[]',
-      unknownUsageCount: 0,
-      isVerified: 0,
-      hasUnknownUsage: 0,
-      verificationErrorReason: '-',
-      roomInfoBuildingAreaSum: '0.00',
-      roomInfoInnerAreaSum: '0.00',
-      roomInfoBalconyAreaSum: '0.00',
-      roomInfoSharedAreaSum: '0.00',
-      roomInfoBuildingAreaSumFromOcr: '0.00',
-      roomInfoInnerAreaSumFromOcr: '0.00',
-      roomInfoBalconyAreaSumFromOcr: '0.00',
-      roomInfoSharedAreaSumFromOcr: '0.00',
-    })
-    roomInfoData.value = []
-    if (roomInfoTotal) roomInfoTotal.value = 0
-    if (roomInfoPageNum) roomInfoPageNum.value = 1
+    resetLoadedBusinessData()
   }
 
   const openCalibration = async (row) => {
+    const generation = openGeneration.value + 1
+    openGeneration.value = generation
+
     currentFile.value = row
     showCalibration.value = true
     calibrationLoading.value = true
     pdfLoading.value = true
-    calibrationPdfUrl.value = ''
+    replaceCalibrationPdfUrl('')
+    recognitionMdContent.value = ''
+    resetLoadedBusinessData()
     preprocessGridfsId.value = row.preprocessGridfsId || ''
     currentViewType.value = 'original'
 
@@ -149,42 +175,49 @@ export function useCalibrationViewer({
       const loadPdfTask = async () => {
         try {
           const initialPdfUrl = await getPdfBlobUrl(row.fileId)
+          if (!isCurrentGeneration(generation)) {
+            if (initialPdfUrl && URL?.revokeObjectURL) URL.revokeObjectURL(initialPdfUrl)
+            return
+          }
           if (initialPdfUrl) {
-            calibrationPdfUrl.value = initialPdfUrl
+            replaceCalibrationPdfUrl(initialPdfUrl)
           } else {
             ElMessage.warning('原始文件预览失败')
           }
         } catch (error) {
-          ElMessage.warning('原始文件预览失败')
+          if (isCurrentGeneration(generation)) {
+            ElMessage.warning('原始文件预览失败')
+          }
         } finally {
-          pdfLoading.value = false
+          if (isCurrentGeneration(generation)) {
+            pdfLoading.value = false
+          }
         }
       }
 
       const loadBusinessDataTask = async () => {
         if (!currentProject.value || !row.rawId) {
-          ElMessage.warning('缺少项目/报告ID，无法加载数据')
-          calibrationLoading.value = false
-          pdfLoading.value = false
+          if (isCurrentGeneration(generation)) {
+            ElMessage.warning('缺少项目/报告ID，无法加载数据')
+            calibrationLoading.value = false
+            pdfLoading.value = false
+          }
           return
         }
 
-        roomSumInfo.buildingAreaSum = '0.00'
-        roomSumInfo.innerAreaSum = '0.00'
-        roomSumInfo.balconyAreaSum = '0.00'
-        roomSumInfo.sharedAreaSum = '0.00'
-
+        let currentSummary
         try {
           const summaryRes = await axios.post('/api/project/survey-reports/query', {
             fileRecordId: row.rawId,
           })
+          if (!isCurrentGeneration(generation)) return
 
           if (
             summaryRes.data.code === 200 &&
             Array.isArray(summaryRes.data.data.records) &&
             summaryRes.data.data.records.length > 0
           ) {
-            const currentSummary = summaryRes.data.data.records[0]
+            currentSummary = summaryRes.data.data.records[0]
             realSurveyReportId.value = currentSummary.id
 
             auditSummaryData.pendingConfirmArea = (currentSummary.pendingConfirmArea || 0).toFixed(
@@ -222,27 +255,16 @@ export function useCalibrationViewer({
             enrichAuditSummaryFromVerificationReason(auditSummaryData)
           } else {
             ElMessage.warning('query 接口返回格式异常，未获取到有效数据')
-            Object.assign(auditSummaryData, {
-              pendingConfirmArea: '0.00',
-              unknownUsageCount: 0,
-              verificationErrorReason: '-',
-              roomInfoBuildingAreaSum: '0.00',
-            })
             return
           }
         } catch (error) {
+          if (!isCurrentGeneration(generation)) return
           ElMessage.warning('query 接口请求失败，无法获取汇总数据和真实报告ID')
           console.error('query 接口异常:', error)
-          Object.assign(auditSummaryData, {
-            pendingConfirmArea: '0.00',
-            unknownUsageCount: 0,
-            verificationErrorReason: '-',
-            roomInfoBuildingAreaSum: '0.00',
-          })
           return
         }
 
-        if (!realSurveyReportId.value) {
+        if (!currentSummary?.id) {
           ElMessage.warning('未获取到真实报告ID，无法加载户室数据')
           return
         }
@@ -252,7 +274,7 @@ export function useCalibrationViewer({
         roomInfoLoading.value = true
         try {
           const pid = Number(currentProject.value)
-          const sid = Number(realSurveyReportId.value)
+          const sid = Number(currentSummary.id)
           const pageSize = Number(roomInfoPageSize?.value || 50)
           let page = 1
 
@@ -270,6 +292,7 @@ export function useCalibrationViewer({
               sortField: 'id',
               sortDirection: 'asc',
             })
+            if (!isCurrentGeneration(generation)) return
             if (roomRes.data.code !== 200) {
               roomInfoData.value = []
               if (roomInfoTotal) roomInfoTotal.value = 0
@@ -327,22 +350,29 @@ export function useCalibrationViewer({
             enrichAuditSummaryFromVerificationReason(auditSummaryData)
           }
         } catch (error) {
+          if (!isCurrentGeneration(generation)) return
           roomInfoData.value = []
           if (roomInfoTotal) roomInfoTotal.value = 0
           ElMessage.warning('户室数据加载失败')
           console.error('户室数据接口异常:', error)
         } finally {
-          roomInfoLoading.value = false
+          if (isCurrentGeneration(generation)) {
+            roomInfoLoading.value = false
+          }
         }
       }
 
       await Promise.all([loadPdfTask(), loadBusinessDataTask()])
     } catch (error) {
-      ElMessage.error('文件详情加载失败')
-      pdfLoading.value = false
-      roomInfoLoading.value = false
+      if (isCurrentGeneration(generation)) {
+        ElMessage.error('文件详情加载失败')
+        pdfLoading.value = false
+        roomInfoLoading.value = false
+      }
     } finally {
-      calibrationLoading.value = false
+      if (isCurrentGeneration(generation)) {
+        calibrationLoading.value = false
+      }
     }
   }
 
@@ -350,7 +380,7 @@ export function useCalibrationViewer({
 
   const pdfLoadError = () => {
     ElMessage.warning('PDF预览失败，可通过下载接口查看文件')
-    calibrationPdfUrl.value = ''
+    replaceCalibrationPdfUrl('')
   }
 
   return {
