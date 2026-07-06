@@ -121,7 +121,7 @@ describe('useCalibrationViewer', () => {
   it('ignores stale async results from an older calibration open', async () => {
     const { options, viewer } = createViewer()
     const firstSummary = deferred()
-    axios.post.mockImplementation(({ fileRecordId }) => {
+    axios.post.mockImplementation((_url, { fileRecordId }) => {
       if (fileRecordId === 101) return firstSummary.promise
       return Promise.resolve(summaryResponse({ id: 22, roomInfoBuildingAreaSum: 10 }))
     })
