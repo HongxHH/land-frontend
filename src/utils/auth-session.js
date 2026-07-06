@@ -48,16 +48,6 @@ export function canAccessUserManagement() {
   return userType === 'SUPER_ADMIN' || userType === 'DEVELOPER'
 }
 
-/** 用户管理写操作：创建/删除/启停/改权限类型等，仅超级管理员 */
-export function canManageUsers() {
-  return getUserSession()?.userType === 'SUPER_ADMIN'
-}
-
-/** 重置他人密码，仅超级管理员 */
-export function canResetUserPassword() {
-  return getUserSession()?.userType === 'SUPER_ADMIN'
-}
-
 /** 与任务监控页 / 相关 API @SaCheckRole(DEVELOPER) 对齐 */
 export function canAccessTaskPoolMonitor() {
   return getUserSession()?.userType === 'DEVELOPER'

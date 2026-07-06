@@ -91,11 +91,7 @@ const handleLogin = async () => {
       return
     }
     setToken(token)
-    sessionStorage.setItem('isAuthenticated', 'true')
     const user = data.data?.user
-    if (user?.id != null) {
-      sessionStorage.setItem('userId', String(user.id))
-    }
     setUserSession(user)
     try {
       await fetchUnreadStationNotificationsAfterLogin()

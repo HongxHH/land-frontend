@@ -6,7 +6,7 @@ export const FILE_STATE_LABELS = {
   UPLOADING: '上传中',
   WAITING_POST_PROCESS: '后处理中',
   WAITING_PARSE: '待解析',
-  PENDING: '排队中',
+  PENDING: '解析排队中',
   PARSING: '解析中',
   UPLOAD_FAIL: '上传失败',
   PARSE_FAIL: '解析失败',
@@ -51,14 +51,11 @@ export const FILE_STATE_FILTER_OPTIONS = BACKEND_FILE_STATE_CODES.map((value) =>
   label: FILE_STATE_FILTER_LABELS[value] ?? FILE_STATE_LABELS[value] ?? value
 }))
 
-/** @typedef {{ fileContextType?: string, autoParseQueuedAt?: string|null }} FileStateLabelContext */
+/** @typedef {{ fileContextType?: string }} FileStateLabelContext */
 
 function resolveWaitingParseLabel(context) {
   if (!isAutoParseFileContext(context?.fileContextType)) {
     return FILE_STATE_LABELS.WAITING_PARSE
-  }
-  if (context?.autoParseQueuedAt) {
-    return '自动解析排队中'
   }
   return '等待自动解析'
 }

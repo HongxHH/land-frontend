@@ -86,7 +86,6 @@
                 statusMap[row.status]?.text ||
                 getFileStateLabel(row.status, {
                   fileContextType: row.fileContextType,
-                  autoParseQueuedAt: row.autoParseQueuedAt,
                 })
               }}
             </el-tag>
@@ -96,7 +95,6 @@
               statusMap[row.status]?.text ||
               getFileStateLabel(row.status, {
                 fileContextType: row.fileContextType,
-                autoParseQueuedAt: row.autoParseQueuedAt,
               })
             }}
           </el-tag>

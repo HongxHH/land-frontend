@@ -37,7 +37,6 @@
             :initial-archive-id="initialArchiveId"
             :active="pageRouteActive && activeTab === 'archives'"
             :file-audit-handler="handleArchiveRowAudit"
-            @contract-archive-audit="handleContractArchiveAudit"
           />
         </el-tab-pane>
 
@@ -269,7 +268,11 @@
         :show-close="!isCreateProjectBusy"
         @closed="resetCreateProjectWizard"
       >
-        <div class="create-project-wizard-body" :class="{ 'is-uploading': smartFolderUploadLoading }">
+        <div
+          ref="createProjectWizardBodyRef"
+          class="create-project-wizard-body"
+          :class="{ 'is-uploading': smartFolderUploadLoading }"
+        >
           <el-form label-position="top" class="create-project-wizard-form">
             <el-row :gutter="16">
               <el-col :span="12">
@@ -310,12 +313,31 @@
             :upload-progress="smartFolderUploadProgress"
             :get-file-upload-state="getSmartFolderUploadState"
             :upload-items="smartFolderUploadItems"
+            :active-upload-entry-id="activeUploadEntryId"
+            :scroll-container="createProjectWizardBodyRef"
             @update:survey-phase="(val) => (surveyPhase = val)"
             @folder-input-change="handleFolderInputChange"
             @folder-drop="handleFolderDrop"
             @toggle-selected="setEntrySelected"
+            @toggle-directory-selected="setDirectoryEntriesSelected"
             @change-context-type="setEntryContextType"
           />
+        </div>
+        <div v-if="smartFolderUploadLoading" class="create-project-upload-bar">
+          <div class="create-project-upload-bar__meta">
+            <span class="create-project-upload-bar__label">上传进度</span>
+            <span>
+              已完成 {{ smartFolderUploadStats?.done ?? 0 }} /
+              {{ smartFolderUploadStats?.total ?? 0 }}
+            </span>
+            <span v-if="smartFolderUploadStats?.running" class="create-project-upload-bar__hint">
+              进行中 {{ smartFolderUploadStats.running }}
+            </span>
+            <span v-if="smartFolderUploadStats?.failed" class="create-project-upload-bar__error">
+              失败 {{ smartFolderUploadStats.failed }}
+            </span>
+          </div>
+          <el-progress :percentage="smartFolderUploadProgress" :stroke-width="8" />
         </div>
         <template #footer>
           <el-button :disabled="isCreateProjectBusy" @click="handleCreateProjectCancel">
@@ -438,6 +460,7 @@ const workspaceQueryLoading = ref(false)
 const activeTab = ref('archives')
 const showCreateProjectDialog = ref(false)
 const createProjectLoading = ref(false)
+const createProjectWizardBodyRef = ref(null)
 const {
   scannedEntries,
   groupedEntries,
@@ -446,12 +469,15 @@ const {
   hasScanResult,
   uploadLoading: smartFolderUploadLoading,
   uploadProgress: smartFolderUploadProgress,
+  activeUploadEntryId,
+  uploadStats: smartFolderUploadStats,
   scanLoading: smartFolderScanLoading,
   importedRootFolderName,
   resetScan: resetSmartFolderScan,
   handleFolderInputChange,
   handleFolderDrop,
   setEntrySelected,
+  setDirectoryEntriesSelected,
   setEntryContextType,
   getFileUploadState: getSmartFolderUploadState,
   uploadToProject,
@@ -939,7 +965,40 @@ const handleCreateProjectSubmit = async () => {
 }
 
 .create-project-wizard-body.is-uploading {
-  overflow: visible;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.create-project-upload-bar {
+  margin-top: 12px;
+  padding: 12px 4px 0;
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  background: #fff;
+}
+
+.create-project-upload-bar__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.create-project-upload-bar__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.create-project-upload-bar__hint {
+  color: #2563eb;
+}
+
+.create-project-upload-bar__error {
+  color: #dc2626;
+  font-weight: 600;
 }
 
 .create-project-wizard-form {

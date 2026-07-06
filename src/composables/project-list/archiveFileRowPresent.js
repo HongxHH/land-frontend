@@ -17,9 +17,7 @@ export const PARSE_SCENE_TO_STATE = {
 }
 
 export function getArchiveFileStateLabel(state, row) {
-  const context = row
-    ? { fileContextType: row.fileContextType, autoParseQueuedAt: row.autoParseQueuedAt }
-    : undefined
+  const context = row ? { fileContextType: row.fileContextType } : undefined
   return getSharedFileStateLabel(state, context)
 }
 

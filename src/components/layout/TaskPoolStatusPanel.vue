@@ -1,65 +1,114 @@
 <template>
   <div class="task-pool-panel">
     <div class="task-body">
-      <section class="summary-card">
-        <div class="pool-tuner" role="group" aria-label="线程池并发容量调整">
-          <div class="pool-tuner__head">
-            <span class="pool-tuner__title">并发容量</span>
-            <span class="pool-tuner__state" :class="poolDirty ? 'is-dirty' : 'is-clean'">
-              {{ poolDirty ? '未应用' : '已同步' }}
-            </span>
-          </div>
-          <div class="pool-tuner__fields">
-            <label class="pool-field">
-              <span class="pool-field__label"
-                >核心线程 <em>生效 {{ coreThreads || '—' }}</em></span
-              >
+      <div class="task-body__left">
+        <section class="summary-card">
+          <div class="pool-tuner" role="group" aria-label="解析并行度调整">
+            <div class="pool-tuner__head">
+              <span class="pool-tuner__title">并行解析数 N</span>
+              <span class="pool-tuner__state" :class="poolDirty ? 'is-dirty' : 'is-clean'">
+                {{ poolDirty ? '未应用' : '已同步' }}
+              </span>
+            </div>
+            <div class="pool-tuner__fields">
               <el-input-number
-                v-model="poolForm.corePoolSize"
+                v-model="poolForm.parseConcurrency"
                 :min="1"
-                :max="Math.max(1, Number(poolForm.maximumPoolSize) || 1)"
+                :max="parseConcurrencyHardLimit"
                 :step="1"
                 controls-position="right"
                 size="small"
               />
-            </label>
-            <label class="pool-field">
-              <span class="pool-field__label"
-                >最大线程 <em>生效 {{ maxThreads || '—' }}</em></span
+            </div>
+            <div class="pool-tuner__actions">
+              <el-button size="small" :disabled="!poolDirty" @click="resetPoolDraftToLive"
+                >恢复</el-button
               >
-              <el-input-number
-                v-model="poolForm.maximumPoolSize"
-                :min="Math.max(1, Number(poolForm.corePoolSize) || 1)"
-                :step="1"
-                controls-position="right"
+              <el-button
                 size="small"
+                type="primary"
+                :loading="updatingPoolSize"
+                :disabled="!poolDirty"
+                @click="submitPoolSizeUpdate"
+              >
+                应用并行度
+              </el-button>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-item">
+              <span>并行 N</span><strong>{{ liveParseConcurrency }}</strong>
+            </div>
+            <div class="metric-item">
+              <span>管道占用</span><strong>{{ pipelineActivePermits }}/{{ liveParseConcurrency || '—' }}</strong>
+            </div>
+            <div class="metric-item">
+              <span>队列</span><strong>{{ queueSize }}/{{ queueCapacity || '—' }}</strong>
+            </div>
+            <div class="metric-item">
+              <span>已完成</span><strong>{{ completedCount }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <div class="system-card">
+          <h2 class="system-card__title">系统运行状态</h2>
+          <div class="system-row">
+            <span class="system-label">系统 CPU</span>
+            <el-progress
+              :percentage="systemCpuPercent"
+              :color="loadColor(systemCpuPercent)"
+              :stroke-width="6"
+              :show-text="false"
+            />
+            <span class="system-val">{{ systemCpuText }}</span>
+          </div>
+          <div class="system-row">
+            <span class="system-label">JVM 堆内存</span>
+            <el-progress
+              :percentage="memoryPercent"
+              :color="loadColor(memoryPercent)"
+              :stroke-width="6"
+              :show-text="false"
+            />
+            <span class="system-val"
+              >{{ formatBytes(memoryUsed) }} / {{ formatBytes(memoryMax) }}</span
+            >
+          </div>
+          <div class="system-row">
+            <span class="system-label">线程数</span>
+            <span class="system-val system-val--solo">{{
+              systemStatus.thread?.liveThreadCount ?? '-'
+            }}</span>
+          </div>
+          <div class="system-row">
+            <span class="system-label">GPU</span>
+            <template v-if="gpuSupported && gpuUtil != null">
+              <el-progress
+                :percentage="gpuPercent"
+                :color="loadColor(gpuPercent)"
+                :stroke-width="6"
+                :show-text="false"
               />
-            </label>
-          </div>
-          <div class="pool-tuner__actions">
-            <el-button size="small" :disabled="!poolDirty" @click="resetPoolDraftToLive"
-              >恢复</el-button
-            >
-            <el-button
-              size="small"
-              type="primary"
-              :loading="updatingPoolSize"
-              :disabled="!poolDirty"
-              @click="submitPoolSizeUpdate"
-            >
-              应用配置
-            </el-button>
+              <span class="system-val">{{ gpuPercent }}%</span>
+            </template>
+            <span v-else class="system-val system-val--solo">{{
+              systemStatus.gpu?.message || '不可用'
+            }}</span>
           </div>
         </div>
-        <div class="metric-row">
-          <div class="metric-item">
-            <span>线程池</span><strong>{{ poolSize }}</strong>
-          </div>
-          <div class="metric-item">
-            <span>已完成</span><strong>{{ completedCount }}</strong>
-          </div>
+
+        <div class="bulk-enqueue-bar">
+          <el-button
+            size="small"
+            type="warning"
+            :loading="bulkEnqueueLoading"
+            @click="handleBulkEnqueueParse"
+          >
+            一键入队待解析/失败
+          </el-button>
         </div>
-      </section>
+      </div>
 
       <div class="running-card">
         <header class="running-card__head">
@@ -155,53 +204,6 @@
           </article>
         </div>
       </div>
-
-      <div class="system-card">
-        <h2 class="system-card__title">系统运行状态</h2>
-        <div class="system-row">
-          <span class="system-label">系统 CPU</span>
-          <el-progress
-            :percentage="systemCpuPercent"
-            :color="loadColor(systemCpuPercent)"
-            :stroke-width="6"
-            :show-text="false"
-          />
-          <span class="system-val">{{ systemCpuText }}</span>
-        </div>
-        <div class="system-row">
-          <span class="system-label">JVM 堆内存</span>
-          <el-progress
-            :percentage="memoryPercent"
-            :color="loadColor(memoryPercent)"
-            :stroke-width="6"
-            :show-text="false"
-          />
-          <span class="system-val"
-            >{{ formatBytes(memoryUsed) }} / {{ formatBytes(memoryMax) }}</span
-          >
-        </div>
-        <div class="system-row">
-          <span class="system-label">线程数</span>
-          <span class="system-val system-val--solo">{{
-            systemStatus.thread?.liveThreadCount ?? '-'
-          }}</span>
-        </div>
-        <div class="system-row">
-          <span class="system-label">GPU</span>
-          <template v-if="gpuSupported && gpuUtil != null">
-            <el-progress
-              :percentage="gpuPercent"
-              :color="loadColor(gpuPercent)"
-              :stroke-width="6"
-              :show-text="false"
-            />
-            <span class="system-val">{{ gpuPercent }}%</span>
-          </template>
-          <span v-else class="system-val system-val--solo">{{
-            systemStatus.gpu?.message || '不可用'
-          }}</span>
-        </div>
-      </div>
     </div>
 
     <el-dialog
@@ -223,10 +225,11 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskParseFlowDetailPanel from '@/components/layout/TaskParseFlowDetailPanel.vue'
 import {
   cancelTaskByTaskId,
+  enqueueAllPendingParse,
   getParseJobFlow,
   getSystemRuntimeStatus,
   getTaskDetailByTaskId,
@@ -243,6 +246,7 @@ const props = defineProps({
 
 const loading = ref(false)
 const updatingPoolSize = ref(false)
+const bulkEnqueueLoading = ref(false)
 const lastUpdateAt = ref(0)
 const statusData = ref({
   threadPoolStatus: {},
@@ -267,8 +271,7 @@ const pageVisible = ref(
 )
 const statusLoaded = ref(false)
 const poolForm = ref({
-  corePoolSize: 1,
-  maximumPoolSize: 1,
+  parseConcurrency: 1,
 })
 const detailVisible = ref(false)
 const detailLoading = ref(false)
@@ -309,9 +312,17 @@ const highPriorityCount = computed(() =>
 const normalPriorityCount = computed(() =>
   Number(statusData.value?.queueTasks?.normalPriorityCount || 0)
 )
-const coreThreads = computed(() => Number(statusData.value?.threadPoolStatus?.corePoolSize || 0))
-const maxThreads = computed(() => Number(statusData.value?.threadPoolStatus?.maximumPoolSize || 0))
-const poolSize = computed(() => Number(statusData.value?.threadPoolStatus?.poolSize || 0))
+const liveParseConcurrency = computed(() =>
+  Number(statusData.value?.threadPoolStatus?.parseConcurrency || 0)
+)
+const parseConcurrencyHardLimit = computed(() =>
+  Math.max(1, Number(statusData.value?.threadPoolStatus?.parseConcurrencyHardLimit || 16))
+)
+const pipelineActivePermits = computed(() =>
+  Number(statusData.value?.threadPoolStatus?.pipelineActivePermits || 0)
+)
+const queueSize = computed(() => Number(statusData.value?.threadPoolStatus?.queueSize || 0))
+const queueCapacity = computed(() => Number(statusData.value?.threadPoolStatus?.queueCapacity || 0))
 const completedCount = computed(() =>
   Number(statusData.value?.threadPoolStatus?.completedTaskCount || 0)
 )
@@ -330,16 +341,13 @@ const memoryPercent = computed(() => {
 })
 const systemCpuText = computed(() => formatPercent(systemCpu.value))
 const poolDirty = computed(() => {
-  const c = Number(poolForm.value.corePoolSize)
-  const m = Number(poolForm.value.maximumPoolSize)
-  return c !== coreThreads.value || m !== maxThreads.value
+  const n = Number(poolForm.value.parseConcurrency)
+  return n !== liveParseConcurrency.value
 })
 
 const resetPoolDraftToLive = () => {
-  const currentCore = Number(statusData.value?.threadPoolStatus?.corePoolSize || 1)
-  const currentMax = Number(statusData.value?.threadPoolStatus?.maximumPoolSize || 1)
-  poolForm.value.corePoolSize = currentCore > 0 ? currentCore : 1
-  poolForm.value.maximumPoolSize = currentMax > 0 ? currentMax : 1
+  const current = liveParseConcurrency.value
+  poolForm.value.parseConcurrency = current > 0 ? current : 1
 }
 
 const lastUpdateText = computed(() => {
@@ -390,10 +398,8 @@ const fetchStatus = async () => {
         runningTasks: [],
         queueTasks: {},
       }
-      const currentCore = Number(statusData.value?.threadPoolStatus?.corePoolSize || 1)
-      const currentMax = Number(statusData.value?.threadPoolStatus?.maximumPoolSize || 1)
-      poolForm.value.corePoolSize = currentCore > 0 ? currentCore : 1
-      poolForm.value.maximumPoolSize = currentMax > 0 ? currentMax : 1
+      const current = liveParseConcurrency.value
+      poolForm.value.parseConcurrency = current > 0 ? current : 1
       lastUpdateAt.value = Date.now()
       statusLoaded.value = true
     }
@@ -591,32 +597,58 @@ watch(
 )
 
 const submitPoolSizeUpdate = async () => {
-  const core = Number(poolForm.value.corePoolSize)
-  const max = Number(poolForm.value.maximumPoolSize)
-  if (!Number.isInteger(core) || !Number.isInteger(max) || core <= 0 || max <= 0) {
-    ElMessage.warning('核心线程数和最大线程数必须是大于0的整数')
+  const n = Number(poolForm.value.parseConcurrency)
+  if (!Number.isInteger(n) || n <= 0) {
+    ElMessage.warning('并行解析数必须是大于 0 的整数')
     return
   }
-  if (core > max) {
-    ElMessage.warning('核心线程数不能大于最大线程数')
+  if (n > parseConcurrencyHardLimit.value) {
+    ElMessage.warning(`并行解析数不能超过上限 ${parseConcurrencyHardLimit.value}`)
     return
   }
   try {
     updatingPoolSize.value = true
-    const res = await updateTaskPoolSize({ corePoolSize: core, maximumPoolSize: max })
+    const res = await updateTaskPoolSize({ parseConcurrency: n })
     const code = Number(res?.data?.code)
     if (code === 200) {
-      ElMessage.success(res?.data?.msg || '线程池参数更新成功')
+      ElMessage.success(res?.data?.msg || '解析并行度更新成功')
       await refreshAll()
       return
     }
-    ElMessage.warning(res?.data?.msg || '线程池参数更新失败')
+    ElMessage.warning(res?.data?.msg || '解析并行度更新失败')
   } catch (error) {
-    console.error('线程池参数更新失败:', error)
-    ElMessage.error(error?.response?.data?.msg || '线程池参数更新失败')
+    console.error('解析并行度更新失败:', error)
+    ElMessage.error(error?.response?.data?.msg || '解析并行度更新失败')
   } finally {
     updatingPoolSize.value = false
   }
+}
+
+const handleBulkEnqueueParse = () => {
+  ElMessageBox.confirm(
+    '将把全库中状态为「待解析」或「解析失败」的可解析文件提交到解析线程池。队列满时本轮会停止，可稍后再次点击。',
+    '一键入队待解析/失败',
+    { type: 'warning', confirmButtonText: '开始入队', cancelButtonText: '取消' }
+  )
+    .then(async () => {
+      bulkEnqueueLoading.value = true
+      try {
+        const res = await enqueueAllPendingParse()
+        const code = Number(res?.data?.code)
+        if (code === 200) {
+          ElMessage.success(res?.data?.msg || '批量入队完成')
+          await refreshAll()
+          return
+        }
+        ElMessage.warning(res?.data?.msg || '批量入队失败')
+      } catch (error) {
+        console.error('批量入队解析失败:', error)
+        ElMessage.error(error?.response?.data?.msg || '批量入队解析失败')
+      } finally {
+        bulkEnqueueLoading.value = false
+      }
+    })
+    .catch(() => {})
 }
 
 const formatDuration = (ms) => {
@@ -677,17 +709,20 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    'summary running'
-    'system running';
+  grid-template-columns: minmax(380px, 440px) minmax(0, 1fr);
   gap: 12px;
   overflow: hidden;
 }
 
+.task-body__left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+
 .summary-card {
-  grid-area: summary;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 12px;
@@ -695,7 +730,6 @@ onBeforeUnmount(() => {
 }
 
 .running-card {
-  grid-area: running;
   min-height: 0;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -707,20 +741,30 @@ onBeforeUnmount(() => {
 }
 
 .system-card {
-  grid-area: system;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 12px;
   background: #fff;
-  align-self: start;
+}
+
+.bulk-enqueue-bar {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
 }
 
 @media (max-width: 1100px) {
   .task-body {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    grid-template-areas: 'summary' 'running' 'system';
     overflow-y: auto;
+  }
+
+  .task-body__left {
+    height: auto;
+  }
+
+  .bulk-enqueue-bar {
+    margin-top: 0;
   }
 
   .running-card {
@@ -769,24 +813,7 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.pool-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.pool-field__label {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.pool-field__label em {
-  font-style: normal;
-  color: #94a3b8;
-  margin-left: 4px;
-}
-
-.pool-field :deep(.el-input-number) {
+.pool-tuner__fields :deep(.el-input-number) {
   width: 100%;
 }
 
@@ -799,7 +826,7 @@ onBeforeUnmount(() => {
 
 .metric-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-top: 10px;
 }

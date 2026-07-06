@@ -31,6 +31,7 @@ const SURVEY_REPORT_FILENAME_EXCLUDES = [
   /出让合同/,
   /复核表/,
   /容量指标/,
+  /竣备表/,
   /楼盘表确认/,
   /确认书$/,
   /分层平面图/,

@@ -35,13 +35,6 @@ export const FILE_CONTEXT_AUDIT_STRATEGY = {
   OTHER: 'calibration',
 }
 
-/** 项目工作区独立 Tab（name 与 ProjectList el-tab-pane name 一致） */
-export const FILE_CONTEXT_WORKSPACE_TAB = {
-  PLANNING_REVIEW: 'planningReview',
-  CAPACITY_INDICATOR: 'capacityIndicator',
-  PROJECT_PARTY_SURVEY_SUMMARY: 'projectPartySummary',
-}
-
 export function normalizeFileContextType(value) {
   return String(value || '').toUpperCase()
 }

@@ -47,3 +47,5 @@ export const cancelTaskByTaskId = (taskId, reason = '用户主动取消') =>
 export const getSystemRuntimeStatus = () => axios.get('/api/file/task/system-status')
 
 export const updateTaskPoolSize = (payload) => axios.post('/api/file/task/pool-size', payload)
+
+export const enqueueAllPendingParse = () => axios.post('/api/file/task/enqueue-pending-parse')

@@ -31,6 +31,12 @@ export default defineConfig({
     include: ['buffer'],
   },
   build: {
+    esbuild: {
+      drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+      pure: process.env.NODE_ENV === 'production'
+        ? ['console.log', 'console.debug', 'console.info']
+        : [],
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {

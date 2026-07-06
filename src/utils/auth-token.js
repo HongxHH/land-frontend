@@ -30,13 +30,3 @@ export function clearAuth() {
 export function isLoggedIn() {
   return Boolean(getToken())
 }
-
-/** 供 fetch 等手动组头使用 */
-export function withSaTokenHeaders(headers = {}) {
-  const next = { ...headers }
-  const t = getToken()
-  if (t) {
-    next[SA_TOKEN_HEADER_NAME] = t
-  }
-  return next
-}

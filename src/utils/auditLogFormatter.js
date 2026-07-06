@@ -167,7 +167,7 @@ export function formatAuditChangeSummary(changeSummary, operation = '') {
 }
 
 /** 详情弹窗用的多行文本 */
-export function formatAuditChangeDetail(changeSummary, operation = '') {
+export function formatAuditChangeDetail(changeSummary, _operation = '') {
   const parsed = tryParseJson(changeSummary)
   if (!parsed) {
     const text = String(changeSummary || '').trim()

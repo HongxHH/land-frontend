@@ -31,10 +31,44 @@ export function useSmartFolderImport() {
   const uploadProgress = ref(0)
   const scanLoading = ref(false)
   const importedRootFolderName = ref('')
+  const activeUploadEntryId = ref(null)
 
   const groupedEntries = computed(() => groupScannedEntries(scannedEntries.value))
 
   const selectedCount = computed(() => getSelectedUploadEntries(scannedEntries.value).length)
+
+  const uploadStats = computed(() => {
+    if (!uploadLoading.value) return null
+    const entries = getSelectedUploadEntries(scannedEntries.value)
+    if (!entries.length) return null
+
+    let done = 0
+    let failed = 0
+    let cancelled = 0
+    let running = 0
+    let waiting = 0
+    for (const entry of entries) {
+      const status = fileUploadStates.get(entry.id)?.status ?? UPLOAD_FILE_STATUS.PENDING
+      switch (status) {
+        case UPLOAD_FILE_STATUS.DONE:
+          done += 1
+          break
+        case UPLOAD_FILE_STATUS.ERROR:
+          failed += 1
+          break
+        case UPLOAD_FILE_STATUS.CANCELLED:
+          cancelled += 1
+          break
+        case UPLOAD_FILE_STATUS.UPLOADING:
+        case UPLOAD_FILE_STATUS.PROCESSING:
+          running += 1
+          break
+        default:
+          waiting += 1
+      }
+    }
+    return { total: entries.length, done, failed, cancelled, running, waiting }
+  })
 
   const hasScanResult = computed(() => scannedEntries.value.length > 0)
 
@@ -48,6 +82,7 @@ export function useSmartFolderImport() {
     uploadUploadedBytes.value = 0
     uploadTotalBytes.value = 0
     uploadProgress.value = 0
+    activeUploadEntryId.value = null
   }
 
   const ingestFiles = (files) => {
@@ -92,6 +127,15 @@ export function useSmartFolderImport() {
     entry.selected = selected
   }
 
+  const setDirectoryEntriesSelected = (entryIds, selected) => {
+    const idSet = new Set(Array.isArray(entryIds) ? entryIds : [])
+    for (const entry of scannedEntries.value) {
+      if (!idSet.has(entry.id)) continue
+      if (selected && !entry.fileContextType) continue
+      entry.selected = selected
+    }
+  }
+
   const setEntryContextType = (entryId, fileContextType) => {
     const entry = scannedEntries.value.find((item) => item.id === entryId)
     if (!entry) return
@@ -109,6 +153,12 @@ export function useSmartFolderImport() {
   const applyFileState = (uid, state, uploadItems) => {
     if (!uid || !state) return
     fileUploadStates.set(uid, { ...state })
+    if (
+      state.status === UPLOAD_FILE_STATUS.UPLOADING ||
+      state.status === UPLOAD_FILE_STATUS.PROCESSING
+    ) {
+      activeUploadEntryId.value = uid
+    }
     syncAggregateProgress(uploadItems)
   }
 
@@ -147,6 +197,7 @@ export function useSmartFolderImport() {
     uploadProgress.value = 0
     uploadUploadedBytes.value = 0
     uploadTotalBytes.value = 0
+    activeUploadEntryId.value = null
 
     for (const item of uploadItems) {
       const uid = resolveUploadFileUid(item)
@@ -213,6 +264,7 @@ export function useSmartFolderImport() {
     } finally {
       uploadLoading.value = false
       uploadAbortController.value = null
+      activeUploadEntryId.value = null
     }
   }
 
@@ -231,6 +283,8 @@ export function useSmartFolderImport() {
     surveyPhase,
     uploadLoading,
     uploadProgress,
+    activeUploadEntryId,
+    uploadStats,
     uploadUploadedBytes,
     uploadTotalBytes,
     scanLoading,
@@ -241,6 +295,7 @@ export function useSmartFolderImport() {
     handleFolderInputChange,
     handleFolderDrop,
     setEntrySelected,
+    setDirectoryEntriesSelected,
     setEntryContextType,
     getFileUploadState,
     uploadToProject,

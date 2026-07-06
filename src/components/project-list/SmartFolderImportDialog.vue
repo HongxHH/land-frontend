@@ -62,7 +62,7 @@
     </div>
 
     <div v-if="hasScanResult" class="smart-folder-import__groups">
-      <div class="smart-folder-import__matched-panel">
+      <div v-if="matchedDisplayGroups.length" class="smart-folder-import__matched-panel">
         <section
           v-for="group in matchedDisplayGroups"
           :key="group.key"
@@ -88,6 +88,16 @@
               >
                 <template #title>
                   <div class="smart-folder-import__dir-header">
+                    <el-checkbox
+                      class="smart-folder-import__dir-select-all"
+                      :model-value="isDirAllSelected(dirGroup, false)"
+                      :indeterminate="isDirIndeterminate(dirGroup, false)"
+                      :disabled="uploadLoading || !hasSelectableInDir(dirGroup, false)"
+                      @click.stop
+                      @update:model-value="handleDirSelectToggle(dirGroup, false, $event)"
+                    >
+                      全选
+                    </el-checkbox>
                     <el-icon class="smart-folder-import__dir-icon" aria-hidden="true"
                       ><FolderOpened
                     /></el-icon>
@@ -110,6 +120,8 @@
                     v-for="entry in dirGroup.entries"
                     :key="entry.id"
                     class="smart-folder-import__row"
+                    :class="{ 'is-upload-active': isActiveUploadEntry(entry.id) }"
+                    :data-upload-entry-id="entry.id"
                   >
                     <el-checkbox
                       :model-value="entry.selected"
@@ -158,6 +170,16 @@
             >
               <template #title>
                 <div class="smart-folder-import__dir-header">
+                  <el-checkbox
+                    class="smart-folder-import__dir-select-all"
+                    :model-value="isDirAllSelected(dirGroup, true)"
+                    :indeterminate="isDirIndeterminate(dirGroup, true)"
+                    :disabled="uploadLoading || !hasSelectableInDir(dirGroup, true)"
+                    @click.stop
+                    @update:model-value="handleDirSelectToggle(dirGroup, true, $event)"
+                  >
+                    全选
+                  </el-checkbox>
                   <el-icon class="smart-folder-import__dir-icon" aria-hidden="true"
                     ><FolderOpened
                   /></el-icon>
@@ -180,6 +202,8 @@
                   v-for="entry in dirGroup.entries"
                   :key="entry.id"
                   class="smart-folder-import__row"
+                  :class="{ 'is-upload-active': isActiveUploadEntry(entry.id) }"
+                  :data-upload-entry-id="entry.id"
                 >
                   <el-checkbox
                     :model-value="entry.selected"
@@ -221,18 +245,11 @@
         <div v-else class="smart-folder-import__empty">— 无未识别文件</div>
       </section>
     </div>
-
-    <el-progress
-      v-if="uploadLoading"
-      :percentage="uploadProgress"
-      :stroke-width="8"
-      class="smart-folder-import__progress"
-    />
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { FolderOpened } from '@element-plus/icons-vue'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
 import {
@@ -252,6 +269,8 @@ const props = defineProps({
   uploadProgress: { type: Number, default: 0 },
   getFileUploadState: { type: Function, default: () => null },
   uploadItems: { type: Array, default: () => [] },
+  activeUploadEntryId: { type: String, default: null },
+  scrollContainer: { type: Object, default: null },
 })
 
 const emit = defineEmits([
@@ -259,6 +278,7 @@ const emit = defineEmits([
   'folder-input-change',
   'folder-drop',
   'toggle-selected',
+  'toggle-directory-selected',
   'change-context-type',
 ])
 
@@ -293,27 +313,32 @@ const displayGroups = computed(() => {
 })
 
 const matchedDisplayGroups = computed(() =>
-  displayGroups.value.filter((group) => group.key !== 'UNMATCHED')
+  displayGroups.value.filter((group) => group.key !== 'UNMATCHED' && group.entries.length > 0)
 )
 
-const unmatchedDisplayGroup = computed(
-  () => displayGroups.value.find((group) => group.key === 'UNMATCHED') ?? null
-)
+const unmatchedDisplayGroup = computed(() => {
+  const group = displayGroups.value.find((item) => item.key === 'UNMATCHED')
+  return group?.entries.length > 0 ? group : null
+})
 
-const allDirCollapseKeys = computed(() => {
+const scanFingerprint = computed(() => props.scannedEntries.map((entry) => entry.id).join('\0'))
+
+const buildExpandedKeysForSelected = () => {
   const keys = []
   for (const group of displayGroups.value) {
     for (const dirGroup of group.directoryGroups) {
-      keys.push(buildDirCollapseKey(group.key, dirGroup.directory))
+      if (dirGroup.entries.some((entry) => entry.selected)) {
+        keys.push(buildDirCollapseKey(group.key, dirGroup.directory))
+      }
     }
   }
   return keys
-})
+}
 
 watch(
-  allDirCollapseKeys,
-  (keys) => {
-    expandedDirKeys.value = [...keys]
+  scanFingerprint,
+  () => {
+    expandedDirKeys.value = buildExpandedKeysForSelected()
   },
   { immediate: true }
 )
@@ -358,6 +383,122 @@ const uploadStatusLabel = (entryId) => {
   const status = resolveUploadState(entryId)?.status ?? 'pending'
   return UPLOAD_STATUS_LABELS[status] || status
 }
+
+const getSelectableDirEntries = (dirGroup, isUnmatched) => {
+  if (isUnmatched) {
+    return dirGroup.entries.filter((entry) => entry.fileContextType)
+  }
+  return dirGroup.entries
+}
+
+const hasSelectableInDir = (dirGroup, isUnmatched) =>
+  getSelectableDirEntries(dirGroup, isUnmatched).length > 0
+
+const isDirAllSelected = (dirGroup, isUnmatched) => {
+  const selectable = getSelectableDirEntries(dirGroup, isUnmatched)
+  return selectable.length > 0 && selectable.every((entry) => entry.selected)
+}
+
+const isDirIndeterminate = (dirGroup, isUnmatched) => {
+  const selectable = getSelectableDirEntries(dirGroup, isUnmatched)
+  if (!selectable.length) return false
+  const selectedCount = selectable.filter((entry) => entry.selected).length
+  return selectedCount > 0 && selectedCount < selectable.length
+}
+
+const handleDirSelectToggle = (dirGroup, isUnmatched, checked) => {
+  if (checked) {
+    const entryIds = getSelectableDirEntries(dirGroup, isUnmatched).map((entry) => entry.id)
+    emit('toggle-directory-selected', entryIds, true)
+    return
+  }
+  const entryIds = dirGroup.entries.map((entry) => entry.id)
+  emit('toggle-directory-selected', entryIds, false)
+}
+
+const autoFollowUpload = ref(true)
+let isProgrammaticScroll = false
+let scrollFollowTimer = null
+let scrollContainerCleanup = null
+
+const isActiveUploadEntry = (entryId) =>
+  props.uploadLoading && props.activeUploadEntryId && entryId === props.activeUploadEntryId
+
+const ensureEntryDirExpanded = (entryId) => {
+  for (const group of displayGroups.value) {
+    for (const dirGroup of group.directoryGroups) {
+      if (!dirGroup.entries.some((entry) => entry.id === entryId)) continue
+      const key = buildDirCollapseKey(group.key, dirGroup.directory)
+      if (!expandedDirKeys.value.includes(key)) {
+        expandedDirKeys.value = [...expandedDirKeys.value, key]
+      }
+      return
+    }
+  }
+}
+
+const scrollToUploadEntry = async (entryId) => {
+  if (!entryId || !autoFollowUpload.value) return
+  const container = props.scrollContainer
+  if (!container) return
+
+  ensureEntryDirExpanded(entryId)
+  await nextTick()
+
+  const row = container.querySelector(`[data-upload-entry-id="${entryId}"]`)
+  if (!row) return
+
+  isProgrammaticScroll = true
+  row.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  window.clearTimeout(scrollFollowTimer)
+  scrollFollowTimer = window.setTimeout(() => {
+    isProgrammaticScroll = false
+  }, 600)
+}
+
+const bindScrollContainer = (container) => {
+  scrollContainerCleanup?.()
+  if (!container) return
+
+  const onScroll = () => {
+    if (isProgrammaticScroll) return
+    autoFollowUpload.value = false
+  }
+
+  container.addEventListener('scroll', onScroll, { passive: true })
+  scrollContainerCleanup = () => container.removeEventListener('scroll', onScroll)
+}
+
+watch(
+  () => props.scrollContainer,
+  (container) => bindScrollContainer(container),
+  { immediate: true }
+)
+
+watch(
+  () => props.uploadLoading,
+  async (loading) => {
+    if (!loading) return
+    autoFollowUpload.value = true
+    await nextTick()
+    const firstItem = props.uploadItems[0]
+    if (firstItem?.uid) {
+      scrollToUploadEntry(firstItem.uid)
+    }
+  }
+)
+
+watch(
+  () => props.activeUploadEntryId,
+  (entryId) => {
+    scrollToUploadEntry(entryId)
+  }
+)
+
+onBeforeUnmount(() => {
+  scrollContainerCleanup?.()
+  window.clearTimeout(scrollFollowTimer)
+})
 
 defineExpose({ pickFolder })
 </script>
@@ -603,8 +744,21 @@ defineExpose({ pickFolder })
   gap: 6px;
   width: 100%;
   min-width: 0;
-  padding: 8px 10px 8px 0;
+  padding: 8px 10px 8px 8px;
   background: rgba(241, 245, 249, 0.95);
+}
+
+.smart-folder-import__dir-select-all {
+  flex-shrink: 0;
+  margin-right: 2px;
+  height: auto;
+}
+
+.smart-folder-import__dir-select-all :deep(.el-checkbox__label) {
+  padding-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
 }
 
 .smart-folder-import__dir-icon {
@@ -656,6 +810,12 @@ defineExpose({ pickFolder })
   border: 1px solid rgba(226, 232, 240, 0.75);
 }
 
+.smart-folder-import__row.is-upload-active {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: rgba(239, 246, 255, 0.98);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
 .smart-folder-import__row-main {
   min-width: 0;
 }
@@ -699,9 +859,5 @@ defineExpose({ pickFolder })
   font-size: 12px;
   color: #94a3b8;
   padding: 4px 0 2px 2px;
-}
-
-.smart-folder-import__progress {
-  margin-top: 12px;
 }
 </style>

@@ -36,25 +36,25 @@
           <el-table-column
             prop="usagePattern"
             label="用途匹配模式"
-            min-width="180"
+            min-width="150"
             show-overflow-tooltip
           />
-          <el-table-column label="用途类别" width="160" align="center" show-overflow-tooltip>
+          <el-table-column label="用途类别" width="180" align="center" show-overflow-tooltip>
             <template #default="{ row }">
               {{ usageCategoryLabel(row.usageCategory) }}
             </template>
           </el-table-column>
-          <el-table-column label="面积类型" width="120" align="center">
+          <el-table-column label="面积类型" width="140" align="center">
             <template #default="{ row }">
               <el-tag size="small" effect="plain" :type="floorAreaTypeTagType(row.floorAreaType)">
                 {{ floorAreaTypeLabel(row.floorAreaType) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="90" align="center">
+          <el-table-column label="状态" width="100" align="center">
             <template #default="{ row }">{{ Number(row.status) === 1 ? '启用' : '禁用' }}</template>
           </el-table-column>
-          <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="remark" label="备注" min-width="140" align="center" show-overflow-tooltip />
           <el-table-column label="操作" width="320" align="center" fixed="right">
             <template #default="{ row }">
               <span class="field-table-actions">
