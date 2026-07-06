@@ -89,6 +89,7 @@ const deferred = () => {
 
 describe('useCalibrationViewer', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     vi.spyOn(URL, 'createObjectURL').mockImplementation(() => 'blob:test-pdf')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     downloadGridFsFile.mockResolvedValue({ data: new Uint8Array([1]) })
