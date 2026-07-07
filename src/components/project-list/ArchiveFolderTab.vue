@@ -210,6 +210,7 @@ const {
   canBatchParse,
   canBatchDelete,
   clearArchiveQueryCache,
+  resetArchiveProjectState,
   clearFiles,
   fetchArchiveFiles,
   prependUploadedArchiveFiles,
@@ -368,7 +369,10 @@ watch([selectedArchiveId, fileLoading], () => {
 
 watch(
   () => [props.projectId, props.active],
-  ([projectId, active]) => {
+  ([projectId, active], [oldProjectId] = []) => {
+    if (oldProjectId !== undefined && String(projectId || '') !== String(oldProjectId || '')) {
+      resetArchiveProjectState()
+    }
     if (projectId && active) {
       fetchArchives()
       return

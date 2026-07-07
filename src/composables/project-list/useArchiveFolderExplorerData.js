@@ -34,6 +34,7 @@ export function useArchiveFolderExplorerData(deps) {
   const fileTotal = ref(0)
   const selectedArchiveId = ref(null)
   const selectedArchiveName = ref('')
+  const archiveQuerySeq = ref(0)
   const fileQuerySeq = ref(0)
   const archiveQueryCache = new Map()
   let currentFileQueryController = null
@@ -167,6 +168,17 @@ export function useArchiveFolderExplorerData(deps) {
     }
   }
 
+  const resetArchiveProjectState = () => {
+    archiveQuerySeq.value += 1
+    fileQuerySeq.value += 1
+    abortCurrentFileQuery()
+    archiveLoading.value = false
+    fileLoading.value = false
+    archiveQueryCache.clear()
+    archiveList.value = []
+    clearFiles()
+  }
+
   async function fetchArchiveFiles(options = {}) {
     const force = Boolean(options?.force)
     const projectId = toValue(deps.projectId)
@@ -255,9 +267,16 @@ export function useArchiveFolderExplorerData(deps) {
       return
     }
 
+    const currentSeq = ++archiveQuerySeq.value
     archiveLoading.value = true
     try {
       const res = await getProjectArchives(projectId)
+      if (
+        currentSeq !== archiveQuerySeq.value ||
+        String(projectId) !== String(toValue(deps.projectId))
+      ) {
+        return
+      }
       if (res.data?.code === 200 && Array.isArray(res.data.data)) {
         const oldSelected = selectedArchiveId.value
         archiveList.value = res.data.data
@@ -289,7 +308,9 @@ export function useArchiveFolderExplorerData(deps) {
       clearFiles()
       ElMessage.error('获取归档夹列表失败，请稍后重试')
     } finally {
-      archiveLoading.value = false
+      if (currentSeq === archiveQuerySeq.value) {
+        archiveLoading.value = false
+      }
     }
   }
 
@@ -583,6 +604,7 @@ export function useArchiveFolderExplorerData(deps) {
     canBatchParse,
     canBatchDelete,
     clearArchiveQueryCache,
+    resetArchiveProjectState,
     clearFiles,
     fetchArchiveFiles,
     prependUploadedArchiveFiles,
