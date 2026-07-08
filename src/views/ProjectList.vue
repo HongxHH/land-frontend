@@ -19,8 +19,6 @@
         v-model="activeTab"
         type="border-card"
         class="archive-tabs archive-tabs--fill no-print"
-        v-loading="workspaceQueryLoading"
-        element-loading-text="正在加载业务数据…"
       >
 
         <el-tab-pane name="archives" class="workspace-tab-pane no-print" lazy>
@@ -54,13 +52,9 @@
             <SummaryTableCard
               :current-project-info="currentProjectInfo"
               :survey-stats="surveyStats"
-              :data-loading="surveyLoading"
-              :refresh-btn-loading="refreshBtnLoading"
+              :data-loading="surveyLoading || workspaceQueryLoading"
               :parsed-refresh-loading="parsedRefreshLoading"
-              :is-refresh-cd="isRefreshCd"
-              :cd-remaining="cdRemaining"
               :display-table-data="displayTableData"
-              @refresh-survey="handleRefreshSurveyData"
               @refresh-parsed="handleRefreshParsedOnly"
               @view-detail="viewDetail"
               @configure-print-export="openSummaryPrintExportSettings"
@@ -602,10 +596,6 @@ const handleJumpAuditFromDetail = async (row) => {
 
 
 const {
-  refreshBtnLoading,
-  isRefreshCd,
-  cdRemaining,
-  handleRefreshSurveyData,
   resetRefreshCdStatus,
   restoreRefreshCdStatus,
   clearRefreshTimer
@@ -617,15 +607,24 @@ const {
 const parsedRefreshLoading = ref(false)
 const handleRefreshParsedOnly = async () => {
   if (!currentProjectInfo.id) {
-    ElMessage.warning('请先选择项目后再刷新')
+    ElMessage.warning('请先在顶部选择项目并点击「查询档案」后再刷新')
     return
   }
   parsedRefreshLoading.value = true
   try {
     const ok = await fetchSurveyReports(currentProjectInfo.id)
-    if (ok) {
-      ElMessage.success('已刷新已解析实测报告数据')
+    if (!ok) return
+    const parsedCount = displayTableData.value.length
+    const uploadedCount = Number(surveyStats.value.total || 0)
+    if (parsedCount === 0) {
+      ElMessage.info(
+        uploadedCount > 0
+          ? `已刷新：项目共上传 ${uploadedCount} 份实测报告，尚无解析成功的汇总数据。请在归档页完成解析后再刷新。`
+          : '已刷新：当前暂无已解析实测报告。请先在归档页上传并解析报告。'
+      )
+      return
     }
+    ElMessage.success(`已刷新：当前共 ${parsedCount} 份已解析实测报告`)
   } catch (error) {
     console.error('刷新已解析列表失败:', error)
     ElMessage.error('刷新失败，请稍后重试')

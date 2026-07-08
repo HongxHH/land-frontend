@@ -165,6 +165,7 @@
 
     <template #footer>
       <footer class="spe-footer">
+        <p v-if="validationError" class="spe-footer__error" role="alert">{{ validationError }}</p>
         <el-button class="spe-footer__ghost" round @click="visible = false">取消</el-button>
         <div class="spe-footer__actions">
           <el-button class="spe-footer__print" round plain type="primary" @click="onPrint">
@@ -184,7 +185,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { Printer, Download } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 import {
   getSummaryColumnDef,
   getColumnConfigLabel,
@@ -233,6 +233,7 @@ const comparisonGroupsModel = defineModel('comparisonGroups', {
 const emit = defineEmits(['after-print-request', 'after-export-request'])
 
 const localRows = ref([])
+const validationError = ref('')
 
 const previewColumnDefs = computed(() => resolveVisibleColumnDefs(localRows.value))
 
@@ -264,10 +265,17 @@ function syncLocalFromParent() {
 watch(
   visible,
   (v) => {
-    if (v) syncLocalFromParent()
+    if (v) {
+      validationError.value = ''
+      syncLocalFromParent()
+    }
   },
   { flush: 'post' }
 )
+
+watch([localRows, comparisonGroupsModel], () => {
+  if (validationError.value) validationError.value = ''
+}, { deep: true })
 
 function onClosed() {
   syncLocalFromParent()
@@ -291,13 +299,14 @@ function moveDown(i) {
 
 function validate() {
   if (!localRows.value.some((r) => r.visible)) {
-    ElMessage.warning('请至少勾选一列汇总数据')
+    validationError.value = '请至少勾选一列汇总数据'
     return false
   }
   if (!comparisonGroupsModel.value?.length) {
-    ElMessage.warning('请至少选择一组面积核算对比数据')
+    validationError.value = '请至少选择一组面积核算对比数据'
     return false
   }
+  validationError.value = ''
   return true
 }
 
@@ -802,6 +811,19 @@ function onExport() {
   justify-content: space-between;
   gap: 12px;
   width: 100%;
+}
+
+.spe-footer__error {
+  flex: 1 1 100%;
+  margin: 0 0 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(255, 251, 235, 0.95);
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .spe-footer__actions {

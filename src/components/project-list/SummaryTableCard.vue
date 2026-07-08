@@ -1,13 +1,12 @@
 ﻿<template>
   <div class="summary-panel summary-panel--modern project-tab-panel no-print">
     <SummaryTableHero
+      v-model:search-keyword="searchKeyword"
       :current-project-info="currentProjectInfo"
       :survey-stats="surveyStats"
       :parsed-refresh-loading="parsedRefreshLoading"
-      :search-keyword="searchKeyword"
       :search-match-count="searchMatchCount"
       :search-total-count="(displayTableData || []).length"
-      @update:search-keyword="searchKeyword = $event"
       @refresh-parsed="emit('refresh-parsed')"
       @configure-print-export="emit('configure-print-export')"
     />
@@ -31,20 +30,12 @@ import '@/styles/summary-table-card.css'
 const props = defineProps({
   currentProjectInfo: { type: Object, required: true },
   surveyStats: { type: Object, required: true },
-  refreshBtnLoading: { type: Boolean, default: false },
   parsedRefreshLoading: { type: Boolean, default: false },
-  isRefreshCd: { type: Boolean, default: false },
-  cdRemaining: { type: Number, default: 0 },
   displayTableData: { type: Array, default: () => [] },
   dataLoading: { type: Boolean, default: false },
 })
 
-const emit = defineEmits([
-  'refresh-survey',
-  'refresh-parsed',
-  'view-detail',
-  'configure-print-export',
-])
+const emit = defineEmits(['refresh-parsed', 'view-detail', 'configure-print-export'])
 
 const searchKeyword = ref('')
 const bodyRef = ref(null)
