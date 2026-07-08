@@ -52,3 +52,9 @@ export function canAccessUserManagement() {
 export function canAccessTaskPoolMonitor() {
   return getUserSession()?.userType === 'DEVELOPER'
 }
+
+/** 与 OperationAuditLogController @SaCheckRole(SUPER_ADMIN|DEVELOPER) 对齐 */
+export function canAccessOperationAudit() {
+  const userType = getUserSession()?.userType
+  return userType === 'SUPER_ADMIN' || userType === 'DEVELOPER'
+}

@@ -1,6 +1,6 @@
 import { onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { isProjectWorkspaceTab } from '@/utils/fileContextTypeRegistry.js'
+import { isProjectWorkspaceTab, resolveProjectWorkspaceTab } from '@/utils/fileContextTypeRegistry.js'
 
 const PROJECT_FILTER_DISPLAY_META = 'projectFilterDisplayMeta'
 const AUDIT_STACK_WAIT_MS = 8000
@@ -243,7 +243,7 @@ export function useProjectListWorkspace({
       const fromAuditReturn = String(route.query.fromAuditReturn || '') === '1'
       if (!fromAuditReturn) return
 
-      const tabName = String(route.query.tab || '')
+      const tabName = resolveProjectWorkspaceTab(String(route.query.tab || ''))
       if (isProjectWorkspaceTab(tabName)) {
         activeTab.value = tabName
         initialReturnTab.value = tabName
@@ -327,13 +327,10 @@ export function useProjectListWorkspace({
 
   onMounted(async () => {
     if (initialReturnTab.value && isProjectWorkspaceTab(initialReturnTab.value)) {
-      activeTab.value = initialReturnTab.value
+      activeTab.value = resolveProjectWorkspaceTab(initialReturnTab.value)
       initialReturnTab.value = ''
     } else if (String(route.query.tab || '').trim()) {
-      const tabFromQuery = String(route.query.tab)
-      if (isProjectWorkspaceTab(tabFromQuery)) {
-        activeTab.value = tabFromQuery
-      }
+      activeTab.value = resolveProjectWorkspaceTab(String(route.query.tab))
     } else {
       activeTab.value = 'archives'
     }

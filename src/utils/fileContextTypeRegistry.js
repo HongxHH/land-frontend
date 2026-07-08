@@ -1,3 +1,5 @@
+import { canAccessOperationAudit } from '@/utils/auth-session.js'
+
 /**
  * 文件内容类型（FileContextType）前端统一注册表。
  * 新增后端类型时在此补充，避免上传归类/审核跳转/标签页遗漏。
@@ -69,4 +71,12 @@ export const PROJECT_WORKSPACE_TAB_NAMES = [
 
 export function isProjectWorkspaceTab(tabName) {
   return PROJECT_WORKSPACE_TAB_NAMES.includes(String(tabName || ''))
+}
+
+/** 路由 / 审核返回跳转：校验 tab 合法且当前用户有权访问 */
+export function resolveProjectWorkspaceTab(tabName) {
+  const name = String(tabName || '')
+  if (!isProjectWorkspaceTab(name)) return 'archives'
+  if (name === 'operationAudit' && !canAccessOperationAudit()) return 'archives'
+  return name
 }

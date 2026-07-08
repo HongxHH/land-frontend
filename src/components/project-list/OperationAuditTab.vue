@@ -110,6 +110,7 @@ import { ElMessage } from 'element-plus'
 import { Document, Files, Refresh } from '@element-plus/icons-vue'
 import { clampTableBodyHeight } from '@/composables/project-list/useElTableHeightClamp.js'
 import { queryOperationAuditLogs } from '@/services/project.service'
+import { getApiErrorMessage, getPermissionDeniedMessage, isForbiddenApiPayload } from '@/utils/apiErrorMessage.js'
 import { OPERATION_LABELS, TARGET_TYPE_LABELS } from '@/utils/auditLogFormatter.js'
 import ProjectTabHero from '@/components/project-list/ProjectTabHero.vue'
 import OperationAuditBody from '@/components/project-list/OperationAuditBody.vue'
@@ -243,7 +244,9 @@ const fetchLogs = async () => {
     if (res.data?.code !== 200) {
       logs.value = []
       total.value = 0
-      ElMessage.warning(res.data?.msg || '审计日志查询失败')
+      ElMessage.warning(
+        isForbiddenApiPayload(res.data) ? getPermissionDeniedMessage() : (res.data?.msg || '审计日志查询失败')
+      )
       return
     }
     const parsed = normalizeResult(res.data?.data)
@@ -253,7 +256,7 @@ const fetchLogs = async () => {
     console.error('查询审计日志失败:', error)
     logs.value = []
     total.value = 0
-    ElMessage.error('查询审计日志失败，请稍后重试')
+    ElMessage.error(getApiErrorMessage(error, '查询审计日志失败，请稍后重试'))
   } finally {
     loading.value = false
   }
