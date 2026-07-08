@@ -5,20 +5,26 @@
       v-model="showCalibration"
       :project-id="projectId"
       :focus-usage-name="auditFocusUsageName"
+      :focus-mode="auditFocusMode"
       :current-file="currentFile"
-      :is-editing="isEditing"
-      :editing-row-id="editingRowId"
-      :start-row-edit="enterEditMode"
-      :exit-edit-mode="exitEditMode"
-      :handle-save-data="handleSaveData"
+      :dirty-row-count="dirtyRowCount"
+      :batch-update-loading="batchUpdateLoading"
+      :is-cell-active="isCellActive"
+      :is-row-dirty="isRowDirty"
+      :start-cell-edit="startCellEdit"
+      :commit-active-cell="commitActiveCell"
+      :discard-all-changes="discardAllChanges"
+      :handle-save-dirty-rows="handleSaveDirtyRows"
+      :confirm-discard-unsaved-changes="confirmDiscardUnsavedChanges"
       :sync-room-row="syncRoomRow"
+      :notify-row-touched="notifyRowTouched"
+      :prepare-row-for-edit="prepareRowForEdit"
       :handle-refresh-survey-report="handleRefreshSurveyReport"
       :handle-create-room="handleCreateRoom"
       :handle-delete-room="handleDeleteRoom"
       :room-create-loading="roomCreateLoading"
       :room-delete-loading="roomDeleteLoading"
       :report-refresh-loading="reportRefreshLoading"
-      :handle-audit-pass="handleAuditPass"
       :calibration-loading="calibrationLoading"
       :current-view-type="currentViewType"
       :is-preprocess-available="isPreprocessAvailable"
@@ -34,8 +40,8 @@
       :room-info-data="roomInfoData"
       :room-info-loading="roomInfoLoading"
       :room-info-total="roomInfoTotal"
-      :fetch-all-room-info-rows="fetchAllRoomInfoRows"
       :search-room-infos-by-pages="searchRoomInfosByPages"
+      :search-missing-usage-by-pages="searchMissingUsageByPages"
       :load-more-room-info="loadMoreRoomInfo"
       :room-info-has-more="roomInfoHasMore"
       :room-info-loading-more="roomInfoLoadingMore"
@@ -91,6 +97,7 @@ const props = defineProps({
   fetchArchives: { type: Function, default: undefined },
   selectArchiveForAudit: { type: Function, default: undefined },
   onContractArchiveAudit: { type: Function, default: undefined },
+  onAuditReturnNavigate: { type: Function, default: undefined },
 })
 
 const emit = defineEmits(['audit-consumed'])
@@ -98,8 +105,17 @@ const emit = defineEmits(['audit-consumed'])
 const {
   showCalibration,
   currentFile,
-  isEditing,
-  editingRowId,
+  dirtyRowCount,
+  batchUpdateLoading,
+  isCellActive,
+  isRowDirty,
+  startCellEdit,
+  commitActiveCell,
+  notifyRowTouched,
+  prepareRowForEdit,
+  discardAllChanges,
+  confirmDiscardUnsavedChanges,
+  handleSaveDirtyRows,
   roomCreateLoading,
   roomDeleteLoading,
   reportRefreshLoading,
@@ -118,19 +134,15 @@ const {
   roomInfoData,
   roomInfoLoading,
   roomInfoTotal,
-  fetchAllRoomInfoRows,
   searchRoomInfosByPages,
+  searchMissingUsageByPages,
   loadMoreRoomInfo,
   roomInfoHasMore,
   roomInfoLoadingMore,
-  enterEditMode,
-  exitEditMode,
-  handleSaveData,
   syncRoomRow,
   handleRefreshSurveyReport,
   handleCreateRoom,
   handleDeleteRoom,
-  handleAuditPass,
   handleCalibrationClosed,
   planningReviewAuditVisible,
   planningReviewAuditForm,
@@ -143,6 +155,7 @@ const {
   handleAudit,
   openAuditByFileRecordId,
   auditFocusUsageName,
+  auditFocusMode,
 } = useArchiveFolderAuditStack({
   projectId: () => props.projectId,
   active: () => props.active,
@@ -156,6 +169,7 @@ const {
   fetchArchives: props.fetchArchives,
   selectArchiveForAudit: props.selectArchiveForAudit,
   onContractArchiveAudit: props.onContractArchiveAudit,
+  onAuditReturnNavigate: props.onAuditReturnNavigate,
   onAuditConsumed: () => emit('audit-consumed'),
 })
 

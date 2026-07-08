@@ -3,6 +3,8 @@
  * 规则优先级从高到低，先匹配先锁定。
  */
 
+import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
+
 /** @typedef {'CONTRACT'|'SURVEY_REPORT'|'PLANNING_REVIEW'|'CAPACITY_INDICATOR'|'PROJECT_PARTY_SURVEY_SUMMARY'} SmartImportContextType */
 
 /** @typedef {Object} ScannedFileEntry
@@ -18,7 +20,7 @@
 export const SMART_IMPORT_CONTEXT_TYPES = [
   'CONTRACT',
   'SURVEY_REPORT',
-  'PLANNING_REVIEW',
+  ...(isPlanningReviewEnabled() ? ['PLANNING_REVIEW'] : []),
   'CAPACITY_INDICATOR',
   'PROJECT_PARTY_SURVEY_SUMMARY',
 ]
@@ -66,7 +68,7 @@ const SURVEY_REPORT_DIR_PATTERNS = [
 ]
 
 /** @type {Array<{ type: SmartImportContextType, extensions: string[], include: RegExp[], exclude?: RegExp[] }>} */
-const MATCH_RULES = [
+const ALL_MATCH_RULES = [
   {
     type: 'PROJECT_PARTY_SURVEY_SUMMARY',
     extensions: ['.xls', '.xlsx'],
@@ -91,6 +93,10 @@ const MATCH_RULES = [
     exclude: [/实测/, /测绘/, /汇总/, /复核/, /容量指标/],
   },
 ]
+
+const MATCH_RULES = ALL_MATCH_RULES.filter(
+  (rule) => rule.type !== 'PLANNING_REVIEW' || isPlanningReviewEnabled()
+)
 
 export function getBaseName(filePath) {
   const normalized = String(filePath || '')

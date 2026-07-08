@@ -1,4 +1,5 @@
 import { filterAndRankRoomRows } from '@/utils/textMatchRank.js'
+import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending.js'
 
 export const ROOM_SEARCH_FIELDS = [
   'usageCategory',
@@ -88,6 +89,71 @@ export async function searchRoomInfosByPages({
     done: true,
   })
   return ranked
+}
+
+/**
+ * 分页扫描并返回用途为空的户室行。
+ */
+export async function searchMissingUsageByPages({
+  projectId,
+  surveyReportInfoId,
+  signal,
+  onProgress,
+  queryRoomInfos,
+  mapRoomInfoList,
+}) {
+  if (!projectId || !surveyReportInfoId) {
+    onProgress?.({ scannedPages: 0, totalPages: 0, matchCount: 0, done: true })
+    return []
+  }
+
+  const rawMatches = []
+  let pageNum = 1
+  let total = 0
+  let totalPages = 1
+
+  while (pageNum <= MAX_ROOM_SEARCH_PAGES) {
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError')
+    }
+
+    const roomRes = await queryRoomInfos({
+      projectId,
+      surveyReportInfoId,
+      pageNum,
+      pageSize: ROOM_SEARCH_PAGE_SIZE,
+      sortField: 'id',
+      sortDirection: 'asc',
+    })
+    if (roomRes.data?.code !== 200) break
+
+    const body = roomRes.data.data || {}
+    const records = Array.isArray(body.records) ? body.records : []
+    total = Number(body.total ?? 0)
+    totalPages = Math.max(1, Math.ceil(total / ROOM_SEARCH_PAGE_SIZE))
+
+    const mapped = mapRoomInfoList(records)
+    rawMatches.push(...mapped.filter((row) => isBlankRoomUsage(row?.roomUsage)))
+
+    onProgress?.({
+      scannedPages: pageNum,
+      totalPages,
+      matchCount: rawMatches.length,
+      done: false,
+    })
+
+    if (records.length === 0) break
+    if (pageNum >= totalPages) break
+    pageNum += 1
+  }
+
+  onProgress?.({
+    scannedPages: pageNum,
+    totalPages,
+    matchCount: rawMatches.length,
+    done: true,
+  })
+  return rawMatches
 }
 
 /**

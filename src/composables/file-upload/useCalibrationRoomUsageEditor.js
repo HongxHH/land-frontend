@@ -26,7 +26,13 @@ const usagePresetMap = {
   UNKNOWN: { roomUsage: '未知', floorAreaType: 'UNKNOWN', floorAreaTypeText: '未知' },
 }
 
-export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, handleDeleteRoom }) {
+export function useCalibrationRoomUsageEditor({
+  syncRoomRow,
+  prepareRowForEdit,
+  notifyRowTouched,
+  handleCreateRoom,
+  handleDeleteRoom,
+}) {
   const createRoomDialogVisible = ref(false)
   const createRoomFormRef = ref(null)
   const createRoomForm = reactive({
@@ -155,10 +161,14 @@ export function useCalibrationRoomUsageEditor({ syncRoomRow, handleCreateRoom, h
   }
 
   const stageUsageOnRow = (row, matched) => {
-    const target = typeof syncRoomRow === 'function' ? syncRoomRow(row) : row
-    target.usageCategory = matched.usageCategoryText
+    let target = typeof syncRoomRow === 'function' ? syncRoomRow(row) : row
+    if (typeof prepareRowForEdit === 'function') {
+      target = prepareRowForEdit(target) || target
+    }
+    target.usageCategory = normalizeUsageCategoryText(matched.usageCategory)
     target.roomUsage = matched.usagePattern || target.roomUsage
     target.floorAreaType = matched.floorAreaTypeText || target.floorAreaType
+    if (typeof notifyRowTouched === 'function') notifyRowTouched(target)
     return target
   }
 

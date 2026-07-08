@@ -53,7 +53,7 @@
       <div class="policy-head">
         <div class="head-left">
           <el-icon color="#e65f4d" size="18"><WarningFilled /></el-icon>
-          <span class="title">检测到 {{ unknownUsageClassCount }} 类未知用途，请指定归属分类</span>
+          <span class="title">检测到 {{ unknownUsageClassCount }} 类待确认用途，请处理</span>
         </div>
       </div>
 
@@ -63,8 +63,10 @@
           :rows="calibrationUnknownRows"
           :project-id="projectId"
           :highlight-usage-name="focusUsageName"
+          :focus-mode="focusMode"
           show-locate-button
           @locate-usage="(name) => emit('locate-usage', name)"
+          @filter-missing-usage="emit('filter-missing-usage')"
         />
         <div v-else-if="!calibrationUnknownLoading" class="calibration-unknown-policy__hint">
           未找到待处理的未知用途记录（可能已在土地类型管理中处理）。
@@ -72,10 +74,10 @@
       </div>
     </div>
 
-    <div v-if="showVerificationDetailPanel" class="cali-audit-detail-panel">
+    <div v-if="showAuditDetailPanel" class="cali-audit-detail-panel">
       <div class="cali-audit-detail-panel__body">
         <el-alert
-          v-if="missingUsageCount > 0"
+          v-if="showMissingUsageAlert"
           class="audit-missing-usage-alert"
           type="error"
           :closable="false"
@@ -95,34 +97,14 @@
         </div>
       </div>
     </div>
-
-    <div
-      v-else-if="missingUsageCount > 0 && !showUnknownUsagePolicyPanel"
-      class="cali-audit-detail-panel"
-    >
-      <div class="cali-audit-detail-panel__body">
-        <el-alert
-          class="audit-missing-usage-alert"
-          type="error"
-          :closable="false"
-          show-icon
-          :title="`存在 ${missingUsageCount} 户用途未识别，导出前请补全`"
-        />
-      </div>
-    </div>
   </section>
 </template>
 
 <script setup>
 import { computed, toRef } from 'vue'
-import {
-  useCalibrationUnknownUsagePolicy,
-  parseUnknownUsageNames,
-} from '@/composables/file-upload/useCalibrationUnknownUsagePolicy'
+import { useCalibrationUnknownUsagePolicy } from '@/composables/file-upload/useCalibrationUnknownUsagePolicy'
 import {
   countMissingUsageFromSummary,
-  countMissingUsageInRoomRows,
-  countDistinctUnknownUsageClasses,
   reportHasPendingUnknownUsage,
 } from '@/composables/file-upload/surveyUsagePending'
 import UnknownUsagePolicyList from '@/components/shared/UnknownUsagePolicyList.vue'
@@ -134,34 +116,38 @@ const props = defineProps({
   open: { type: Boolean, default: false },
   auditSummaryData: { type: Object, required: true },
   auditSummaryDisplay: { type: Object, required: true },
-  roomInfoData: { type: Array, default: () => [] },
   projectId: { type: [String, Number], default: '' },
+  currentFile: { type: Object, default: null },
   focusUsageName: { type: String, default: '' },
+  focusMode: { type: String, default: '' },
 })
 
-const emit = defineEmits(['locate-usage'])
+const emit = defineEmits(['locate-usage', 'filter-missing-usage'])
 
 const openRef = toRef(props, 'open')
 const auditSummaryDataRef = computed(() => props.auditSummaryData)
 const projectIdRef = computed(() => props.projectId)
+const currentFileRef = computed(() => props.currentFile)
 
 const { calibrationUnknownRows, calibrationUnknownLoading } = useCalibrationUnknownUsagePolicy({
   dialogOpen: openRef,
   projectId: projectIdRef,
   auditSummaryData: auditSummaryDataRef,
+  currentFile: currentFileRef,
 })
 
 const unknownUsageClassCount = computed(() => {
-  const fromRows = calibrationUnknownRows.value.length
-  const fromSummary = countDistinctUnknownUsageClasses(props.auditSummaryData?.unknownUsages)
-  return Math.max(fromRows, fromSummary)
+  const names = new Set(
+    calibrationUnknownRows.value
+      .map((row) => String(row?.usageName || '').trim())
+      .filter(Boolean)
+  )
+  return names.size
 })
 
-const showUnknownUsagePolicyPanel = computed(() => {
-  if (!props.open) return false
-  if (reportHasPendingUnknownUsage(props.auditSummaryData)) return true
-  return parseUnknownUsageNames(props.auditSummaryData?.unknownUsages).length > 0
-})
+const showUnknownUsagePolicyPanel = computed(
+  () => props.open && reportHasPendingUnknownUsage(props.auditSummaryData)
+)
 
 const isAuditPassed = computed(() => Number(props.auditSummaryData?.isVerified) === 1)
 const hasPendingUnknownUsage = computed(() => reportHasPendingUnknownUsage(props.auditSummaryData))
@@ -177,15 +163,18 @@ const hasVerificationErrorReason = computed(() => {
   return !!reason && reason !== '-' && reason.toLowerCase() !== 'null'
 })
 
-const showVerificationDetailPanel = computed(
-  () => !isAuditPassed.value && hasVerificationErrorReason.value
+const missingUsageCount = computed(() =>
+  countMissingUsageFromSummary(props.auditSummaryData?.unknownUsages)
 )
 
-const missingUsageCount = computed(() => {
-  const fromReport = countMissingUsageFromSummary(props.auditSummaryData?.unknownUsages)
-  if (fromReport > 0) return fromReport
-  return countMissingUsageInRoomRows(props.roomInfoData)
-})
+const showMissingUsageAlert = computed(
+  () => missingUsageCount.value > 0 && !showUnknownUsagePolicyPanel.value
+)
+
+const showAuditDetailPanel = computed(
+  () =>
+    (!isAuditPassed.value && hasVerificationErrorReason.value) || showMissingUsageAlert.value
+)
 
 const hasPendingConfirmArea = computed(
   () => Number(props.auditSummaryData?.pendingConfirmArea) > AREA_COMPARE_TOLERANCE

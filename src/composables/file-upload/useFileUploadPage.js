@@ -11,7 +11,6 @@ import { useCalibrationState } from '@/composables/file-upload/useCalibrationSta
 import { useCalibrationViewer } from '@/composables/file-upload/useCalibrationViewer'
 import { useRecognitionMarkdown } from '@/composables/file-upload/useRecognitionMarkdown'
 import { useCurrentProjectSession } from '@/composables/file-upload/useCurrentProjectSession'
-import { useCalibrationActions } from '@/composables/file-upload/useCalibrationActions'
 import { useRoomEditWorkflow } from '@/composables/file-upload/useRoomEditWorkflow'
 
 export function useFileUploadPage() {
@@ -78,7 +77,6 @@ export function useFileUploadPage() {
     prependUploadedFiles,
   })
 
-  const isEditing = ref(false)
   const batchUpdateLoading = ref(false)
 
   const {
@@ -137,25 +135,27 @@ export function useFileUploadPage() {
     clearUploadSelection,
   })
 
-  const { handleAuditPass } = useCalibrationActions({
-    showCalibration,
-    resetCalibrationState,
-    refreshData,
-    currentFile,
-    realSurveyReportId,
-  })
-
   const {
-    enterEditMode,
-    exitEditMode,
-    handleSaveData,
+    dirtyRowCount,
+    isCellActive,
+    isRowDirty,
+    startCellEdit,
+    commitActiveCell,
+    notifyRowTouched,
+    prepareRowForEdit,
+    discardAllChanges,
+    confirmDiscardUnsavedChanges,
+    handleSaveDirtyRows,
     syncRoomRow,
     handleRefreshSurveyReport,
+    handleCreateRoom,
+    handleDeleteRoom,
+    roomCreateLoading,
+    roomDeleteLoading,
     reportRefreshLoading,
-    goRoomInfoPage,
-    goRoomInfoPageSizeChange,
-    fetchAllRoomInfoRows,
+    clearDirtyState,
     searchRoomInfosByPages,
+    searchMissingUsageByPages,
     loadMoreRoomInfo,
     roomInfoHasMore,
     roomInfoLoadingMore,
@@ -168,7 +168,6 @@ export function useFileUploadPage() {
     roomInfoTotal,
     roomInfoPageNum,
     roomInfoPageSize,
-    isEditing,
     batchUpdateLoading,
     usageCategoryMap,
     usageCategoryReverseMap,
@@ -255,13 +254,25 @@ export function useFileUploadPage() {
     showCalibration,
     resetCalibrationState,
     currentFile,
-    isEditing,
-    enterEditMode,
-    exitEditMode,
-    handleSaveData,
+    dirtyRowCount,
+    batchUpdateLoading,
+    isCellActive,
+    isRowDirty,
+    startCellEdit,
+    commitActiveCell,
+    notifyRowTouched,
+    prepareRowForEdit,
+    discardAllChanges,
+    confirmDiscardUnsavedChanges,
+    handleSaveDirtyRows,
     syncRoomRow,
     handleRefreshSurveyReport,
+    handleCreateRoom,
+    handleDeleteRoom,
+    roomCreateLoading,
+    roomDeleteLoading,
     reportRefreshLoading,
+    clearDirtyState,
     calibrationLoading,
     currentViewType,
     isPreprocessAvailable,
@@ -279,13 +290,10 @@ export function useFileUploadPage() {
     roomInfoTotal,
     roomInfoPageNum,
     roomInfoPageSize,
-    goRoomInfoPage,
-    goRoomInfoPageSizeChange,
-    fetchAllRoomInfoRows,
     searchRoomInfosByPages,
+    searchMissingUsageByPages,
     loadMoreRoomInfo,
     roomInfoHasMore,
     roomInfoLoadingMore,
-    handleAuditPass,
   }
 }

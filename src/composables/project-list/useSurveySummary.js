@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '@/utils/apiErrorMessage'
 import { queryFiles } from '@/services/file.service'
 import {
   aggregateProjectUnknownUsagesJson,
+  buildMissingUsageGroupsByFile,
   buildUsageNameFileRecordMap,
   mergeUnknownUsagePolicyRows,
   projectHasPendingUnknownUsageRows,
@@ -92,6 +93,7 @@ export function useSurveySummary() {
     }
     unknownUsages.value = mergeUnknownUsagePolicyRows(aggregatedJson, apiRows, {
       fileRecordIdByUsage: buildUsageNameFileRecordMap(tableRows),
+      missingUsageSourceGroups: buildMissingUsageGroupsByFile(tableRows),
     })
   }
 

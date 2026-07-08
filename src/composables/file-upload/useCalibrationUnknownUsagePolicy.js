@@ -3,6 +3,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import {
   MISSING_USAGE_LABEL,
+  buildMissingUsageSourceGroupForAudit,
   groupRoomNumbersByUsageName,
   mergeUnknownUsagePolicyRows,
   parseDistinctUnknownUsageNames,
@@ -13,7 +14,12 @@ export { parseDistinctUnknownUsageNames as parseUnknownUsageNames }
 /**
  * 智能审核对话框内：展示当前报告涉及的未知用途
  */
-export function useCalibrationUnknownUsagePolicy({ dialogOpen, projectId, auditSummaryData }) {
+export function useCalibrationUnknownUsagePolicy({
+  dialogOpen,
+  projectId,
+  auditSummaryData,
+  currentFile,
+}) {
   const rows = ref([])
   const loading = ref(false)
 
@@ -49,11 +55,29 @@ export function useCalibrationUnknownUsagePolicy({ dialogOpen, projectId, auditS
       const list = res.data?.code === 200 && Array.isArray(res.data.data) ? res.data.data : []
       const names = nameSet.value
       const filtered = list.filter((item) => names.has(String(item.usageName || '').trim()))
-      rows.value = mergeUnknownUsagePolicyRows(unknownUsagesJson, filtered)
+      const file = currentFile?.value
+      const fileRecordId = String(file?.rawId || file?.fileRecordId || '').trim()
+      const fileName = String(file?.name || file?.originalName || '').trim()
+      rows.value = mergeUnknownUsagePolicyRows(unknownUsagesJson, filtered, {
+        missingUsageSourceGroups: buildMissingUsageSourceGroupForAudit(
+          fileRecordId,
+          fileName,
+          unknownUsagesJson
+        ),
+      })
     } catch (error) {
       console.error('加载审核页未知用途失败:', error)
       ElMessage.warning('加载未知用途列表失败')
-      rows.value = mergeUnknownUsagePolicyRows(unknownUsagesJson, [])
+      const file = currentFile?.value
+      const fileRecordId = String(file?.rawId || file?.fileRecordId || '').trim()
+      const fileName = String(file?.name || file?.originalName || '').trim()
+      rows.value = mergeUnknownUsagePolicyRows(unknownUsagesJson, [], {
+        missingUsageSourceGroups: buildMissingUsageSourceGroupForAudit(
+          fileRecordId,
+          fileName,
+          unknownUsagesJson
+        ),
+      })
     } finally {
       loading.value = false
     }
@@ -74,6 +98,5 @@ export function useCalibrationUnknownUsagePolicy({ dialogOpen, projectId, auditS
   return {
     calibrationUnknownRows: rows,
     calibrationUnknownLoading: loading,
-    reloadCalibrationUnknownRows: loadRows,
   }
 }

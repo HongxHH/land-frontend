@@ -29,7 +29,7 @@
       <div ref="formsTableWrapRef" class="planning-table-wrap">
         <el-table
           ref="formsTableRef"
-          class="project-tab-el-table planning-el-table"
+          class="project-tab-el-table planning-el-table capacity-forms-table"
           :data="forms"
           border
           stripe
@@ -40,28 +40,67 @@
           empty-text="暂无容量指标核查表数据"
           @row-click="handleFormRowClick"
         >
-          <el-table-column type="index" width="52" label="序号" align="center" fixed="left" />
           <el-table-column
-            label="核查文件"
-            min-width="220"
+            type="index"
+            width="52"
+            label="序号"
             align="center"
             fixed="left"
+            :resizable="false"
+          />
+          <el-table-column
+            label="核查文件"
+            min-width="200"
+            align="center"
+            fixed="left"
+            :resizable="false"
             show-overflow-tooltip
           >
             <template #default="{ row }">
               {{ resolveFormFileName(row) || `fileRecordId ${row.fileRecordId || '-'}` }}
             </template>
           </el-table-column>
-          <el-table-column label="合计(㎡)" min-width="140" align="center">
+          <el-table-column
+            label="合计(㎡)"
+            min-width="124"
+            align="center"
+            :resizable="false"
+            class-name="col-area"
+            label-class-name="col-area"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">{{ formatNum(row.totalArea) }}</template>
           </el-table-column>
-          <el-table-column label="商业类(㎡)" min-width="140" align="center">
+          <el-table-column
+            label="商业类(㎡)"
+            min-width="124"
+            align="center"
+            :resizable="false"
+            class-name="col-area"
+            label-class-name="col-area"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">{{ formatNum(row.commercialArea) }}</template>
           </el-table-column>
-          <el-table-column label="住宅类(㎡)" min-width="140" align="center">
+          <el-table-column
+            label="住宅类(㎡)"
+            min-width="124"
+            align="center"
+            :resizable="false"
+            class-name="col-area"
+            label-class-name="col-area"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">{{ formatNum(row.residentialArea) }}</template>
           </el-table-column>
-          <el-table-column label="解析状态" width="110" align="center">
+          <el-table-column
+            label="解析状态"
+            min-width="108"
+            align="center"
+            :resizable="false"
+            class-name="col-status"
+            label-class-name="col-status"
+          >
             <template #default="{ row }">
               <el-tag
                 :type="Number(row.isParsed) === 1 ? 'success' : 'info'"
@@ -77,6 +116,7 @@
             width="88"
             align="center"
             fixed="right"
+            :resizable="false"
             class-name="col-actions"
             label-class-name="col-actions"
           >
@@ -444,6 +484,29 @@ watch(
 :deep(.planning-el-table th.el-table__cell .cell),
 :deep(.planning-el-table td.el-table__cell .cell) {
   text-align: center;
+}
+
+:deep(.capacity-forms-table th.el-table__cell > .cell) {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.capacity-forms-table td.el-table__cell.col-area > .cell),
+:deep(.capacity-forms-table th.el-table__cell.col-area > .cell) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+:deep(.capacity-forms-table td.el-table__cell.col-status > .cell),
+:deep(.capacity-forms-table th.el-table__cell.col-status > .cell) {
+  white-space: nowrap;
+}
+
+:deep(.capacity-forms-table td.el-table__cell.col-actions > .cell) {
+  overflow: visible;
+  text-overflow: clip;
 }
 
 :deep(.planning-el-table th.el-table__cell.is-center.el-table-fixed-column--left .cell),

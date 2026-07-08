@@ -4,7 +4,7 @@
       <div class="policy-head">
         <div class="head-left">
           <el-icon color="#e65f4d" size="18"><WarningFilled /></el-icon>
-          <span class="title">检测到 {{ distinctUsageClassCount }} 类未知用途，请指定归属分类</span>
+          <span class="title">检测到 {{ distinctUsageClassCount }} 类待确认用途，请处理</span>
         </div>
       </div>
 
@@ -12,9 +12,7 @@
         :rows="unknownUsages"
         :project-id="projectId"
         show-audit-button
-        @open-source-audit="
-          (fileRecordId, usageName) => $emit('open-source-audit', { fileRecordId, usageName })
-        "
+        @open-source-audit="(payload) => $emit('open-source-audit', payload)"
       />
     </div>
   </transition>

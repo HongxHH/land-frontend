@@ -3,8 +3,8 @@
     <div class="table-toolbar">
       <div class="left">
         <span class="toolbar-title">户室信息</span>
-        <el-tag size="small" effect="plain" :type="isEditing ? 'warning' : 'info'">
-          {{ isEditing ? '编辑模式' : '查看模式' }}
+        <el-tag v-if="dirtyRowCount > 0" size="small" effect="plain" type="warning">
+          未保存 {{ dirtyRowCount }} 条
         </el-tag>
         <span class="toolbar-count">{{ roomTableCountText }}</span>
       </div>
@@ -37,12 +37,24 @@
         <el-button size="small" type="primary" plain @click="openCreateRoomDialog">
           新增户室
         </el-button>
-        <el-button v-if="isEditing" size="small" type="danger" plain @click="exitEditMode">
-          退出编辑
-        </el-button>
-        <el-button v-if="isEditing" size="small" type="primary" @click="handleSaveData"
-          >保存修改</el-button
+        <el-button
+          v-if="dirtyRowCount > 0"
+          size="small"
+          type="danger"
+          plain
+          @click="discardAllChanges"
         >
+          放弃修改
+        </el-button>
+        <el-button
+          v-if="dirtyRowCount > 0"
+          size="small"
+          type="primary"
+          :loading="batchUpdateLoading"
+          @click="handleSaveDirtyRows"
+        >
+          保存修改
+        </el-button>
       </div>
     </div>
 
@@ -68,13 +80,15 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">{{ row.roomLevel || '-' }}</template>
-          <el-input
-            v-else
-            v-model="row.roomLevel"
-            size="small"
-            class="room-table-field"
+          <RoomTableEditableCell
+            :row="row"
+            field="roomLevel"
+            :display="row.roomLevel || '-'"
+            :display-title="row.roomLevel || '-'"
+            :active="isCellActive(row, 'roomLevel')"
             placeholder="楼层"
+            @activate="startCellEdit(row, 'roomLevel')"
+            @commit="commitActiveCell"
           />
         </template>
       </el-table-column>
@@ -87,13 +101,15 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">{{ row.roomNumber || '-' }}</template>
-          <el-input
-            v-else
-            v-model="row.roomNumber"
-            size="small"
-            class="room-table-field"
+          <RoomTableEditableCell
+            :row="row"
+            field="roomNumber"
+            :display="row.roomNumber || '-'"
+            :display-title="row.roomNumber || '-'"
+            :active="isCellActive(row, 'roomNumber')"
             placeholder="房号"
+            @activate="startCellEdit(row, 'roomNumber')"
+            @commit="commitActiveCell"
           />
         </template>
       </el-table-column>
@@ -106,13 +122,15 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">{{ row.buildingArea || '0.00' }}</template>
-          <el-input
-            v-else
-            v-model="row.buildingArea"
-            size="small"
-            class="room-table-field"
-            type="number"
+          <RoomTableEditableCell
+            :row="row"
+            field="buildingArea"
+            :display="row.buildingArea || '0.00'"
+            :display-title="row.buildingArea || '0.00'"
+            :active="isCellActive(row, 'buildingArea')"
+            input-type="number"
+            @activate="startCellEdit(row, 'buildingArea')"
+            @commit="commitActiveCell"
           />
         </template>
       </el-table-column>
@@ -125,13 +143,15 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">{{ row.innerArea || '0.00' }}</template>
-          <el-input
-            v-else
-            v-model="row.innerArea"
-            size="small"
-            class="room-table-field"
-            type="number"
+          <RoomTableEditableCell
+            :row="row"
+            field="innerArea"
+            :display="row.innerArea || '0.00'"
+            :display-title="row.innerArea || '0.00'"
+            :active="isCellActive(row, 'innerArea')"
+            input-type="number"
+            @activate="startCellEdit(row, 'innerArea')"
+            @commit="commitActiveCell"
           />
         </template>
       </el-table-column>
@@ -144,13 +164,15 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">{{ row.balconyArea || '0.00' }}</template>
-          <el-input
-            v-else
-            v-model="row.balconyArea"
-            size="small"
-            class="room-table-field"
-            type="number"
+          <RoomTableEditableCell
+            :row="row"
+            field="balconyArea"
+            :display="row.balconyArea || '0.00'"
+            :display-title="row.balconyArea || '0.00'"
+            :active="isCellActive(row, 'balconyArea')"
+            input-type="number"
+            @activate="startCellEdit(row, 'balconyArea')"
+            @commit="commitActiveCell"
           />
         </template>
       </el-table-column>
@@ -163,13 +185,15 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">{{ row.sharedArea || '0.00' }}</template>
-          <el-input
-            v-else
-            v-model="row.sharedArea"
-            size="small"
-            class="room-table-field"
-            type="number"
+          <RoomTableEditableCell
+            :row="row"
+            field="sharedArea"
+            :display="row.sharedArea || '0.00'"
+            :display-title="row.sharedArea || '0.00'"
+            :active="isCellActive(row, 'sharedArea')"
+            input-type="number"
+            @activate="startCellEdit(row, 'sharedArea')"
+            @commit="commitActiveCell"
           />
         </template>
       </el-table-column>
@@ -182,12 +206,7 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">{{
-            normalizeUsageCategoryText(row.usageCategory)
-          }}</template>
-          <span v-else class="room-table-editing-tag">{{
-            normalizeUsageCategoryText(row.usageCategory) || '未选'
-          }}</span>
+          {{ normalizeUsageCategoryText(row.usageCategory) }}
         </template>
       </el-table-column>
 
@@ -199,19 +218,7 @@
         align="center"
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">
-            <el-tag
-              v-if="isBlankRoomUsage(row.roomUsage)"
-              type="danger"
-              size="small"
-              effect="light"
-              class="usage-missing-tag"
-            >
-              用途缺失
-            </el-tag>
-            <span v-else class="room-table-cell-ellipsis">{{ row.roomUsage }}</span>
-          </template>
-          <div v-else class="usage-edit-inline">
+          <div class="usage-edit-inline">
             <el-tag
               v-if="isBlankRoomUsage(row.roomUsage)"
               type="danger"
@@ -285,7 +292,7 @@
                   class="room-table-usage-btn usage-edit-inline__action"
                   @click.stop="openUsageEditor(row)"
                 >
-                  {{ row.roomUsage ? '更换' : '选用途' }}
+                  {{ row.roomUsage && !isBlankRoomUsage(row.roomUsage) ? '更换' : '选用途' }}
                 </el-button>
               </template>
             </el-popover>
@@ -320,38 +327,28 @@
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <template v-if="!isRowEditing(row)">
-            <span class="room-table-cell-ellipsis">{{ row.remark || '-' }}</span>
-          </template>
-          <el-input
-            v-else
-            v-model="row.remark"
-            size="small"
-            class="room-table-field"
+          <RoomTableEditableCell
+            :row="row"
+            field="remark"
+            :display="row.remark || '-'"
+            :display-title="row.remark || '-'"
+            :active="isCellActive(row, 'remark')"
             placeholder="备注"
+            @activate="startCellEdit(row, 'remark')"
+            @commit="commitActiveCell"
           />
         </template>
       </el-table-column>
-      <el-table-column label="操作" min-width="108" align="center" fixed="right">
+      <el-table-column label="操作" min-width="72" align="center" fixed="right">
         <template #default="{ row }">
-          <div class="row-op-group">
-            <el-button
-              link
-              type="primary"
-              :disabled="isEditing && !isRowEditing(row)"
-              @click="startRowEdit(row)"
-            >
-              {{ isRowEditing(row) ? '…' : '编辑' }}
-            </el-button>
-            <el-button
-              link
-              type="danger"
-              :disabled="roomDeleteLoading"
-              @click="handleDeleteRoomRow(row)"
-            >
-              删除
-            </el-button>
-          </div>
+          <el-button
+            link
+            type="danger"
+            :disabled="roomDeleteLoading"
+            @click="handleDeleteRoomRow(row)"
+          >
+            删除
+          </el-button>
         </template>
       </el-table-column>
 
@@ -604,6 +601,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch, toRef } from 'vue'
 import { useCalibrationRoomTableFilter } from '@/composables/file-upload/useCalibrationRoomTableFilter'
+import { FILTER_PRESET_MISSING_USAGE } from '@/composables/file-upload/surveyUsagePending'
 import { useRoomTableInfiniteScroll } from '@/composables/file-upload/useRoomTableInfiniteScroll'
 import { useCalibrationRoomUsageEditor } from '@/composables/file-upload/useCalibrationRoomUsageEditor'
 import {
@@ -611,6 +609,7 @@ import {
   sortMetricsForCompare,
 } from '@/composables/file-upload/auditSummaryMetrics'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
+import RoomTableEditableCell from '@/components/file-upload/RoomTableEditableCell.vue'
 import { Loading, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -629,12 +628,17 @@ const ROOM_TABLE_CELL_STYLE = {
 
 const props = defineProps({
   open: { type: Boolean, default: false },
-  isEditing: { type: Boolean, default: false },
-  editingRowId: { type: [String, Number], default: '' },
-  startRowEdit: { type: Function, required: true },
-  exitEditMode: { type: Function, required: true },
-  handleSaveData: { type: Function, required: true },
+  dirtyRowCount: { type: Number, default: 0 },
+  batchUpdateLoading: { type: Boolean, default: false },
+  isCellActive: { type: Function, required: true },
+  isRowDirty: { type: Function, required: true },
+  startCellEdit: { type: Function, required: true },
+  commitActiveCell: { type: Function, required: true },
+  discardAllChanges: { type: Function, required: true },
+  handleSaveDirtyRows: { type: Function, required: true },
   syncRoomRow: { type: Function, default: null },
+  notifyRowTouched: { type: Function, default: null },
+  prepareRowForEdit: { type: Function, default: null },
   handleRefreshSurveyReport: { type: Function, default: null },
   handleCreateRoom: { type: Function, default: null },
   handleDeleteRoom: { type: Function, default: null },
@@ -646,6 +650,7 @@ const props = defineProps({
   roomInfoLoading: { type: Boolean, default: false },
   roomInfoTotal: { type: Number, default: 0 },
   searchRoomInfosByPages: { type: Function, default: null },
+  searchMissingUsageByPages: { type: Function, default: null },
   loadMoreRoomInfo: { type: Function, default: null },
   roomInfoHasMore: { type: Boolean, default: false },
   roomInfoLoadingMore: { type: Boolean, default: false },
@@ -667,11 +672,13 @@ const {
   searchableTotal: roomTableSearchableTotal,
   clearKeyword: clearRoomTableKeyword,
   setKeyword: setRoomTableKeyword,
+  setFilterPreset: setRoomTableFilterPreset,
   onSearchPageChange: onRoomTableSearchPageChange,
   reloadSearchRows: reloadRoomTableSearchRows,
 } = useCalibrationRoomTableFilter({
   getRoomRows: () => props.roomInfoData,
   searchRoomPages: (keyword, opts) => props.searchRoomInfosByPages?.(keyword, opts),
+  searchMissingUsagePages: (opts) => props.searchMissingUsageByPages?.(opts),
   getTotal: () => (props.roomInfoTotal > 0 ? props.roomInfoTotal : props.roomInfoData.length),
 })
 
@@ -712,6 +719,7 @@ watch(
   () => props.roomInfoLoadingMore,
   async (loadingMore, prevLoadingMore) => {
     if (prevLoadingMore && !loadingMore) {
+      if (roomTableIsFiltering.value || props.batchUpdateLoading) return
       await tryFillViewport()
     }
   }
@@ -719,10 +727,16 @@ watch(
 
 watch(
   () => props.roomInfoLoading,
-  (loading, prevLoading) => {
-    if (prevLoading && !loading && roomTableIsFiltering.value) {
+  async (loading, prevLoading) => {
+    if (!prevLoading || loading) return
+    if (props.batchUpdateLoading) return
+    if (roomTableIsFiltering.value) {
       reloadRoomTableSearchRows()
+      return
     }
+    await nextTick()
+    const body = roomTableRef.value?.$refs?.bodyWrapper
+    if (body) body.scrollTop = 0
   }
 )
 
@@ -739,7 +753,7 @@ const roomTableLoadMoreText = computed(() => {
 watch(
   () => [props.open, props.roomInfoLoading, props.roomInfoData.length, props.roomInfoHasMore],
   async ([open, loading]) => {
-    if (!open || loading) return
+    if (!open || loading || roomTableIsFiltering.value || props.batchUpdateLoading) return
     await tryFillViewport()
     rebindScroll()
   }
@@ -779,6 +793,8 @@ const handleRoomToolbarRefreshClick = async () => {
 
 const usageEditor = useCalibrationRoomUsageEditor({
   syncRoomRow: (row) => props.syncRoomRow?.(row),
+  prepareRowForEdit: (row) => props.prepareRowForEdit?.(row),
+  notifyRowTouched: (row) => props.notifyRowTouched?.(row),
   handleCreateRoom: (payload) => props.handleCreateRoom?.(payload),
   handleDeleteRoom: (row) => props.handleDeleteRoom?.(row),
 })
@@ -835,15 +851,11 @@ onBeforeUnmount(() => {
 
 const getRoomRowClassName = ({ row }) => {
   const classes = []
+  if (props.isRowDirty(row)) classes.push('room-row--dirty')
   if (isBlankRoomUsage(row?.roomUsage)) classes.push('missing-usage-row')
   else if (row?.usageCategory === '未知') classes.push('unknown-usage-row')
   if (Number(row?.isCalculate ?? 0) !== 1) classes.push('non-calculate-row')
   return classes.join(' ')
-}
-
-const isRowEditing = (row) => {
-  if (!props.isEditing || !props.editingRowId || !row?.id) return false
-  return String(row.id) === String(props.editingRowId)
 }
 
 const AREA_COMPARE_TOLERANCE = 0.01
@@ -883,5 +895,9 @@ watch(
   }
 )
 
-defineExpose({ clearRoomTableKeyword, setRoomTableKeyword })
+defineExpose({
+  clearRoomTableKeyword,
+  setRoomTableKeyword,
+  setMissingUsageFilter: () => setRoomTableFilterPreset(FILTER_PRESET_MISSING_USAGE),
+})
 </script>

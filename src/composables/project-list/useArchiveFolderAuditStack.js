@@ -3,7 +3,6 @@ import { ElMessage } from 'element-plus'
 import { useCalibrationState } from '@/composables/file-upload/useCalibrationState'
 import { useCalibrationViewer } from '@/composables/file-upload/useCalibrationViewer'
 import { useRoomEditWorkflow } from '@/composables/file-upload/useRoomEditWorkflow'
-import { useCalibrationActions } from '@/composables/file-upload/useCalibrationActions'
 import {
   useFileUploadConstants,
   useAuditSummaryDisplay,
@@ -16,6 +15,7 @@ import {
 import { queryPlanningReviewForms, queryCapacityIndicatorForms } from '@/services/project.service'
 import { queryFiles } from '@/services/file.service'
 import { getAuditStrategy, normalizeFileContextType } from '@/utils/fileContextTypeRegistry.js'
+import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
 
 /**
  * 归档 Tab：实测校准工作区 + 规划复核/项目方汇总表审核弹窗编排
@@ -30,6 +30,7 @@ export function useArchiveFolderAuditStack(deps) {
   const capacityIndicatorAuditFileRecordId = ref('')
   const capacityIndicatorAuditInitialFile = ref(null)
   const auditFocusUsageName = ref('')
+  const auditFocusMode = ref('')
 
   const currentProject = computed(() => String(toValue(deps.projectId) || ''))
 
@@ -47,8 +48,6 @@ export function useArchiveFolderAuditStack(deps) {
     auditSummaryData,
   } = useCalibrationState()
   const { auditSummaryDisplay } = useAuditSummaryDisplay(auditSummaryData)
-  const isEditing = ref(false)
-  const editingRowId = ref('')
   const batchUpdateLoading = ref(false)
 
   const refreshArchiveFiles = (options) => {
@@ -88,9 +87,16 @@ export function useArchiveFolderAuditStack(deps) {
   const { recognitionHtml } = useRecognitionMarkdown({ recognitionMdContent })
 
   const {
-    enterEditMode,
-    exitEditMode,
-    handleSaveData,
+    dirtyRowCount,
+    isCellActive,
+    isRowDirty,
+    startCellEdit,
+    commitActiveCell,
+    notifyRowTouched,
+    prepareRowForEdit,
+    discardAllChanges,
+    confirmDiscardUnsavedChanges,
+    handleSaveDirtyRows,
     syncRoomRow,
     handleRefreshSurveyReport,
     handleCreateRoom,
@@ -98,13 +104,12 @@ export function useArchiveFolderAuditStack(deps) {
     roomCreateLoading,
     roomDeleteLoading,
     reportRefreshLoading,
-    goRoomInfoPage,
-    goRoomInfoPageSizeChange,
-    fetchAllRoomInfoRows,
     searchRoomInfosByPages,
+    searchMissingUsageByPages,
     loadMoreRoomInfo,
     roomInfoHasMore,
     roomInfoLoadingMore,
+    clearDirtyState,
   } = useRoomEditWorkflow({
     currentProject,
     realSurveyReportId,
@@ -114,20 +119,10 @@ export function useArchiveFolderAuditStack(deps) {
     roomInfoTotal,
     roomInfoPageNum,
     roomInfoPageSize,
-    isEditing,
-    editingRowId,
     batchUpdateLoading,
     usageCategoryMap,
     usageCategoryReverseMap,
     auditSummaryData,
-  })
-
-  const { handleAuditPass } = useCalibrationActions({
-    showCalibration,
-    resetCalibrationState,
-    refreshData: refreshArchiveFiles,
-    currentFile,
-    realSurveyReportId,
   })
 
   const openPlanningReviewAudit = async (row) => {
@@ -217,13 +212,16 @@ export function useArchiveFolderAuditStack(deps) {
     }
   }
 
-  const handleAudit = async (row) => {
+  const handleAudit = async (row, options = {}) => {
     const fileId = getArchiveFileRecordId(row)
     if (!fileId) {
       ElMessage.warning('缺少文件记录ID，无法审核')
       return
     }
-    auditFocusUsageName.value = ''
+    if (!options.preserveFocus) {
+      auditFocusUsageName.value = ''
+      auditFocusMode.value = ''
+    }
     const selectedArchive = toValue(deps.selectedArchive)
     const contextType = normalizeFileContextType(row?.fileContextType || selectedArchive?.kind)
     const strategy = getAuditStrategy(contextType)
@@ -238,6 +236,10 @@ export function useArchiveFolderAuditStack(deps) {
       return
     }
     if (strategy === 'planning_review') {
+      if (!isPlanningReviewEnabled()) {
+        ElMessage.warning('规划复核功能未启用')
+        return
+      }
       await openPlanningReviewAudit(row)
       return
     }
@@ -353,7 +355,9 @@ export function useArchiveFolderAuditStack(deps) {
     const force = Boolean(options?.force)
     const skipArchiveNavigation = options?.skipArchiveNavigation !== false
     const focusUsageName = String(options?.focusUsageName || '').trim()
+    const focusMode = String(options?.focusMode || '').trim()
     auditFocusUsageName.value = focusUsageName
+    auditFocusMode.value = focusMode
     const projectId = toValue(deps.projectId)
     const active = toValue(deps.active)
     if (!targetId || !projectId) return
@@ -364,7 +368,7 @@ export function useArchiveFolderAuditStack(deps) {
       (item) => String(getArchiveFileRecordId(item)) === targetId
     )
     if (localFound) {
-      await handleAudit(localFound)
+      await handleAudit(localFound, { preserveFocus: true })
       deps.onAuditConsumed?.()
       return
     }
@@ -395,7 +399,7 @@ export function useArchiveFolderAuditStack(deps) {
       }
     }
 
-    await handleAudit(located.row)
+    await handleAudit(located.row, { preserveFocus: true })
     deps.onAuditConsumed?.()
   }
 
@@ -404,18 +408,28 @@ export function useArchiveFolderAuditStack(deps) {
   }
 
   const handleCalibrationClosed = async () => {
-    isEditing.value = false
-    editingRowId.value = ''
+    clearDirtyState()
     auditFocusUsageName.value = ''
+    auditFocusMode.value = ''
     resetCalibrationState()
     await refreshArchiveFiles()
+    deps.onAuditReturnNavigate?.()
   }
 
   return {
     showCalibration,
     currentFile,
-    isEditing,
-    editingRowId,
+    dirtyRowCount,
+    batchUpdateLoading,
+    isCellActive,
+    isRowDirty,
+    startCellEdit,
+    commitActiveCell,
+    notifyRowTouched,
+    prepareRowForEdit,
+    discardAllChanges,
+    confirmDiscardUnsavedChanges,
+    handleSaveDirtyRows,
     roomCreateLoading,
     roomDeleteLoading,
     reportRefreshLoading,
@@ -436,21 +450,15 @@ export function useArchiveFolderAuditStack(deps) {
     roomInfoTotal,
     roomInfoPageNum,
     roomInfoPageSize,
-    goRoomInfoPage,
-    goRoomInfoPageSizeChange,
-    fetchAllRoomInfoRows,
     searchRoomInfosByPages,
+    searchMissingUsageByPages,
     loadMoreRoomInfo,
     roomInfoHasMore,
     roomInfoLoadingMore,
-    enterEditMode,
-    exitEditMode,
-    handleSaveData,
     syncRoomRow,
     handleRefreshSurveyReport,
     handleCreateRoom,
     handleDeleteRoom,
-    handleAuditPass,
     handleCalibrationBack,
     handleCalibrationClosed,
     planningReviewAuditVisible,
@@ -464,5 +472,6 @@ export function useArchiveFolderAuditStack(deps) {
     handleAudit,
     openAuditByFileRecordId,
     auditFocusUsageName,
+    auditFocusMode,
   }
 }

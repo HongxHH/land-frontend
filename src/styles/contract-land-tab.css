@@ -439,6 +439,21 @@
   text-align: center;
   line-height: 1.35;
   white-space: nowrap;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contract-list-modern-table td.el-table__cell.col-metric>.cell,
+.contract-list-modern-table th.el-table__cell.col-metric>.cell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.contract-list-modern-table td.el-table__cell.col-datetime>.cell,
+.contract-list-modern-table th.el-table__cell.col-datetime>.cell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 1200px) {

@@ -81,14 +81,24 @@
       v-model="showCalibration"
       :project-id="currentProject"
       :current-file="currentFile"
-      :is-editing="isEditing"
-      :start-row-edit="enterEditMode"
-      :exit-edit-mode="exitEditMode"
-      :handle-save-data="handleSaveData"
+      :dirty-row-count="dirtyRowCount"
+      :batch-update-loading="batchUpdateLoading"
+      :is-cell-active="isCellActive"
+      :is-row-dirty="isRowDirty"
+      :start-cell-edit="startCellEdit"
+      :commit-active-cell="commitActiveCell"
+      :discard-all-changes="discardAllChanges"
+      :handle-save-dirty-rows="handleSaveDirtyRows"
+      :confirm-discard-unsaved-changes="confirmDiscardUnsavedChanges"
       :sync-room-row="syncRoomRow"
+      :notify-row-touched="notifyRowTouched"
+      :prepare-row-for-edit="prepareRowForEdit"
       :handle-refresh-survey-report="handleRefreshSurveyReport"
+      :handle-create-room="handleCreateRoom"
+      :handle-delete-room="handleDeleteRoom"
+      :room-create-loading="roomCreateLoading"
+      :room-delete-loading="roomDeleteLoading"
       :report-refresh-loading="reportRefreshLoading"
-      :handle-audit-pass="handleAuditPass"
       :calibration-loading="calibrationLoading"
       :current-view-type="currentViewType"
       :is-preprocess-available="isPreprocessAvailable"
@@ -104,8 +114,8 @@
       :room-info-data="roomInfoData"
       :room-info-loading="roomInfoLoading"
       :room-info-total="roomInfoTotal"
-      :fetch-all-room-info-rows="fetchAllRoomInfoRows"
       :search-room-infos-by-pages="searchRoomInfosByPages"
+      :search-missing-usage-by-pages="searchMissingUsageByPages"
       :load-more-room-info="loadMoreRoomInfo"
       :room-info-has-more="roomInfoHasMore"
       :room-info-loading-more="roomInfoLoadingMore"
@@ -176,14 +186,25 @@ const {
   showCalibration,
   resetCalibrationState,
   currentFile,
-  isEditing,
-  enterEditMode,
-  exitEditMode,
-  handleSaveData,
+  dirtyRowCount,
+  batchUpdateLoading,
+  isCellActive,
+  isRowDirty,
+  startCellEdit,
+  commitActiveCell,
+  notifyRowTouched,
+  prepareRowForEdit,
+  discardAllChanges,
+  confirmDiscardUnsavedChanges,
+  handleSaveDirtyRows,
   syncRoomRow,
   handleRefreshSurveyReport,
+  handleCreateRoom,
+  handleDeleteRoom,
+  roomCreateLoading,
+  roomDeleteLoading,
   reportRefreshLoading,
-  handleAuditPass,
+  clearDirtyState,
   calibrationLoading,
   currentViewType,
   isPreprocessAvailable,
@@ -199,8 +220,8 @@ const {
   roomInfoData,
   roomInfoLoading,
   roomInfoTotal,
-  fetchAllRoomInfoRows,
   searchRoomInfosByPages,
+  searchMissingUsageByPages,
   loadMoreRoomInfo,
   roomInfoHasMore,
   roomInfoLoadingMore,
@@ -226,6 +247,7 @@ const navigateBackToProjects = () => {
 }
 
 const handleCalibrationClosed = () => {
+  clearDirtyState()
   resetCalibrationState()
   if (route.query.returnTo === 'projects') {
     navigateBackToProjects()

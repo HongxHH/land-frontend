@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { clearAuth, getToken, SA_TOKEN_HEADER_NAME } from '@/utils/auth-token'
+import { getPermissionDeniedMessage, isForbiddenApiPayload } from '@/utils/apiErrorMessage'
 import logger from '@/utils/logger'
 
 export const REQUEST_ID_HEADER = 'X-Request-Id'
@@ -47,6 +48,12 @@ function rememberTraceId(traceId) {
   }
 }
 
+function normalizeForbiddenPayload(payload) {
+  if (payload && typeof payload === 'object' && isForbiddenApiPayload(payload)) {
+    payload.msg = getPermissionDeniedMessage()
+  }
+}
+
 function readResponseTraceId(response) {
   const fromHeader = response?.headers?.[REQUEST_ID_HEADER.toLowerCase()]
     || response?.headers?.[REQUEST_ID_HEADER]
@@ -77,10 +84,12 @@ axios.interceptors.response.use(
       redirectToLogin()
       return Promise.reject(new Error(d.msg || '未登录'))
     }
+    normalizeForbiddenPayload(d)
     return response
   },
   (error) => {
     readResponseTraceId(error?.response)
+    normalizeForbiddenPayload(error.response?.data)
     const status = error.response?.status
     const code = error.response?.data?.code
     const method = error.config?.method?.toUpperCase?.() || 'UNKNOWN'

@@ -6,6 +6,7 @@
     custom-class="calibration-dialog"
     modal-class="calibration-modal"
     :show-close="true"
+    :before-close="handleBeforeClose"
     @closed="handleDialogClosed"
   >
     <template #header>
@@ -76,12 +77,17 @@
       <CalibrationRightPanel
         ref="rightPanelRef"
         :open="dialogVisible"
-        :is-editing="isEditing"
-        :editing-row-id="editingRowId"
-        :start-row-edit="startRowEdit"
-        :exit-edit-mode="exitEditMode"
-        :handle-save-data="handleSaveData"
+        :dirty-row-count="dirtyRowCount"
+        :batch-update-loading="batchUpdateLoading"
+        :is-cell-active="isCellActive"
+        :is-row-dirty="isRowDirty"
+        :start-cell-edit="startCellEdit"
+        :commit-active-cell="commitActiveCell"
+        :discard-all-changes="discardAllChanges"
+        :handle-save-dirty-rows="handleSaveDirtyRows"
         :sync-room-row="syncRoomRow"
+        :notify-row-touched="notifyRowTouched"
+        :prepare-row-for-edit="prepareRowForEdit"
         :handle-refresh-survey-report="handleRefreshSurveyReport"
         :handle-create-room="handleCreateRoom"
         :handle-delete-room="handleDeleteRoom"
@@ -93,12 +99,15 @@
         :room-info-data="roomInfoData"
         :room-info-loading="roomInfoLoading"
         :project-id="projectId"
+        :current-file="currentFile"
         :room-info-total="roomInfoTotal"
         :search-room-infos-by-pages="searchRoomInfosByPages"
+        :search-missing-usage-by-pages="searchMissingUsageByPages"
         :load-more-room-info="loadMoreRoomInfo"
         :room-info-has-more="roomInfoHasMore"
         :room-info-loading-more="roomInfoLoadingMore"
         :focus-usage-name="focusUsageName"
+        :focus-mode="focusMode"
       />
     </div>
   </el-dialog>
@@ -117,19 +126,24 @@ import '@/styles/calibration-workspace-dialog.css'
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
   currentFile: { type: Object, default: null },
-  isEditing: { type: Boolean, default: false },
-  editingRowId: { type: [String, Number], default: '' },
-  startRowEdit: { type: Function, required: true },
-  exitEditMode: { type: Function, required: true },
-  handleSaveData: { type: Function, required: true },
+  dirtyRowCount: { type: Number, default: 0 },
+  batchUpdateLoading: { type: Boolean, default: false },
+  isCellActive: { type: Function, required: true },
+  isRowDirty: { type: Function, required: true },
+  startCellEdit: { type: Function, required: true },
+  commitActiveCell: { type: Function, required: true },
+  discardAllChanges: { type: Function, required: true },
+  handleSaveDirtyRows: { type: Function, required: true },
+  confirmDiscardUnsavedChanges: { type: Function, required: true },
   syncRoomRow: { type: Function, default: null },
+  notifyRowTouched: { type: Function, default: null },
+  prepareRowForEdit: { type: Function, default: null },
   handleRefreshSurveyReport: { type: Function, default: null },
   handleCreateRoom: { type: Function, default: null },
   handleDeleteRoom: { type: Function, default: null },
   roomCreateLoading: { type: Boolean, default: false },
   roomDeleteLoading: { type: Boolean, default: false },
   reportRefreshLoading: { type: Boolean, default: false },
-  handleAuditPass: { type: Function, default: null },
   calibrationLoading: { type: Boolean, default: false },
   currentViewType: { type: String, default: 'original' },
   isPreprocessAvailable: { type: Boolean, default: false },
@@ -146,12 +160,13 @@ const props = defineProps({
   roomInfoLoading: { type: Boolean, default: false },
   projectId: { type: [String, Number], default: '' },
   roomInfoTotal: { type: Number, default: 0 },
-  fetchAllRoomInfoRows: { type: Function, default: null },
   searchRoomInfosByPages: { type: Function, default: null },
+  searchMissingUsageByPages: { type: Function, default: null },
   loadMoreRoomInfo: { type: Function, default: null },
   roomInfoHasMore: { type: Boolean, default: false },
   roomInfoLoadingMore: { type: Boolean, default: false },
   focusUsageName: { type: String, default: '' },
+  focusMode: { type: String, default: '' },
 })
 
 const emit = defineEmits(['update:modelValue', 'closed'])
@@ -196,6 +211,11 @@ const dialogVisible = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val),
 })
+
+const handleBeforeClose = async (done) => {
+  const canClose = await props.confirmDiscardUnsavedChanges()
+  if (canClose) done()
+}
 
 const handleDialogClosed = () => {
   rightPanelRef.value?.clearRoomTableKeyword?.()

@@ -6,8 +6,40 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { queryRoomInfos } from '@/services/project.service'
 import {
   fetchRoomInfoById as fetchRoomInfoByIdRaw,
+  searchMissingUsageByPages as searchMissingUsageByPagesRaw,
   searchRoomInfosByPages as searchRoomInfosByPagesRaw,
 } from '@/composables/file-upload/roomInfoPageSearch.js'
+
+const SAVE_CONCURRENCY = 5
+const MAX_DIRTY_ROWS = 200
+
+export const EDITABLE_CELL_FIELDS = [
+  'roomLevel',
+  'roomNumber',
+  'buildingArea',
+  'innerArea',
+  'balconyArea',
+  'sharedArea',
+  'remark',
+]
+
+async function runPool(items, concurrency, worker) {
+  const results = new Array(items.length)
+  let index = 0
+  const runWorker = async () => {
+    while (index < items.length) {
+      const current = index
+      index += 1
+      results[current] = await worker(items[current], current)
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => runWorker()
+  )
+  await Promise.all(workers)
+  return results
+}
 
 export function useRoomEditWorkflow(options = {}) {
   const {
@@ -19,23 +51,28 @@ export function useRoomEditWorkflow(options = {}) {
     roomInfoTotal,
     roomInfoPageNum,
     roomInfoPageSize,
-    isEditing,
-    editingRowId,
     batchUpdateLoading,
     usageCategoryMap,
     usageCategoryReverseMap,
     auditSummaryData,
   } = options
 
-  const localIsEditing = isEditing || ref(false)
-  const localEditingRowId = editingRowId || ref('')
   const localBatchUpdateLoading = batchUpdateLoading || ref(false)
 
-  const originalEditingRow = ref(null)
+  const activeCell = ref({ rowId: '', field: '' })
+  const originalByRowId = new Map()
+  /** 不在当前已加载分页中的编辑行，避免 push 污染 roomInfoData */
+  const offPageRowEdits = new Map()
+  const dirtyVersion = ref(0)
+
   const roomCreateLoading = ref(false)
   const roomDeleteLoading = ref(false)
   const reportRefreshLoading = ref(false)
   const roomInfoLoadingMore = ref(false)
+
+  const bumpDirty = () => {
+    dirtyVersion.value += 1
+  }
 
   const getRoomPageSize = () => Math.max(10, Math.min(200, Number(roomInfoPageSize?.value || 50)))
 
@@ -69,6 +106,13 @@ export function useRoomEditWorkflow(options = {}) {
     return text === '-' ? '' : text
   }
 
+  const resolveFloorAreaTypeForUpdate = (row, preset) => {
+    const text = String(row.floorAreaType || '').trim()
+    if (text === '计容') return 'BUILDABLE'
+    if (text === '不计容') return 'NON_BUILDABLE'
+    return preset.floorAreaType
+  }
+
   const buildRoomInfoUpdateDTO = (row) => {
     const preset = resolveUsagePresetByCategory(row.usageCategory)
     const roomUsage = isBlankRoomUsage(row.roomUsage)
@@ -87,14 +131,17 @@ export function useRoomEditWorkflow(options = {}) {
       remark: normalizeDisplayField(row.remark),
       isCalculate: Number(row.isCalculate || 0),
       usageCategory: preset.usageCategory,
-      floorAreaType: preset.floorAreaType,
+      floorAreaType: resolveFloorAreaTypeForUpdate(row, preset),
     }
   }
 
-  const persistRoomRow = async (row, { refreshReport = true, silentRefresh = true } = {}) => {
+  const persistRoomRow = async (
+    row,
+    { refreshReport = true, silentRefresh = true, skipReload = false, silentError = false } = {}
+  ) => {
     const sourceRow = ensureEditableRow(row)
     if (!sourceRow?.id) {
-      ElMessage.warning('缺少户室ID，无法保存')
+      if (!silentError) ElMessage.warning('缺少户室ID，无法保存')
       return false
     }
 
@@ -104,17 +151,17 @@ export function useRoomEditWorkflow(options = {}) {
         buildRoomInfoUpdateDTO(sourceRow)
       )
       if (res.data?.code !== 200) {
-        ElMessage.error(res.data?.msg || '保存失败')
+        if (!silentError) ElMessage.error(res.data?.msg || '保存失败')
         return false
       }
+      if (skipReload) return true
       return reloadRoomAndSummaryData({
         refreshReport,
         silentRefresh,
-        savedRowId: sourceRow.id,
       })
     } catch (error) {
       console.error('保存户室数据失败:', error)
-      ElMessage.error(error?.response?.data?.msg || '保存失败，请重试')
+      if (!silentError) ElMessage.error(error?.response?.data?.msg || '保存失败，请重试')
       return false
     }
   }
@@ -171,10 +218,13 @@ export function useRoomEditWorkflow(options = {}) {
     return { usageCategory: normalized, ...(presetMap[normalized] || presetMap.UNKNOWN) }
   }
 
-  const clearEditingState = () => {
-    localIsEditing.value = false
-    localEditingRowId.value = ''
-    originalEditingRow.value = null
+  const snapshotRow = (row) => JSON.parse(JSON.stringify(row))
+
+  const clearDirtyState = () => {
+    activeCell.value = { rowId: '', field: '' }
+    originalByRowId.clear()
+    offPageRowEdits.clear()
+    bumpDirty()
   }
 
   const ensureContext = () => {
@@ -189,7 +239,7 @@ export function useRoomEditWorkflow(options = {}) {
     }
   }
 
-  const reloadRoomOnly = async ({ pageNum } = {}) => {
+  const reloadRoomOnly = async ({ pageNum, preserveDirty = true } = {}) => {
     const { projectId, surveyReportId } = ensureContext()
     if (!projectId || !surveyReportId) return
 
@@ -216,7 +266,7 @@ export function useRoomEditWorkflow(options = {}) {
 
       if (roomInfoPageNum) roomInfoPageNum.value = page
       if (roomInfoTotal) roomInfoTotal.value = result.total
-      applyRoomPageReload(result.records)
+      applyRoomPageReload(result.records, { preserveDirty })
     } catch (error) {
       console.error('重新加载户室数据失败:', error)
       throw error
@@ -234,19 +284,33 @@ export function useRoomEditWorkflow(options = {}) {
     const loaded = roomInfoData.value.length
     if (!syncRoomInfoHasMore(loaded, total)) return false
 
-    const nextPage = Math.max(1, Number(roomInfoPageNum?.value || 1)) + 1
+    const pageSize = getRoomPageSize()
+    let nextPage = Math.max(1, Number(roomInfoPageNum?.value || 1)) + 1
+    const maxPage = Math.max(1, Math.ceil(total / pageSize))
+    const startPage = nextPage
+
     roomInfoLoadingMore.value = true
     try {
-      const result = await fetchRoomInfoPage(nextPage)
-      if (!result.ok) return false
-      if (roomInfoTotal) roomInfoTotal.value = result.total
-      if (result.records.length === 0) return false
+      while (nextPage <= maxPage && nextPage - startPage < 8) {
+        const result = await fetchRoomInfoPage(nextPage)
+        if (!result.ok) return false
+        if (roomInfoTotal) roomInfoTotal.value = result.total
+        if (result.records.length === 0) return false
 
-      const existingIds = new Set(roomInfoData.value.map((row) => String(row.id)))
-      const appendRows = result.records.filter((row) => !existingIds.has(String(row.id)))
-      roomInfoData.value = roomInfoData.value.concat(appendRows)
-      if (roomInfoPageNum) roomInfoPageNum.value = nextPage
-      return syncRoomInfoHasMore(roomInfoData.value.length, result.total)
+        const existingIds = new Set(roomInfoData.value.map((row) => String(row.id)))
+        const appendRows = result.records.filter((row) => !existingIds.has(String(row.id)))
+
+        if (roomInfoPageNum) roomInfoPageNum.value = nextPage
+
+        if (appendRows.length > 0) {
+          roomInfoData.value = roomInfoData.value.concat(appendRows)
+          return syncRoomInfoHasMore(roomInfoData.value.length, result.total)
+        }
+
+        if (nextPage >= maxPage) return false
+        nextPage += 1
+      }
+      return syncRoomInfoHasMore(roomInfoData.value.length, total)
     } catch (error) {
       console.error('加载更多户室数据失败:', error)
       ElMessage.error('加载更多户室失败，请稍后重试')
@@ -256,93 +320,9 @@ export function useRoomEditWorkflow(options = {}) {
     }
   }
 
-  const reloadAllRoomInfoPages = async () => {
-    const { projectId, surveyReportId } = ensureContext()
-    if (!projectId || !surveyReportId) return
-
-    roomInfoLoading.value = true
-    try {
-      const pageSize = getRoomPageSize()
-      let pageNum = 1
-      let allRecords = []
-      let total = 0
-
-      while (pageNum <= 50) {
-        const result = await fetchRoomInfoPage(pageNum)
-        if (!result.ok) break
-        total = result.total
-        allRecords = allRecords.concat(result.records)
-        if (allRecords.length >= total || result.records.length === 0) break
-        pageNum += 1
-      }
-
-      if (roomInfoTotal) roomInfoTotal.value = total
-      if (roomInfoPageNum) {
-        roomInfoPageNum.value = total === 0 ? 1 : Math.max(1, Math.ceil(total / pageSize))
-      }
-      roomInfoData.value = allRecords
-    } catch (error) {
-      console.error('加载全部户室数据失败:', error)
-      throw error
-    } finally {
-      roomInfoLoading.value = false
-    }
-  }
-
-  const goRoomInfoPage = async (nextPage) => {
-    if (!roomInfoPageNum) return
-    roomInfoPageNum.value = Math.max(1, Number(nextPage || 1))
-    await reloadRoomOnly()
-  }
-
-  const goRoomInfoPageSizeChange = async (nextSize) => {
-    if (!roomInfoPageSize || !roomInfoPageNum) return
-    roomInfoPageSize.value = Math.max(10, Math.min(200, Number(nextSize || 50)))
-    roomInfoPageNum.value = 1
-    await reloadRoomOnly()
-  }
-
   const roomInfoHasMore = computed(() =>
     syncRoomInfoHasMore(roomInfoData.value.length, Number(roomInfoTotal?.value || 0))
   )
-
-  const fetchAllRoomInfoRows = async () => {
-    const projectId = Number(currentProject?.value || 0)
-    const surveyReportInfoId = Number(realSurveyReportId?.value || 0)
-    if (!projectId || !surveyReportInfoId) return []
-
-    const pageSize = 200
-    let pageNum = 1
-    let allRecords = []
-    let total = 0
-
-    while (pageNum <= 50) {
-      const roomRes = await queryRoomInfos({
-        projectId,
-        surveyReportInfoId,
-        pageNum,
-        pageSize,
-        sortField: 'id',
-        sortDirection: 'asc',
-      })
-      if (roomRes.data?.code !== 200) break
-
-      const body = roomRes.data.data || {}
-      const records = Array.isArray(body.records) ? body.records : []
-      total = Number(body.total ?? 0)
-      allRecords = allRecords.concat(records)
-
-      if (allRecords.length >= total || records.length === 0) break
-      pageNum += 1
-    }
-
-    return mapRoomInfoList(allRecords)
-  }
-
-  /** 新增户室后加载全部户室，便于滚动定位到底部 */
-  const goLastRoomInfoPageAfterMutation = async () => {
-    await reloadAllRoomInfoPages()
-  }
 
   const reloadSummaryOnly = async () => {
     const fileRecordId = Number(currentFile?.value?.rawId || 0)
@@ -422,7 +402,7 @@ export function useRoomEditWorkflow(options = {}) {
   const reloadRoomAndSummaryData = async ({
     refreshReport = false,
     silentRefresh = true,
-    savedRowId,
+    resetToFirstPage = false,
   } = {}) => {
     if (refreshReport) {
       const refreshOk = await triggerSurveyReportRefresh({ silent: silentRefresh })
@@ -430,8 +410,16 @@ export function useRoomEditWorkflow(options = {}) {
     }
 
     try {
-      await Promise.all([reloadSummaryOnly(), reloadRoomOnly()])
-      await reconcileAfterRoomReload({ savedRowId })
+      if (resetToFirstPage && roomInfoPageNum) {
+        roomInfoPageNum.value = 1
+      }
+      await Promise.all([
+        reloadSummaryOnly(),
+        reloadRoomOnly({
+          pageNum: resetToFirstPage ? 1 : undefined,
+          preserveDirty: !resetToFirstPage,
+        }),
+      ])
       return true
     } catch {
       ElMessage.error('刷新页面数据失败，请重试')
@@ -459,7 +447,30 @@ export function useRoomEditWorkflow(options = {}) {
   const findRoomRowById = (rowId) => {
     if (rowId == null || rowId === '') return null
     const id = String(rowId)
-    return roomInfoData.value.find((item) => String(item.id) === id) ?? null
+    return (
+      roomInfoData.value.find((item) => String(item.id) === id) ??
+      offPageRowEdits.get(id) ??
+      null
+    )
+  }
+
+  const ensureEditableRow = (row) => {
+    if (!row?.id) return row
+    const rowId = String(row.id)
+    const idx = roomInfoData.value.findIndex((item) => String(item.id) === rowId)
+    if (idx >= 0) {
+      copyRoomRowFields(row, roomInfoData.value[idx])
+      return roomInfoData.value[idx]
+    }
+
+    let cached = offPageRowEdits.get(rowId)
+    if (!cached) {
+      cached = { ...row }
+      offPageRowEdits.set(rowId, cached)
+    } else {
+      copyRoomRowFields(row, cached)
+    }
+    return cached
   }
 
   const copyRoomRowFields = (from, to) => {
@@ -478,28 +489,143 @@ export function useRoomEditWorkflow(options = {}) {
     return to
   }
 
-  const ensureEditableRow = (row) => {
-    const rowId = String(row.id)
-    let idx = roomInfoData.value.findIndex((item) => String(item.id) === rowId)
-    if (idx < 0) {
-      roomInfoData.value.push({ ...row })
-      idx = roomInfoData.value.length - 1
-    } else {
-      copyRoomRowFields(row, roomInfoData.value[idx])
+  const ensureRowSnapshot = (row) => {
+    const rowId = String(row?.id ?? '')
+    if (!rowId) return
+    if (!originalByRowId.has(rowId)) {
+      originalByRowId.set(rowId, snapshotRow(row))
+      bumpDirty()
     }
-    return roomInfoData.value[idx]
   }
 
-  /** 分页刷新后保留仍在编辑、但不在当前页的数据行 */
-  const applyRoomPageReload = (records) => {
-    const pageIds = new Set((records || []).map((row) => String(row.id)))
-    const preserveId = String(localEditingRowId.value || '')
-    const preserved = preserveId
-      ? roomInfoData.value.filter(
-          (row) => String(row.id) === preserveId && !pageIds.has(String(row.id))
-        )
-      : []
-    roomInfoData.value = [...(records || []), ...preserved]
+  const prepareRowForEdit = (row) => {
+    if (!row?.id) return null
+    const target = ensureEditableRow(row)
+    ensureRowSnapshot(target)
+    return target
+  }
+
+  const markRowDirtyIfChanged = (rowId) => {
+    const id = String(rowId || '')
+    if (!id || !originalByRowId.has(id)) return
+    const row = findRoomRowById(id)
+    const snapshot = originalByRowId.get(id)
+    if (!row || !isRowModified(row, snapshot)) {
+      originalByRowId.delete(id)
+      bumpDirty()
+    }
+  }
+
+  const getDirtyRowIds = () => {
+    const ids = []
+    for (const [id, snapshot] of originalByRowId) {
+      const row = findRoomRowById(id)
+      if (row && isRowModified(row, snapshot)) {
+        ids.push(id)
+      } else {
+        originalByRowId.delete(id)
+      }
+    }
+    if (ids.length !== originalByRowId.size) bumpDirty()
+    return ids
+  }
+
+  const dirtyRowCount = computed(() => {
+    dirtyVersion.value
+    return getDirtyRowIds().length
+  })
+
+  const hasUnsavedChanges = computed(() => dirtyRowCount.value > 0)
+
+  const isCellActive = (row, field) => {
+    const rowId = String(row?.id ?? '')
+    return (
+      rowId &&
+      activeCell.value.rowId === rowId &&
+      activeCell.value.field === field
+    )
+  }
+
+  const isRowDirty = (row) => {
+    dirtyVersion.value
+    const rowId = String(row?.id ?? '')
+    if (!rowId || !originalByRowId.has(rowId)) return false
+    const snapshot = originalByRowId.get(rowId)
+    return isRowModified(row, snapshot)
+  }
+
+  const commitActiveCell = () => {
+    const { rowId } = activeCell.value
+    if (rowId) markRowDirtyIfChanged(rowId)
+    activeCell.value = { rowId: '', field: '' }
+  }
+
+  const startCellEdit = (row, field) => {
+    if (!row?.id) {
+      ElMessage.warning('缺少户室ID，无法编辑')
+      return
+    }
+    if (!EDITABLE_CELL_FIELDS.includes(field)) return
+
+    commitActiveCell()
+    ensureEditableRow(row)
+    ensureRowSnapshot(findRoomRowById(row.id))
+    activeCell.value = { rowId: String(row.id), field }
+  }
+
+  const notifyRowTouched = (row) => {
+    if (!row?.id) return
+    prepareRowForEdit(row)
+    markRowDirtyIfChanged(String(row.id))
+    bumpDirty()
+  }
+
+  const discardAllChanges = () => {
+    commitActiveCell()
+    for (const [id, snapshot] of originalByRowId) {
+      const row = findRoomRowById(id)
+      if (row) copyRoomRowFields(snapshot, row)
+    }
+    clearDirtyState()
+  }
+
+  const confirmDiscardUnsavedChanges = async () => {
+    commitActiveCell()
+    if (!hasUnsavedChanges.value) return true
+    try {
+      await ElMessageBox.confirm(
+        '有未保存的户室修改，继续将丢失这些修改。',
+        '未保存的修改',
+        {
+          confirmButtonText: '放弃修改',
+          cancelButtonText: '继续编辑',
+          type: 'warning',
+        }
+      )
+      discardAllChanges()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const applyRoomPageReload = (records, { preserveDirty = true } = {}) => {
+    const nextRecords = Array.isArray(records) ? records : []
+    if (!preserveDirty) {
+      roomInfoData.value = nextRecords
+      return
+    }
+
+    const dirtyIds = getDirtyRowIds()
+    if (!dirtyIds.length) {
+      roomInfoData.value = nextRecords
+      return
+    }
+
+    const pageIds = new Set(nextRecords.map((row) => String(row.id)))
+    const preserveIds = new Set(dirtyIds.filter((id) => !pageIds.has(id)))
+    const preserved = roomInfoData.value.filter((row) => preserveIds.has(String(row.id)))
+    roomInfoData.value = [...nextRecords, ...preserved]
   }
 
   const fetchRoomInfoById = async (roomInfoId) => {
@@ -528,95 +654,70 @@ export function useRoomEditWorkflow(options = {}) {
     })
   }
 
-  const refreshRowFromServer = async (rowId) => fetchRoomInfoById(rowId)
+  const searchMissingUsageByPages = async ({ signal, onProgress } = {}) => {
+    const projectId = Number(currentProject?.value || 0)
+    const surveyReportInfoId = Number(realSurveyReportId?.value || 0)
+    if (!projectId || !surveyReportInfoId) return []
 
-  const reconcileAfterRoomReload = async ({ savedRowId } = {}) => {
-    const savedId = savedRowId != null ? String(savedRowId) : ''
-    const editingId = String(localEditingRowId.value || '')
-
-    if (savedId) {
-      await refreshRowFromServer(savedId)
-    }
-
-    if (editingId && editingId !== savedId) {
-      const stillLoaded = findRoomRowById(editingId)
-      if (!stillLoaded) {
-        const refreshed = await refreshRowFromServer(editingId)
-        if (!refreshed) {
-          clearEditingState()
-        }
-      }
-    }
-
-    if (savedId && editingId === savedId) {
-      clearEditingState()
-      return
-    }
-
-    if (editingId) {
-      const current = findRoomRowById(editingId)
-      if (!current) {
-        clearEditingState()
-      } else {
-        originalEditingRow.value = JSON.parse(JSON.stringify(current))
-      }
-    }
+    return searchMissingUsageByPagesRaw({
+      projectId,
+      surveyReportInfoId,
+      signal,
+      onProgress,
+      queryRoomInfos,
+      mapRoomInfoList,
+    })
   }
 
-  const enterEditMode = (row) => {
-    if (!row?.id) {
-      ElMessage.warning('缺少户室ID，无法编辑')
-      return
+  const handleSaveDirtyRows = async () => {
+    commitActiveCell()
+    const dirtyIds = getDirtyRowIds()
+    if (!dirtyIds.length) {
+      ElMessage.info('无修改')
+      return false
     }
-
-    const target = ensureEditableRow(row)
-    originalEditingRow.value = JSON.parse(JSON.stringify(target))
-    localEditingRowId.value = String(target.id)
-    localIsEditing.value = true
-  }
-
-  const exitEditMode = () => {
-    if (!localIsEditing.value || !localEditingRowId.value) {
-      clearEditingState()
-      return
-    }
-
-    const row = findRoomRowById(localEditingRowId.value)
-    if (row && originalEditingRow.value) {
-      copyRoomRowFields(originalEditingRow.value, row)
-    }
-    clearEditingState()
-  }
-
-  const handleSaveData = async () => {
-    if (!localIsEditing.value || !localEditingRowId.value) {
-      ElMessage.warning('请先选择一行进入编辑')
-      return
-    }
-
-    let targetRow = findRoomRowById(localEditingRowId.value)
-    if (!targetRow?.id) {
-      targetRow = await refreshRowFromServer(localEditingRowId.value)
-    }
-    if (!targetRow?.id) {
-      clearEditingState()
-      ElMessage.warning('未找到当前编辑行，已退出编辑')
-      return
-    }
-
-    if (!isRowModified(targetRow, originalEditingRow.value)) {
-      ElMessage.info('当前行无修改')
-      clearEditingState()
-      return
+    if (dirtyIds.length > MAX_DIRTY_ROWS) {
+      ElMessage.warning(`单次最多保存 ${MAX_DIRTY_ROWS} 条，请分批操作`)
+      return false
     }
 
     localBatchUpdateLoading.value = true
     try {
-      const ok = await persistRoomRow(targetRow, { refreshReport: true, silentRefresh: true })
-      if (!ok) return
+      const results = await runPool(dirtyIds, SAVE_CONCURRENCY, async (id) => {
+        const row = findRoomRowById(id)
+        if (!row) return false
+        return persistRoomRow(row, {
+          refreshReport: false,
+          skipReload: true,
+          silentError: true,
+        })
+      })
 
-      clearEditingState()
-      ElMessage.success('保存成功，已刷新实测报告')
+      const failedCount = results.filter((ok) => !ok).length
+      if (failedCount > 0) {
+        await reloadRoomAndSummaryData({
+          refreshReport: false,
+          silentRefresh: true,
+          resetToFirstPage: true,
+        })
+        ElMessage.error(`${failedCount} 条保存失败，请检查后重试`)
+        return false
+      }
+
+      const reloadOk = await reloadRoomAndSummaryData({
+        refreshReport: true,
+        silentRefresh: true,
+        resetToFirstPage: true,
+      })
+      if (!reloadOk) {
+        ElMessage.error('已保存但刷新列表失败，请点击「重新计算」同步数据')
+        return false
+      }
+
+      clearDirtyState()
+
+      ElMessage.success(`已保存 ${dirtyIds.length} 条，已刷新实测报告`)
+      return true
     } finally {
       localBatchUpdateLoading.value = false
     }
@@ -654,9 +755,16 @@ export function useRoomEditWorkflow(options = {}) {
         return false
       }
 
-      clearEditingState()
-      await reloadRoomAndSummaryData({ refreshReport: true, silentRefresh: true })
-      await goLastRoomInfoPageAfterMutation()
+      clearDirtyState()
+      const reloadOk = await reloadRoomAndSummaryData({
+        refreshReport: true,
+        silentRefresh: true,
+        resetToFirstPage: true,
+      })
+      if (!reloadOk) {
+        ElMessage.warning('新增成功但列表刷新失败，请点击「重新计算」')
+        return true
+      }
       ElMessage.success('新增户室成功，已刷新实测报告')
       return true
     } catch (error) {
@@ -693,8 +801,14 @@ export function useRoomEditWorkflow(options = {}) {
         return false
       }
 
-      clearEditingState()
-      await reloadRoomAndSummaryData({ refreshReport: true, silentRefresh: true })
+      originalByRowId.delete(String(roomId))
+      bumpDirty()
+      clearDirtyState()
+      await reloadRoomAndSummaryData({
+        refreshReport: true,
+        silentRefresh: true,
+        resetToFirstPage: true,
+      })
       ElMessage.success('删除户室成功，已刷新实测报告')
       return true
     } catch (error) {
@@ -707,7 +821,17 @@ export function useRoomEditWorkflow(options = {}) {
   }
 
   const handleRefreshSurveyReport = async () => {
-    const ok = await reloadRoomAndSummaryData({ refreshReport: true, silentRefresh: false })
+    commitActiveCell()
+    if (hasUnsavedChanges.value) {
+      const canProceed = await confirmDiscardUnsavedChanges()
+      if (!canProceed) return false
+    }
+
+    const ok = await reloadRoomAndSummaryData({
+      refreshReport: true,
+      silentRefresh: false,
+      resetToFirstPage: true,
+    })
     if (ok) {
       ElMessage.success('数据已刷新')
     }
@@ -717,24 +841,32 @@ export function useRoomEditWorkflow(options = {}) {
   const syncRoomRow = (row) => ensureEditableRow(row)
 
   return {
-    enterEditMode,
-    exitEditMode,
-    handleSaveData,
+    activeCell,
+    dirtyRowCount,
+    hasUnsavedChanges,
+    isCellActive,
+    isRowDirty,
+    startCellEdit,
+    commitActiveCell,
+    prepareRowForEdit,
+    notifyRowTouched,
+    discardAllChanges,
+    confirmDiscardUnsavedChanges,
+    handleSaveDirtyRows,
     syncRoomRow,
-    clearEditingState,
+    clearDirtyState,
     handleRefreshSurveyReport,
     handleCreateRoom,
     handleDeleteRoom,
     roomCreateLoading,
     roomDeleteLoading,
     reportRefreshLoading,
+    batchUpdateLoading: localBatchUpdateLoading,
     roomInfoLoadingMore,
     loadMoreRoomInfo,
     roomInfoHasMore,
-    goRoomInfoPage,
-    goRoomInfoPageSizeChange,
-    fetchAllRoomInfoRows,
     searchRoomInfosByPages,
+    searchMissingUsageByPages,
     fetchRoomInfoById,
   }
 }

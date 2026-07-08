@@ -1,6 +1,7 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getParseJobFlow } from '@/services/file.service'
+import { getAjaxJsonMessage, getApiErrorMessage } from '@/utils/apiErrorMessage'
 
 function isParseFlowTerminal(detail) {
   const s = String(detail?.status || '').toUpperCase()
@@ -32,10 +33,16 @@ export function useArchiveParseFlow({ isActive }) {
         parseFlowDetail.value = res?.data?.data || null
         return
       }
-      ElMessage.warning(res?.data?.msg || '加载解析流程失败')
+      if (!silent) {
+        ElMessage.warning(getAjaxJsonMessage(res?.data, '加载解析流程失败'))
+      }
+      stopParseFlowAutoRefresh()
     } catch (e) {
       console.error(e)
-      ElMessage.error(e?.response?.data?.msg || '加载解析流程失败')
+      if (!silent) {
+        ElMessage.error(getApiErrorMessage(e, '加载解析流程失败'))
+      }
+      stopParseFlowAutoRefresh()
     } finally {
       parseFlowRefreshing = false
       if (!silent) parseFlowLoading.value = false

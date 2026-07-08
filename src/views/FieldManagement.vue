@@ -567,6 +567,7 @@ const goOpenSourceAudit = (row) => {
     query: {
       projectId: String(row.projectId),
       openAuditFileId: String(row.fileRecordId),
+      returnTo: 'fields',
     },
   })
 }

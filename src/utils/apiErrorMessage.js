@@ -12,7 +12,21 @@ export function isForbiddenApiPayload(payload) {
 }
 
 /** 无权限场景统一提示文案 */
-export function getPermissionDeniedMessage(fallback = '暂无权限') {
+export function getPermissionDeniedMessage(fallback = '无权限') {
+  return fallback
+}
+
+/**
+ * 从 AjaxJson 响应体读取 msg（含 code=403 / Sa-Token 角色不符）
+ */
+export function getAjaxJsonMessage(data, fallback) {
+  if (isForbiddenApiPayload(data)) {
+    return getPermissionDeniedMessage()
+  }
+  const msg = data?.msg
+  if (msg != null && String(msg).trim() !== '') {
+    return String(msg).trim()
+  }
   return fallback
 }
 

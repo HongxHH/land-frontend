@@ -166,36 +166,51 @@
 }
 
 /*
- * 含未知用途：整行统一底色（tr），单元格透明，避免每格 inset 阴影/底色叠加发乌。
- * 左侧强调线仅画在首列单元格上一条。
+ * 含未知用途：整行统一底色（tr），非固定列单元格透明，避免每格 inset 阴影/底色叠加发乌。
+ * 固定列单独叠层渲染，须保持不透明底色（见下方 fixed-column 规则）。
  */
-.summary-modern-table .el-table__body tr.summary-row-unknown-usage>td.el-table__cell {
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage>td.el-table__cell:not(.el-table-fixed-column--left):not(.el-table-fixed-column--right) {
   background-color: transparent !important;
   box-shadow: none !important;
 }
 
-.summary-modern-table .el-table__body tr.summary-row-unknown-usage.el-table__row--striped>td.el-table__cell {
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage.el-table__row--striped>td.el-table__cell:not(.el-table-fixed-column--left):not(.el-table-fixed-column--right) {
   background-color: transparent !important;
 }
 
 .summary-modern-table .el-table__body tr.summary-row-unknown-usage {
   background-color: #fffbeb !important;
+  --summary-unknown-row-bg: #fffbeb;
 }
 
 .summary-modern-table .el-table__body tr.summary-row-unknown-usage:hover {
   background-color: #fff3cd !important;
+  --summary-unknown-row-bg: #fff3cd;
 }
 
-.summary-modern-table .el-table__body tr.summary-row-unknown-usage:hover>td.el-table__cell {
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage:hover>td.el-table__cell:not(.el-table-fixed-column--left):not(.el-table-fixed-column--right) {
   background-color: transparent !important;
 }
 
 .summary-modern-table .el-table__body tr.summary-row-unknown-usage.summary-row-unverified {
   background-color: #fff4e6 !important;
+  --summary-unknown-row-bg: #fff4e6;
 }
 
 .summary-modern-table .el-table__body tr.summary-row-unknown-usage.summary-row-unverified:hover {
   background-color: #ffe8cc !important;
+  --summary-unknown-row-bg: #ffe8cc;
+}
+
+/*
+ * 固定列在横向滚动时单独叠层渲染，td 透明会透出下方滚动内容。
+ * 非固定列仍保持透明以使用 tr 统一底色。
+ */
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage>td.el-table-fixed-column--left.el-table__cell,
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage>td.el-table-fixed-column--right.el-table__cell,
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage:hover>td.el-table-fixed-column--left.el-table__cell,
+.summary-modern-table .el-table__body tr.summary-row-unknown-usage:hover>td.el-table-fixed-column--right.el-table__cell {
+  background-color: var(--summary-unknown-row-bg, #fffbeb) !important;
 }
 
 .summary-modern-table .el-table__body tr.summary-row-unknown-usage>td.el-table__cell:first-child {

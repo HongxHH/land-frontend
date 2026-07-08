@@ -1,7 +1,9 @@
 /**
  * 房产实测汇总「面积核算对比」各来源统一元数据（页面 / 打印 / Excel 导出共用）
  */
-export const SUMMARY_COMPARISON_GROUP_META = [
+import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
+
+const ALL_SUMMARY_COMPARISON_GROUP_META = [
   {
     key: 'systemCalculated',
     title: '实测报告对比结果',
@@ -27,5 +29,9 @@ export const SUMMARY_COMPARISON_GROUP_META = [
     availableField: 'capacityIndicatorCalculatedAvailable',
   },
 ]
+
+export const SUMMARY_COMPARISON_GROUP_META = ALL_SUMMARY_COMPARISON_GROUP_META.filter(
+  (item) => item.key !== 'planningCalculated' || isPlanningReviewEnabled()
+)
 
 export const SUMMARY_COMPARISON_GROUP_KEYS = SUMMARY_COMPARISON_GROUP_META.map((item) => item.key)

@@ -18,6 +18,7 @@ import {
   parseFileById,
   queryFiles,
 } from '@/services/file.service'
+import { filterVisibleArchives } from '@/utils/fileContextTypeRegistry.js'
 
 const ARCHIVE_CACHE_TTL = 12000
 
@@ -260,7 +261,7 @@ export function useArchiveFolderExplorerData(deps) {
       const res = await getProjectArchives(projectId)
       if (res.data?.code === 200 && Array.isArray(res.data.data)) {
         const oldSelected = selectedArchiveId.value
-        archiveList.value = res.data.data
+        archiveList.value = filterVisibleArchives(res.data.data)
 
         if (!archiveList.value.length) {
           clearFiles()

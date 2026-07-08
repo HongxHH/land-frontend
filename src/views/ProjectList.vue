@@ -91,7 +91,12 @@
           />
         </el-tab-pane>
 
-        <el-tab-pane name="planningReview" class="workspace-tab-pane no-print" lazy>
+        <el-tab-pane
+          v-if="featurePlanningReviewEnabled"
+          name="planningReview"
+          class="workspace-tab-pane no-print"
+          lazy
+        >
           <template #label>
             <span class="custom-tab-label">
               <el-icon><DocumentChecked /></el-icon> 规划复核表
@@ -176,6 +181,7 @@
       :fetch-archive-files="refreshWorkspaceAfterFileAudit"
       :on-contract-archive-audit="handleContractArchiveAudit"
       @audit-consumed="handlePendingAuditConsumed"
+      :on-audit-return-navigate="handleAuditReturnNavigation"
     />
 
     <PrintSummaryBlock
@@ -382,6 +388,9 @@ import SmartFolderImportDialog from '@/components/project-list/SmartFolderImport
 import { useSmartFolderImport } from '@/composables/project-list/useSmartFolderImport.js'
 import { useProjectListWorkspace } from '@/composables/project-list/useProjectListWorkspace.js'
 import { canAccessOperationAudit } from '@/utils/auth-session.js'
+import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
+
+const featurePlanningReviewEnabled = isPlanningReviewEnabled()
 
 /** 归档 Tab 与其余 Tab / 弹窗异步分包，减轻首次进入「项目信息」的解析与下载耗时 */
 const ArchiveFolderTab = defineAsyncComponent(() => import('@/components/project-list/ArchiveFolderTab.vue'))
@@ -731,7 +740,8 @@ const {
   handleGlobalSearch,
   loadActiveTabData,
   handleOpenAuditByFileRecordId,
-  handlePendingAuditConsumed
+  handlePendingAuditConsumed,
+  handleAuditReturnNavigation,
 } = useProjectListWorkspace({
   route,
   router,

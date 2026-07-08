@@ -18,41 +18,99 @@
           <span v-if="rule.occurrenceCount != null" class="meta-item">
             出现 <strong>{{ rule.occurrenceCount }}</strong> 次
           </span>
-          <template v-if="roomNumbersText(rule)">
+          <template v-if="metaSecondaryText(rule)">
             <span class="meta-dot" aria-hidden="true">·</span>
-            <span class="meta-rooms" :title="roomNumbersText(rule)">{{
-              roomNumbersText(rule)
+            <span class="meta-rooms" :title="metaTooltipText(rule)">{{
+              metaSecondaryText(rule)
             }}</span>
           </template>
-          <template v-if="rule.recentFileName || rule.fileRecordId">
+          <template v-if="!isMissingUsagePolicyRow(rule) && (rule.recentFileName || rule.fileRecordId)">
             <span class="meta-dot" aria-hidden="true">·</span>
           </template>
-          <span v-if="rule.recentFileName" class="meta-file" :title="rule.recentFileName">{{
-            rule.recentFileName
-          }}</span>
-          <span v-else-if="rule.fileRecordId" class="meta-file meta-file--muted"
+          <span
+            v-if="!isMissingUsagePolicyRow(rule) && rule.recentFileName"
+            class="meta-file"
+            :title="rule.recentFileName"
+            >{{ rule.recentFileName }}</span
+          >
+          <span
+            v-else-if="!isMissingUsagePolicyRow(rule) && rule.fileRecordId"
+            class="meta-file meta-file--muted"
             >文件记录 #{{ rule.fileRecordId }}</span
           >
           <span
-            v-else-if="!rule.occurrenceCount && !roomNumbersText(rule)"
+            v-else-if="
+              !isMissingUsagePolicyRow(rule) &&
+              !rule.occurrenceCount &&
+              !metaSecondaryText(rule)
+            "
             class="meta-file meta-file--muted"
             >当前报告待确认</span
           >
         </div>
 
         <div v-if="hasRowAction(rule)" class="policy-row__actions">
+          <template v-if="showAuditButton && projectId && isMissingUsagePolicyRow(rule)">
+            <el-button
+              v-if="!hasMultipleSourceGroups(rule)"
+              type="primary"
+              link
+              size="small"
+              class="action-btn"
+              @click="openMissingUsageAudit(rule)"
+            >
+              打开来源审核
+            </el-button>
+            <el-dropdown
+              v-else
+              trigger="click"
+              placement="bottom-end"
+              popper-class="policy-source-dropdown-popper"
+              :popper-options="sourceGroupDropdownPopperOptions"
+              @command="(group) => openMissingUsageAudit(rule, group)"
+            >
+              <el-button type="primary" link size="small" class="action-btn">
+                选择报告处理
+                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu class="policy-source-dropdown-menu">
+                  <el-dropdown-item
+                    v-for="group in missingUsageSourceGroups(rule)"
+                    :key="group.fileRecordId"
+                    :command="group"
+                    :title="formatSourceGroupLabel(group)"
+                  >
+                    <span class="policy-source-dropdown-item__label">{{
+                      formatSourceGroupLabel(group)
+                    }}</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
           <el-button
-            v-if="showAuditButton && rule.fileRecordId && projectId"
+            v-else-if="showAuditButton && rule.fileRecordId && projectId"
             type="primary"
             link
             size="small"
             class="action-btn"
-            @click="$emit('open-source-audit', String(rule.fileRecordId), rule.usageName)"
+            @click="emitOpenSourceAudit(rule.fileRecordId, rule.usageName)"
           >
             打开来源审核
           </el-button>
           <el-button
-            v-else-if="showLocateButton && !isReadOnlyRow(rule)"
+            v-else-if="showLocateButton && isMissingUsagePolicyRow(rule)"
+            type="primary"
+            link
+            size="small"
+            class="action-btn"
+            @click="$emit('filter-missing-usage')"
+          >
+            筛选缺失户室
+          </el-button>
+          <el-button
+            v-else-if="showLocateButton"
             type="primary"
             link
             size="small"
@@ -68,32 +126,100 @@
 </template>
 
 <script setup>
-import { formatRoomNumbersInline } from '@/composables/file-upload/surveyUsagePending'
+import { ArrowDown } from '@element-plus/icons-vue'
+import {
+  FOCUS_MODE_MISSING_USAGE,
+  formatMissingUsageMetaText,
+  formatRoomNumbersInline,
+  isMissingUsagePolicyRow,
+  MISSING_USAGE_ROW_LABEL,
+} from '@/composables/file-upload/surveyUsagePending'
 
 const props = defineProps({
   rows: { type: Array, default: () => [] },
   projectId: { type: [String, Number], default: '' },
   highlightUsageName: { type: String, default: '' },
+  focusMode: { type: String, default: '' },
   showAuditButton: { type: Boolean, default: false },
   showLocateButton: { type: Boolean, default: false },
 })
 
-defineEmits(['open-source-audit', 'locate-usage'])
+const emit = defineEmits(['open-source-audit', 'locate-usage', 'filter-missing-usage'])
+
+/** 下拉菜单限制在视口内，条目过多时内部滚动 */
+const sourceGroupDropdownPopperOptions = {
+  modifiers: [
+    {
+      name: 'flip',
+      options: {
+        fallbackPlacements: ['top-end', 'bottom-start', 'top-start'],
+      },
+    },
+    {
+      name: 'preventOverflow',
+      options: { padding: 12 },
+    },
+  ],
+}
+
+const formatSourceGroupLabel = (group) => {
+  const fileName = String(group?.fileName || '').trim() || `文件记录 #${group?.fileRecordId || ''}`
+  const count = Number(group?.occurrenceCount ?? 0)
+  return `${fileName}（${count} 户）`
+}
 
 const isHighlighted = (rule) => {
+  if (String(props.focusMode || '').trim() === FOCUS_MODE_MISSING_USAGE) {
+    return isMissingUsagePolicyRow(rule)
+  }
   const focus = String(props.highlightUsageName || '').trim()
   if (!focus) return false
   return String(rule?.usageName || '').trim() === focus
 }
 
-const roomNumbersText = (rule) => formatRoomNumbersInline(rule?.roomNumbers)
+const missingUsageSourceGroups = (rule) =>
+  Array.isArray(rule?.sourceGroups) ? rule.sourceGroups : []
 
-const isReadOnlyRow = (rule) =>
-  Boolean(rule?.readOnly) || String(rule?.usageName || '').trim() === '用途缺失'
+const hasMultipleSourceGroups = (rule) => missingUsageSourceGroups(rule).length > 1
+
+const metaSecondaryText = (rule) => {
+  if (isMissingUsagePolicyRow(rule)) {
+    return formatMissingUsageMetaText(rule)
+  }
+  return formatRoomNumbersInline(rule?.roomNumbers)
+}
+
+const metaTooltipText = (rule) => formatRoomNumbersInline(rule?.roomNumbers)
+
+const missingUsageHasAuditTarget = (rule) => {
+  if (missingUsageSourceGroups(rule).length > 0) return true
+  return Boolean(rule?.fileRecordId)
+}
 
 const hasRowAction = (rule) => {
+  if (isMissingUsagePolicyRow(rule)) {
+    if (props.showAuditButton && props.projectId && missingUsageHasAuditTarget(rule)) return true
+    if (props.showLocateButton) return true
+    return false
+  }
   if (props.showAuditButton && rule.fileRecordId && props.projectId) return true
-  return props.showLocateButton && !isReadOnlyRow(rule)
+  return props.showLocateButton && !isMissingUsagePolicyRow(rule)
+}
+
+const emitOpenSourceAudit = (fileRecordId, usageName, focusMode = '') => {
+  emit('open-source-audit', {
+    fileRecordId: String(fileRecordId || ''),
+    usageName: String(usageName || '').trim(),
+    focusMode: String(focusMode || '').trim(),
+  })
+}
+
+const openMissingUsageAudit = (rule, group) => {
+  const groups = missingUsageSourceGroups(rule)
+  const target = group || (groups.length === 1 ? groups[0] : null)
+  const fileRecordId = String(target?.fileRecordId || rule?.fileRecordId || '').trim()
+  if (!fileRecordId) return
+  emitOpenSourceAudit(fileRecordId, MISSING_USAGE_ROW_LABEL, FOCUS_MODE_MISSING_USAGE)
 }
 </script>
 
@@ -209,7 +335,7 @@ const hasRowAction = (rule) => {
 }
 
 .meta-rooms {
-  flex: 1 1 100%;
+  flex: 1 1 auto;
   min-width: 0;
   color: #1e40af;
   font-size: 13px;
@@ -249,5 +375,32 @@ const hasRowAction = (rule) => {
   .meta-rooms {
     flex-basis: 100%;
   }
+}
+</style>
+
+<style>
+/* teleported 下拉层：限制高度并在视口内滚动 */
+.policy-source-dropdown-popper.el-popper {
+  max-width: min(520px, calc(100vw - 24px));
+}
+
+.policy-source-dropdown-popper .policy-source-dropdown-menu {
+  max-height: min(320px, 45vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.policy-source-dropdown-popper .el-dropdown-menu__item {
+  max-width: min(500px, calc(100vw - 32px));
+  line-height: 1.35;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.policy-source-dropdown-popper .policy-source-dropdown-item__label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

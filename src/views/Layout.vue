@@ -22,33 +22,30 @@
         active-text-color="#ffffff"
         class="aside-menu"
       >
-        <el-menu-item-group>
-          <template #title>业务功能</template>
-          <el-menu-item index="/dashboard">
-            <el-icon><Odometer /></el-icon>
-            <span>首页</span>
-          </el-menu-item>
-          <el-menu-item index="/projects">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>项目信息</span>
-          </el-menu-item>
-        </el-menu-item-group>
+        <!-- 不用 el-menu-item-group：折叠时 EP 只对「直接子级」隐藏文字并出 tooltip -->
+        <li v-if="!isAsideCollapsed" class="aside-section-title" role="presentation">业务功能</li>
+        <el-menu-item index="/dashboard">
+          <el-icon><Odometer /></el-icon>
+          <template #title>首页</template>
+        </el-menu-item>
+        <el-menu-item index="/projects">
+          <el-icon><DataAnalysis /></el-icon>
+          <template #title>项目信息</template>
+        </el-menu-item>
 
-        <el-menu-item-group>
-          <template #title>系统管理</template>
-          <el-menu-item index="/fields">
-            <el-icon><MapLocation /></el-icon>
-            <span>土地类型管理</span>
-          </el-menu-item>
-          <el-menu-item v-if="canAccessUserManagement()" index="/users">
-            <el-icon><UserFilled /></el-icon>
-            <span>用户权限管理</span>
-          </el-menu-item>
-          <el-menu-item v-if="canAccessTaskPoolMonitor()" index="/task-pool">
-            <el-icon><Cpu /></el-icon>
-            <span>任务线程池监控</span>
-          </el-menu-item>
-        </el-menu-item-group>
+        <li v-if="!isAsideCollapsed" class="aside-section-title" role="presentation">系统管理</li>
+        <el-menu-item index="/fields">
+          <el-icon><MapLocation /></el-icon>
+          <template #title>土地类型管理</template>
+        </el-menu-item>
+        <el-menu-item v-if="canAccessUserManagement()" index="/users">
+          <el-icon><UserFilled /></el-icon>
+          <template #title>用户权限管理</template>
+        </el-menu-item>
+        <el-menu-item v-if="canAccessTaskPoolMonitor()" index="/task-pool">
+          <el-icon><Cpu /></el-icon>
+          <template #title>任务线程池监控</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -231,15 +228,31 @@ const handleLogout = async () => {
   --el-menu-base-level-padding: 20px;
 }
 
-:deep(.aside-menu .el-menu-item-group__title) {
-  padding: 16px 22px 10px !important;
+.aside-section-title {
+  list-style: none;
+  padding: 16px 22px 10px;
   color: #8391a7;
   font-size: 14px;
   letter-spacing: 0.08em;
+  line-height: 1.4;
 }
 
-.aside--collapsed :deep(.el-menu-item-group__title) {
-  display: none;
+.aside--collapsed .logo {
+  justify-content: center;
+  padding: 0;
+}
+
+.aside--collapsed :deep(.aside-menu .el-menu-item) {
+  margin: 4px 10px;
+  justify-content: center;
+}
+
+.aside--collapsed :deep(.aside-menu .el-menu-item .el-icon) {
+  margin-right: 0;
+}
+
+.aside--collapsed :deep(.aside-menu .el-menu-item.is-active::before) {
+  left: 0;
 }
 
 :deep(.aside-menu .el-menu-item) {

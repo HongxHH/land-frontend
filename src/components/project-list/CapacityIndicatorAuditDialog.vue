@@ -359,7 +359,7 @@ const submitMainFormEdit = async () => {
       totalArea: formEdit.totalArea,
       commercialArea: formEdit.commercialArea,
       residentialArea: formEdit.residentialArea,
-      remark: formEdit.remark || null,
+      remark: formEdit.remark,
     })
     if (res.data?.code !== 200) {
       ElMessage.warning(res.data?.msg || '更新失败')

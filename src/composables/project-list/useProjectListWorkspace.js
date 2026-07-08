@@ -42,6 +42,23 @@ export function useProjectListWorkspace({
   const projectWorkspaceBootstrapping = ref(false)
   let projectOptionsLoadingPromise = null
   let deepLinkAuditOpening = false
+  let auditReturnNavigating = false
+
+  const handleAuditReturnNavigation = () => {
+    const returnTo = String(route.query.returnTo || '').trim()
+    if (!returnTo || auditReturnNavigating) return
+
+    const returnRouteMap = {
+      fields: { name: 'FieldManagement' },
+    }
+    const target = returnRouteMap[returnTo]
+    if (!target) return
+
+    auditReturnNavigating = true
+    router.replace(target).finally(() => {
+      auditReturnNavigating = false
+    })
+  }
 
   const ensureProjectOptionsLoaded = async () => {
     if (projectOptionsLoaded.value) return true
@@ -171,6 +188,7 @@ export function useProjectListWorkspace({
     const fileRecordId =
       typeof payload === 'object' && payload != null ? payload.fileRecordId : payload
     const focusUsageName = typeof payload === 'object' && payload != null ? payload.usageName : ''
+    const focusMode = typeof payload === 'object' && payload != null ? payload.focusMode : ''
     const fid = String(fileRecordId || '').trim()
     if (!fid) {
       ElMessage.warning('缺少文件信息，无法打开审核')
@@ -185,6 +203,7 @@ export function useProjectListWorkspace({
       force: true,
       skipArchiveNavigation: true,
       focusUsageName: String(focusUsageName || '').trim(),
+      focusMode: String(focusMode || '').trim(),
     })
     return true
   }
@@ -393,5 +412,6 @@ export function useProjectListWorkspace({
     loadActiveTabData,
     handleOpenAuditByFileRecordId,
     handlePendingAuditConsumed,
+    handleAuditReturnNavigation,
   }
 }

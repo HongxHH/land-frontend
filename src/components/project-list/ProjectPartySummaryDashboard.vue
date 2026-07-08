@@ -173,5 +173,5 @@ defineProps({
   formatNum: { type: Function, required: true },
 })
 
-defineEmits(['load-more', 'select-form', 'audit'])
+const emit = defineEmits(['load-more', 'select-form', 'audit'])
 </script>

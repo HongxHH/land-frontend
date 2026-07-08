@@ -104,7 +104,7 @@
           <div class="main-form-edit-footer">
             <el-button @click="dialogVisible = false">关闭</el-button>
             <el-button type="primary" :loading="mainFormSaveLoading" @click="submitMainFormEdit"
-              >保存主表</el-button
+              >保存修改</el-button
             >
           </div>
         </div>
@@ -448,7 +448,7 @@ const submitMainFormEdit = async () => {
   try {
     const payload = {
       id: Number(formEdit.id),
-      remark: formEdit.remark || null,
+      remark: formEdit.remark,
       declaredTotals: {
         contractAgreedTotalBuildingArea: toNullableNumber(
           formEdit.declaredTotals.contractAgreedTotalBuildingArea

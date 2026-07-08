@@ -1,4 +1,5 @@
 import { canAccessOperationAudit } from '@/utils/auth-session.js'
+import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
 
 /**
  * 文件内容类型（FileContextType）前端统一注册表。
@@ -7,15 +8,21 @@ import { canAccessOperationAudit } from '@/utils/auth-session.js'
 
 /** @typedef {'contract'|'calibration'|'planning_review'|'capacity_indicator'|'party_summary'|null} AuditStrategy */
 
-/** 上传弹窗可识别的归档 kind（与后端 FileContextType 一致） */
-export const UPLOAD_FILE_CONTEXT_KINDS = new Set([
+const ALL_UPLOAD_FILE_CONTEXT_KINDS = [
   'CONTRACT',
   'SURVEY_REPORT',
   'PLANNING_REVIEW',
   'CAPACITY_INDICATOR',
   'PROJECT_PARTY_SURVEY_SUMMARY',
   'OTHER',
-])
+]
+
+/** 上传弹窗可识别的归档 kind（与后端 FileContextType 一致） */
+export const UPLOAD_FILE_CONTEXT_KINDS = new Set(
+  ALL_UPLOAD_FILE_CONTEXT_KINDS.filter(
+    (kind) => kind !== 'PLANNING_REVIEW' || isPlanningReviewEnabled()
+  )
+)
 
 /** 上传弹窗 / 列表展示用中文名 */
 export const FILE_CONTEXT_TYPE_LABELS = {
@@ -41,6 +48,17 @@ export function normalizeFileContextType(value) {
   return String(value || '').toUpperCase()
 }
 
+export function isPlanningReviewFileContext(fileContextType) {
+  return normalizeFileContextType(fileContextType) === 'PLANNING_REVIEW'
+}
+
+/** 过滤不可见的默认归档夹（如功能关闭时的规划复核表） */
+export function filterVisibleArchives(archives) {
+  if (!Array.isArray(archives)) return []
+  if (isPlanningReviewEnabled()) return archives
+  return archives.filter((item) => !isPlanningReviewFileContext(item?.kind))
+}
+
 export function resolveUploadFileContextType(kind) {
   const normalized = normalizeFileContextType(kind)
   return UPLOAD_FILE_CONTEXT_KINDS.has(normalized) ? normalized : 'OTHER'
@@ -57,8 +75,7 @@ export function getAuditStrategy(fileContextType) {
   return FILE_CONTEXT_AUDIT_STRATEGY[key] ?? 'calibration'
 }
 
-/** 项目工作区 el-tab-pane name 白名单（路由 tab / 审核返回跳转） */
-export const PROJECT_WORKSPACE_TAB_NAMES = [
+const ALL_PROJECT_WORKSPACE_TAB_NAMES = [
   'summary',
   'contractLandEdit',
   'projectEdit',
@@ -69,6 +86,11 @@ export const PROJECT_WORKSPACE_TAB_NAMES = [
   'operationAudit',
 ]
 
+/** 项目工作区 el-tab-pane name 白名单（路由 tab / 审核返回跳转） */
+export const PROJECT_WORKSPACE_TAB_NAMES = ALL_PROJECT_WORKSPACE_TAB_NAMES.filter(
+  (name) => name !== 'planningReview' || isPlanningReviewEnabled()
+)
+
 export function isProjectWorkspaceTab(tabName) {
   return PROJECT_WORKSPACE_TAB_NAMES.includes(String(tabName || ''))
 }
@@ -77,6 +99,7 @@ export function isProjectWorkspaceTab(tabName) {
 export function resolveProjectWorkspaceTab(tabName) {
   const name = String(tabName || '')
   if (!isProjectWorkspaceTab(name)) return 'archives'
+  if (name === 'planningReview' && !isPlanningReviewEnabled()) return 'archives'
   if (name === 'operationAudit' && !canAccessOperationAudit()) return 'archives'
   return name
 }

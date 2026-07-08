@@ -699,9 +699,21 @@
   padding: 0 8px;
 }
 
-.room-table-editing-tag {
-  font-size: 14px;
-  color: #64748b;
+.room-cell-display {
+  display: block;
+  width: 100%;
+  min-height: 24px;
+  line-height: 24px;
+  cursor: text;
+  border-radius: 4px;
+}
+
+.room-cell-display:hover {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+:deep(.room-table .room-row--dirty > td.el-table__cell) {
+  background: #fffbeb !important;
 }
 
 .room-area-type {

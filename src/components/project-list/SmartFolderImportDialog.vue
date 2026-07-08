@@ -257,6 +257,8 @@ import {
   groupEntriesByDirectory,
 } from '@/utils/localFolderFileMatcher.js'
 
+const GROUP_ORDER = [...contextTypeOptionsSource, 'UNMATCHED']
+
 const props = defineProps({
   embedded: { type: Boolean, default: false },
   scannedEntries: { type: Array, default: () => [] },
@@ -289,15 +291,6 @@ const expandedDirKeys = ref([])
 const buildDirCollapseKey = (groupKey, directory) => `${groupKey}::${directory}`
 
 const contextTypeOptions = contextTypeOptionsSource
-
-const GROUP_ORDER = [
-  'CONTRACT',
-  'SURVEY_REPORT',
-  'PLANNING_REVIEW',
-  'CAPACITY_INDICATOR',
-  'PROJECT_PARTY_SURVEY_SUMMARY',
-  'UNMATCHED',
-]
 
 const displayGroups = computed(() => {
   return GROUP_ORDER.map((key) => {

@@ -81,7 +81,7 @@
         <template v-else>
           <el-table
             ref="parcelsTableRef"
-            class="project-tab-el-table contract-list-modern-table"
+            class="project-tab-el-table contract-list-modern-table land-parcel-table"
             :data="currentLandParcelList"
             border
             stripe
@@ -93,7 +93,7 @@
               :resizable="false"
               label="序号"
               type="index"
-              width="48"
+              width="52"
               align="center"
               header-align="center"
               fixed="left"
@@ -103,7 +103,7 @@
               :resizable="false"
               prop="parcelCode"
               label="地块编号"
-              width="108"
+              min-width="112"
               align="center"
               fixed="left"
               header-align="center"
@@ -113,12 +113,19 @@
               :resizable="false"
               prop="parcelName"
               label="地块名称"
-              width="120"
+              min-width="140"
               align="center"
               header-align="center"
               show-overflow-tooltip
             />
-            <el-table-column :resizable="false" label="规划用途" width="92" align="center" header-align="center">
+            <el-table-column
+              :resizable="false"
+              label="规划用途"
+              min-width="96"
+              align="center"
+              header-align="center"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">
                 {{ plannedUseLabelMap[row.plannedUse] || row.plannedUse || '-' }}
               </template>
@@ -127,39 +134,45 @@
               :resizable="false"
               prop="totalArea"
               label="总面积(㎡)"
-              min-width="132"
+              min-width="124"
               align="center"
               header-align="center"
               class-name="col-area"
               label-class-name="col-area"
+              show-overflow-tooltip
             />
             <el-table-column
               :resizable="false"
               prop="residentialArea"
               label="住宅面积(㎡)"
-              min-width="132"
+              min-width="124"
               align="center"
               header-align="center"
               class-name="col-area"
               label-class-name="col-area"
+              show-overflow-tooltip
             />
             <el-table-column
               :resizable="false"
               prop="commercialArea"
               label="商业面积(㎡)"
-              min-width="132"
+              min-width="124"
               align="center"
               header-align="center"
               class-name="col-area"
               label-class-name="col-area"
+              show-overflow-tooltip
             />
             <el-table-column
               :resizable="false"
               prop="commercialResidentialRatio"
               label="商住比"
-              width="86"
+              min-width="92"
               align="center"
               header-align="center"
+              class-name="col-metric"
+              label-class-name="col-metric"
+              show-overflow-tooltip
             />
             <el-table-column
               :resizable="false"

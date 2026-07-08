@@ -31,7 +31,7 @@
       <el-table
         v-else
         ref="contractsTableRef"
-        class="project-tab-el-table contract-list-modern-table"
+        class="project-tab-el-table contract-list-modern-table contract-list-table"
         :data="pagedContractRows"
         border
         stripe
@@ -45,7 +45,7 @@
           :resizable="false"
           label="序号"
           type="index"
-          width="50"
+          width="52"
           align="center"
           header-align="center"
           fixed="left"
@@ -55,7 +55,7 @@
           :resizable="false"
           prop="contractNumber"
           label="合同编号"
-          min-width="130"
+          min-width="136"
           fixed="left"
           header-align="center"
           show-overflow-tooltip
@@ -64,7 +64,7 @@
           :resizable="false"
           prop="transferor"
           label="出让方"
-          min-width="140"
+          min-width="148"
           header-align="center"
           show-overflow-tooltip
         />
@@ -72,7 +72,7 @@
           :resizable="false"
           prop="transferee"
           label="受让方"
-          min-width="140"
+          min-width="148"
           header-align="center"
           show-overflow-tooltip
         />
@@ -80,32 +80,43 @@
           :resizable="false"
           prop="totalArea"
           label="总面积(㎡)"
-          width="118"
+          min-width="124"
           align="right"
           header-align="center"
+          class-name="col-area"
+          label-class-name="col-area"
+          show-overflow-tooltip
         />
         <el-table-column
           :resizable="false"
           prop="residentialArea"
           label="住宅面积(㎡)"
-          width="118"
+          min-width="124"
           align="right"
           header-align="center"
+          class-name="col-area"
+          label-class-name="col-area"
+          show-overflow-tooltip
         />
         <el-table-column
           :resizable="false"
           prop="commercialArea"
           label="商业面积(㎡)"
-          width="118"
+          min-width="124"
           align="right"
           header-align="center"
+          class-name="col-area"
+          label-class-name="col-area"
+          show-overflow-tooltip
         />
         <el-table-column
           :resizable="false"
           label="创建时间"
-          width="156"
+          min-width="168"
           align="center"
           header-align="center"
+          class-name="col-datetime"
+          label-class-name="col-datetime"
           show-overflow-tooltip
         >
           <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
@@ -113,9 +124,11 @@
         <el-table-column
           :resizable="false"
           label="更新时间"
-          width="156"
+          min-width="168"
           align="center"
           header-align="center"
+          class-name="col-datetime"
+          label-class-name="col-datetime"
           show-overflow-tooltip
         >
           <template #default="{ row }">{{ formatDateTime(row.updateTime) }}</template>
@@ -124,14 +137,14 @@
           :resizable="false"
           prop="remark"
           label="备注"
-          min-width="100"
+          min-width="120"
           header-align="center"
           show-overflow-tooltip
         />
         <el-table-column
           :resizable="false"
           label="操作"
-          width="80"
+          width="88"
           align="center"
           header-align="center"
           fixed="right"

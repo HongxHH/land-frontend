@@ -95,16 +95,24 @@
       <template v-else>
         <div ref="tableBodyHostRef" class="table-body-host">
           <el-table
+            class="archive-folder-file-table"
             :data="archiveFiles"
             stripe
             border
             :height="tableBodyHeight"
             row-key="id"
+            scrollbar-always-on
             :row-class-name="archiveFileTableRowClassName"
             @selection-change="(rows) => emit('selection-change', rows)"
           >
-            <el-table-column type="selection" width="48" align="center" />
-            <el-table-column v-if="showThumbnailColumn" label="缩略图" width="108" align="center">
+            <el-table-column type="selection" width="48" align="center" :resizable="false" />
+            <el-table-column
+              v-if="showThumbnailColumn"
+              label="缩略图"
+              width="108"
+              align="center"
+              :resizable="false"
+            >
               <template #default="{ row }">
                 <el-image
                   v-if="getArchiveThumbnailUrl(row)"
@@ -125,7 +133,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="文件名" min-width="280">
+            <el-table-column label="文件名" min-width="220" :resizable="false" show-overflow-tooltip>
               <template #default="{ row }">
                 <el-link
                   v-if="canPreview(row)"
@@ -142,7 +150,14 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="130" align="center">
+            <el-table-column
+              label="状态"
+              min-width="120"
+              align="center"
+              :resizable="false"
+              class-name="col-status"
+              label-class-name="col-status"
+            >
               <template #default="{ row }">
                 <el-tag
                   v-if="row.parseJobId"
@@ -168,8 +183,11 @@
             <el-table-column
               v-if="selectedArchiveKind === 'SURVEY_REPORT'"
               label="校验状态"
-              width="130"
+              min-width="108"
               align="center"
+              :resizable="false"
+              class-name="col-status"
+              label-class-name="col-status"
             >
               <template #default="{ row }">
                 <el-tooltip
@@ -189,21 +207,58 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="上传时间" width="180" align="center">
+            <el-table-column
+              label="上传时间"
+              min-width="168"
+              align="center"
+              :resizable="false"
+              class-name="col-datetime"
+              label-class-name="col-datetime"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">{{ formatArchiveDateTime(row.uploadTime) }}</template>
             </el-table-column>
-            <el-table-column label="上传人" width="110" align="center" show-overflow-tooltip>
+            <el-table-column
+              label="上传人"
+              min-width="96"
+              align="center"
+              :resizable="false"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">{{ row.uploadUserName || '—' }}</template>
             </el-table-column>
-            <el-table-column label="文件类型" width="110" align="center">
+            <el-table-column
+              label="文件类型"
+              min-width="96"
+              align="center"
+              :resizable="false"
+              class-name="col-status"
+              label-class-name="col-status"
+            >
               <template #default="{ row }">
                 <el-tag size="small" effect="plain">{{ row.fileType || '-' }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="大小" width="100" align="center">
+            <el-table-column
+              label="大小"
+              min-width="96"
+              align="center"
+              :resizable="false"
+              class-name="col-size"
+              label-class-name="col-size"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">{{ formatArchiveFileSize(row.fileSize) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="260" align="center" fixed="right">
+            <el-table-column
+              label="操作"
+              width="260"
+              align="center"
+              fixed="right"
+              :resizable="false"
+              class-name="col-actions"
+              label-class-name="col-actions"
+            >
               <template #default="{ row }">
                 <div class="archive-file-op-actions">
                   <div class="op-action-slot">
@@ -542,6 +597,36 @@ defineExpose({
 :deep(.table-wrap .el-table .cell) {
   font-size: var(--archive-table-font-size);
   line-height: 1.45;
+}
+
+:deep(.archive-folder-file-table th.el-table__cell > .cell) {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.archive-folder-file-table td.el-table__cell.col-datetime > .cell),
+:deep(.archive-folder-file-table th.el-table__cell.col-datetime > .cell),
+:deep(.archive-folder-file-table td.el-table__cell.col-size > .cell),
+:deep(.archive-folder-file-table th.el-table__cell.col-size > .cell) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+:deep(.archive-folder-file-table td.el-table__cell.col-status > .cell),
+:deep(.archive-folder-file-table th.el-table__cell.col-status > .cell) {
+  white-space: nowrap;
+}
+
+:deep(.archive-folder-file-table td.el-table__cell.col-actions > .cell) {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+:deep(.archive-folder-file-table td.el-table__cell > .cell.el-tooltip) {
+  width: 100% !important;
+  max-width: 100%;
 }
 
 :deep(.archive-file-op-actions .el-button) {
