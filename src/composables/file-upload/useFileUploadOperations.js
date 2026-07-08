@@ -25,6 +25,7 @@ export function useFileUploadOperations({
     batchLoading,
     canBatchParse,
     handleSelectionChange,
+    clearBatchSelection,
     batchDelete,
     batchParse,
   } = useBatchActions({ refreshData, startPolling })
@@ -36,7 +37,7 @@ export function useFileUploadOperations({
     tempFiles,
     uploadLoading,
     getFileUploadState,
-    clearUploadSelection,
+    clearUploadSelection: clearUploadDialogSelection,
     openUploadDialog,
     handleFileChange,
     handleFileRemove,
@@ -50,6 +51,11 @@ export function useFileUploadOperations({
     refreshData,
     prependUploadedFiles,
   })
+
+  const clearUploadSelection = () => {
+    clearBatchSelection()
+    clearUploadDialogSelection()
+  }
 
   const { startProcessing, cancelProcessing } = useParseActions({ startPolling })
 

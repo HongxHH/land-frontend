@@ -20,6 +20,7 @@ export function useCurrentProjectSession({
   })
 
   watch(currentProject, (newProjectId) => {
+    clearUploadSelection()
     if (newProjectId) {
       localStorage.setItem('savedCurrentProject', newProjectId)
       resetFilter()
