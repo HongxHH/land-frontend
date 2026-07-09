@@ -137,12 +137,11 @@ const { calibrationUnknownRows, calibrationUnknownLoading } = useCalibrationUnkn
 })
 
 const unknownUsageClassCount = computed(() => {
-  const names = new Set(
+  return new Set(
     calibrationUnknownRows.value
       .map((row) => String(row?.usageName || '').trim())
       .filter(Boolean)
-  )
-  return names.size
+  ).size
 })
 
 const showUnknownUsagePolicyPanel = computed(

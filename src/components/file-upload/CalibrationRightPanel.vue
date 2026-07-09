@@ -24,6 +24,7 @@
         :discard-all-changes="discardAllChanges"
         :handle-save-dirty-rows="handleSaveDirtyRows"
         :sync-room-row="syncRoomRow"
+        :get-room-row-by-id="getRoomRowById"
         :notify-row-touched="notifyRowTouched"
         :prepare-row-for-edit="prepareRowForEdit"
         :handle-refresh-survey-report="handleRefreshSurveyReport"
@@ -65,6 +66,7 @@ const props = defineProps({
   discardAllChanges: { type: Function, required: true },
   handleSaveDirtyRows: { type: Function, required: true },
   syncRoomRow: { type: Function, default: null },
+  getRoomRowById: { type: Function, default: null },
   notifyRowTouched: { type: Function, default: null },
   prepareRowForEdit: { type: Function, default: null },
   handleRefreshSurveyReport: { type: Function, default: null },

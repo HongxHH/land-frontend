@@ -637,6 +637,7 @@ const props = defineProps({
   discardAllChanges: { type: Function, required: true },
   handleSaveDirtyRows: { type: Function, required: true },
   syncRoomRow: { type: Function, default: null },
+  getRoomRowById: { type: Function, default: null },
   notifyRowTouched: { type: Function, default: null },
   prepareRowForEdit: { type: Function, default: null },
   handleRefreshSurveyReport: { type: Function, default: null },
@@ -677,6 +678,8 @@ const {
   reloadSearchRows: reloadRoomTableSearchRows,
 } = useCalibrationRoomTableFilter({
   getRoomRows: () => props.roomInfoData,
+  resolveRowById: (rowId) => props.getRoomRowById?.(rowId) ?? null,
+  getEditRevision: () => props.dirtyRowCount,
   searchRoomPages: (keyword, opts) => props.searchRoomInfosByPages?.(keyword, opts),
   searchMissingUsagePages: (opts) => props.searchMissingUsageByPages?.(opts),
   getTotal: () => (props.roomInfoTotal > 0 ? props.roomInfoTotal : props.roomInfoData.length),
@@ -726,17 +729,25 @@ watch(
 )
 
 watch(
-  () => props.roomInfoLoading,
-  async (loading, prevLoading) => {
-    if (!prevLoading || loading) return
-    if (props.batchUpdateLoading) return
+  () => [props.roomInfoLoading, props.batchUpdateLoading],
+  async ([loading, batchLoading], [prevLoading, prevBatchLoading]) => {
+    if (loading || batchLoading) return
+
+    const loadingFinished = prevLoading && !loading
+    const batchFinished = prevBatchLoading && !batchLoading
+    if (!loadingFinished && !batchFinished) return
+
     if (roomTableIsFiltering.value) {
-      reloadRoomTableSearchRows()
+      reloadRoomTableSearchRows({ immediate: batchFinished })
       return
     }
-    await nextTick()
-    const body = roomTableRef.value?.$refs?.bodyWrapper
-    if (body) body.scrollTop = 0
+
+    if (loadingFinished) {
+      await nextTick()
+      const bodyWrapper = roomTableRef.value?.$refs?.bodyWrapper
+      const scrollEl = bodyWrapper?.querySelector('.el-scrollbar__wrap') || bodyWrapper
+      if (scrollEl) scrollEl.scrollTop = 0
+    }
   }
 )
 

@@ -91,6 +91,7 @@
       :handle-save-dirty-rows="handleSaveDirtyRows"
       :confirm-discard-unsaved-changes="confirmDiscardUnsavedChanges"
       :sync-room-row="syncRoomRow"
+      :get-room-row-by-id="getRoomRowById"
       :notify-row-touched="notifyRowTouched"
       :prepare-row-for-edit="prepareRowForEdit"
       :handle-refresh-survey-report="handleRefreshSurveyReport"
@@ -198,6 +199,7 @@ const {
   confirmDiscardUnsavedChanges,
   handleSaveDirtyRows,
   syncRoomRow,
+  getRoomRowById,
   handleRefreshSurveyReport,
   handleCreateRoom,
   handleDeleteRoom,

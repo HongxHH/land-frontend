@@ -23,6 +23,13 @@ export function useRoomTableInfiniteScroll({
     return root.querySelector('.el-table__body-wrapper')
   }
 
+  /** Element Plus 表格实际滚动在 bodyWrapper 内的 el-scrollbar__wrap 上 */
+  const resolveScrollContainer = () => {
+    const bodyWrapper = resolveBodyWrapper()
+    if (!bodyWrapper) return null
+    return bodyWrapper.querySelector('.el-scrollbar__wrap') || bodyWrapper
+  }
+
   const tryLoadMore = () => {
     if (rafId != null) return
     rafId = requestAnimationFrame(() => {
@@ -30,9 +37,9 @@ export function useRoomTableInfiniteScroll({
       if (!enabled?.value) return
       if (!hasMore?.value) return
       if (loading?.value || loadingMore?.value) return
-      const body = resolveBodyWrapper()
-      if (!body) return
-      const remaining = body.scrollHeight - body.scrollTop - body.clientHeight
+      const scrollEl = resolveScrollContainer()
+      if (!scrollEl) return
+      const remaining = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight
       if (remaining <= SCROLL_THRESHOLD_PX) {
         onLoadMore?.()
       }
@@ -44,9 +51,9 @@ export function useRoomTableInfiniteScroll({
     if (!enabled?.value || !hasMore?.value) return
     if (loading?.value || loadingMore?.value) return
     if (attempt >= MAX_VIEWPORT_FILL_ATTEMPTS) return
-    const body = resolveBodyWrapper()
-    if (!body) return
-    if (body.scrollHeight <= body.clientHeight + 1) {
+    const scrollEl = resolveScrollContainer()
+    if (!scrollEl) return
+    if (scrollEl.scrollHeight <= scrollEl.clientHeight + 1) {
       const loaded = await onLoadMore?.()
       if (loaded === false) return
       await tryFillViewport(attempt + 1)
@@ -57,18 +64,21 @@ export function useRoomTableInfiniteScroll({
     tryLoadMore()
   }
 
+  let boundScrollEl = null
+
   const bindScroll = () => {
     unbindScroll()
-    const body = resolveBodyWrapper()
-    if (!body) return
-    body.addEventListener('scroll', onScroll, { passive: true })
+    const scrollEl = resolveScrollContainer()
+    if (!scrollEl) return
+    scrollEl.addEventListener('scroll', onScroll, { passive: true })
+    boundScrollEl = scrollEl
     scrollBound.value = true
   }
 
   const unbindScroll = () => {
-    const body = resolveBodyWrapper()
-    if (body) {
-      body.removeEventListener('scroll', onScroll)
+    if (boundScrollEl) {
+      boundScrollEl.removeEventListener('scroll', onScroll)
+      boundScrollEl = null
     }
     scrollBound.value = false
   }

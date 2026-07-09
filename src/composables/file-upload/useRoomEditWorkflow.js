@@ -551,7 +551,8 @@ export function useRoomEditWorkflow(options = {}) {
     const rowId = String(row?.id ?? '')
     if (!rowId || !originalByRowId.has(rowId)) return false
     const snapshot = originalByRowId.get(rowId)
-    return isRowModified(row, snapshot)
+    const canonical = findRoomRowById(rowId) || row
+    return isRowModified(canonical, snapshot)
   }
 
   const commitActiveCell = () => {
@@ -840,6 +841,8 @@ export function useRoomEditWorkflow(options = {}) {
 
   const syncRoomRow = (row) => ensureEditableRow(row)
 
+  const getRoomRowById = (rowId) => findRoomRowById(rowId)
+
   return {
     activeCell,
     dirtyRowCount,
@@ -854,6 +857,7 @@ export function useRoomEditWorkflow(options = {}) {
     confirmDiscardUnsavedChanges,
     handleSaveDirtyRows,
     syncRoomRow,
+    getRoomRowById,
     clearDirtyState,
     handleRefreshSurveyReport,
     handleCreateRoom,

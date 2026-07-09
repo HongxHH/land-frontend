@@ -13,14 +13,13 @@ const SEARCH_FIELDS = ROOM_SEARCH_FIELDS
 
 export const SEARCH_DISPLAY_PAGE_SIZE = 50
 
-/** 搜索命中行优先复用已加载分页中的同一对象引用，便于编辑/保存联动 */
-
-export function resolveRoomRowReferences(rows, getRoomRows) {
+/** 搜索命中行优先复用已加载分页或离页编辑缓存中的同一对象引用，便于编辑/保存联动 */
+export function resolveRoomRowReferences(rows, getRoomRows, resolveRowById) {
   const list = Array.isArray(rows) ? rows : []
 
   const loaded = getRoomRows?.() || []
 
-  if (!loaded.length) return list
+  if (!loaded.length && typeof resolveRowById !== 'function') return list
 
   const loadedById = new Map(loaded.map((row) => [String(row.id), row]))
 
@@ -29,7 +28,15 @@ export function resolveRoomRowReferences(rows, getRoomRows) {
 
     if (!id) return row
 
-    return loadedById.get(id) ?? row
+    const loadedRow = loadedById.get(id)
+    if (loadedRow) return loadedRow
+
+    if (typeof resolveRowById === 'function') {
+      const resolved = resolveRowById(id, row)
+      if (resolved) return resolved
+    }
+
+    return row
   })
 }
 
@@ -45,6 +52,12 @@ export function useCalibrationRoomTableFilter(options) {
     typeof options === 'function'
       ? () => getRoomRows()?.length || 0
       : options?.getTotal || (() => getRoomRows()?.length || 0)
+
+  const resolveRowById =
+    typeof options === 'function' ? undefined : options?.resolveRowById
+
+  const getEditRevision =
+    typeof options === 'function' ? undefined : options?.getEditRevision
 
   const keyword = ref('')
 
@@ -274,28 +287,37 @@ export function useCalibrationRoomTableFilter(options) {
   })
 
   const resolvedSearchMatches = computed(() => {
+    if (typeof getEditRevision === 'function') {
+      void getEditRevision()
+    }
+
     if (!isFiltering.value) return []
 
     if (isMissingUsageFilter.value) {
       if (typeof searchMissingUsagePages === 'function') {
-        return resolveRoomRowReferences(searchMatches.value, getRoomRows)
+        return resolveRoomRowReferences(searchMatches.value, getRoomRows, resolveRowById)
       }
       const rows = getRoomRows?.() || []
       return resolveRoomRowReferences(
         rows.filter((row) => isBlankRoomUsage(row?.roomUsage)),
-        getRoomRows
+        getRoomRows,
+        resolveRowById
       )
     }
 
     if (typeof searchRoomPages === 'function') {
-      return resolveRoomRowReferences(searchMatches.value, getRoomRows)
+      return resolveRoomRowReferences(searchMatches.value, getRoomRows, resolveRowById)
     }
 
     const rows = getRoomRows?.() || []
 
     const kw = normalizedKeyword.value
 
-    return resolveRoomRowReferences(filterAndRankRoomRows(rows, kw, SEARCH_FIELDS), getRoomRows)
+    return resolveRoomRowReferences(
+      filterAndRankRoomRows(rows, kw, SEARCH_FIELDS),
+      getRoomRows,
+      resolveRowById
+    )
   })
 
   const filteredRoomInfoData = computed(() => {
@@ -358,7 +380,7 @@ export function useCalibrationRoomTableFilter(options) {
     searchDisplayPageNum.value = Math.max(1, Number(page || 1))
   }
 
-  const reloadSearchRows = () => {
+  const reloadSearchRows = ({ immediate = false } = {}) => {
     if (filterPreset.value === FILTER_PRESET_MISSING_USAGE) {
       if (typeof searchMissingUsagePages !== 'function') return
       if (searchScanning.value) return
@@ -374,6 +396,11 @@ export function useCalibrationRoomTableFilter(options) {
     if (reloadSearchDebounceTimer != null) {
       clearTimeout(reloadSearchDebounceTimer)
       reloadSearchDebounceTimer = null
+    }
+
+    if (immediate) {
+      runSearch(trimmed)
+      return
     }
 
     reloadSearchDebounceTimer = setTimeout(() => {
