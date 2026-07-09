@@ -30,7 +30,7 @@
           stripe
           table-layout="fixed"
           :max-height="tableMaxHeight"
-          v-loading="loading"
+          v-loading="knownLoading"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
           <el-table-column
@@ -118,7 +118,7 @@
           stripe
           table-layout="fixed"
           :max-height="tableMaxHeight"
-          v-loading="loading"
+          v-loading="unknownLoading"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
           <el-table-column
@@ -314,13 +314,14 @@
 </template>
 
 <script setup>
-import { computed, onActivated, onMounted, reactive, ref } from 'vue'
+import { computed, onActivated, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check, Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
 import { ElLoading, ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import UsageConfigRelatedFilesDrawer from '@/components/field-management/UsageConfigRelatedFilesDrawer.vue'
 import { useUsageConfigRelatedFiles } from '@/composables/field-management/useUsageConfigRelatedFiles.js'
+import { useUsageConfigPageCache } from '@/composables/usage-config/useUsageConfigPageCache.js'
 import {
   TARGET_CATEGORY_LABEL_MAP,
   TARGET_CATEGORY_MAP,
@@ -349,9 +350,17 @@ const {
   handleSizeChange: handleRelatedFilesSizeChange,
 } = useUsageConfigRelatedFiles()
 
-const loading = ref(false)
-const standardFields = ref([])
-const specialFields = ref([])
+const {
+  knownList,
+  unknownList,
+  knownLoading,
+  unknownLoading,
+  loadKnown,
+  loadUnknown,
+  refreshAll,
+  syncPage,
+} = useUsageConfigPageCache()
+
 const knownSearchKeyword = ref('')
 const unknownSearchKeyword = ref('')
 
@@ -416,9 +425,10 @@ const rowMatchesKeyword = (parts, keyword) => {
 }
 
 const filteredStandardFields = computed(() => {
+  const rows = knownList.value ?? []
   const keyword = normalizeSearchText(knownSearchKeyword.value)
-  if (!keyword) return standardFields.value
-  return standardFields.value.filter((row) =>
+  if (!keyword) return rows
+  return rows.filter((row) =>
     rowMatchesKeyword(
       [
         row.usagePattern,
@@ -434,9 +444,10 @@ const filteredStandardFields = computed(() => {
 })
 
 const filteredSpecialFields = computed(() => {
+  const rows = unknownList.value ?? []
   const keyword = normalizeSearchText(unknownSearchKeyword.value)
-  if (!keyword) return specialFields.value
-  return specialFields.value.filter((row) =>
+  if (!keyword) return rows
+  return rows.filter((row) =>
     rowMatchesKeyword(
       [
         row.usageName,
@@ -453,63 +464,47 @@ const filteredSpecialFields = computed(() => {
 })
 
 const knownCountText = computed(() => {
-  const total = standardFields.value.length
+  const total = (knownList.value ?? []).length
   const shown = filteredStandardFields.value.length
   if (!normalizeSearchText(knownSearchKeyword.value)) return `共 ${total} 条`
   return `共 ${shown} 条（筛选自 ${total} 条）`
 })
 
 const unknownCountText = computed(() => {
-  const total = specialFields.value.length
+  const total = (unknownList.value ?? []).length
   const shown = filteredSpecialFields.value.length
   if (!normalizeSearchText(unknownSearchKeyword.value)) return `共 ${total} 条`
   return `共 ${shown} 条（筛选自 ${total} 条）`
 })
 
-const fetchUsageConfigList = async () => {
-  loading.value = true
-  try {
-    const res = await axios.get('/api/usage-config/list', { params: { _t: Date.now() } })
-    if (res.data.code === 200) {
-      standardFields.value = (res.data.data || []).map((item) => ({
-        ...item,
-        priority: Number(item.priority),
-        status: Number(item.status),
-      }))
-    }
-  } catch (error) {
-    console.error('获取用途配置失败:', error)
-    ElMessage.error('获取用途配置失败，请重试')
-  } finally {
-    loading.value = false
+const reloadAfterMutation = async (targets) => {
+  const jobs = []
+  if (targets.includes('known')) {
+    jobs.push(
+      loadKnown({ force: true }).catch((error) => {
+        console.error('获取用途配置失败:', error)
+        ElMessage.error('获取用途配置失败，请重试')
+      })
+    )
   }
+  if (targets.includes('unknown')) {
+    jobs.push(
+      loadUnknown({ force: true }).catch((error) => {
+        console.error('获取未知用途失败:', error)
+        ElMessage.error('获取未知用途失败，请重试')
+      })
+    )
+  }
+  await Promise.all(jobs)
 }
 
-const fetchUnknownUsageList = async () => {
-  loading.value = true
-  try {
-    const res = await axios.get('/api/usage-config/unknown/pending', { params: { _t: Date.now() } })
-    if (res.data.code === 200) {
-      specialFields.value = (res.data.data || []).map((item) => ({
-        id: item.id,
-        usageName: item.usageName,
-        occurrenceCount: item.occurrenceCount,
-        updateTime: item.updateTime,
-        targetCategory: item.suggestedCategory || '',
-        projectId: item.projectId,
-        fileRecordId: item.fileRecordId,
-        recentFileName: item.recentFileName || '',
-        recentProjectName: item.recentProjectName || '',
-        handleRemark: item.handleRemark || '',
-      }))
+const syncPageData = ({ silent = false } = {}) =>
+  syncPage({ silent }).catch((error) => {
+    console.error('同步土地类型数据失败:', error)
+    if (!silent) {
+      ElMessage.error('加载数据失败，请重试')
     }
-  } catch (error) {
-    console.error('获取未知用途失败:', error)
-    ElMessage.error('获取未知用途失败，请重试')
-  } finally {
-    loading.value = false
-  }
-}
+  })
 
 const addUsageConfig = async (formData) => {
   const loadingInst = ElLoading.service({ lock: true, text: '正在新增配置...' })
@@ -594,7 +589,7 @@ const createUsageConfigFromUnknown = async (row) => {
     }
     await refreshProjectSurveyReports(row.projectId)
     ElMessage.success(`已将【${row.usageName}】纳入已知用途映射`)
-    await Promise.all([fetchUsageConfigList(), fetchUnknownUsageList()])
+    await reloadAfterMutation(['known', 'unknown'])
   } catch (error) {
     console.error('处理未知用途失败:', error)
     ElMessage.error('处理失败，请重试')
@@ -634,7 +629,7 @@ const submitAddForm = async () => {
     if (!ok) return
     addDialogVisible.value = false
     ElMessage.success('新增成功')
-    await fetchUsageConfigList()
+    await reloadAfterMutation(['known'])
   } catch {
     ElMessage.warning('请完善必填项后提交')
   }
@@ -681,15 +676,20 @@ const submitEditForm = async () => {
     if (!ok) return
     editDialogVisible.value = false
     ElMessage.success('更新成功')
-    await fetchUsageConfigList()
+    await reloadAfterMutation(['known'])
   } catch {
     ElMessage.warning('请完善必填项后提交')
   }
 }
 
 const handleRefresh = async () => {
-  await Promise.all([fetchUsageConfigList(), fetchUnknownUsageList()])
-  ElMessage.success('已同步最新配置')
+  try {
+    await refreshAll({ cacheBust: true })
+    ElMessage.success('已同步最新配置')
+  } catch (error) {
+    console.error('刷新土地类型数据失败:', error)
+    ElMessage.error('刷新失败，请重试')
+  }
 }
 
 const handleDelete = async (row) => {
@@ -705,7 +705,7 @@ const handleDelete = async (row) => {
       return
     }
     ElMessage.success('删除成功')
-    await fetchUsageConfigList()
+    await reloadAfterMutation(['known'])
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除用途配置失败:', error)
@@ -726,12 +726,8 @@ const saveSpecialConfig = async (row) => {
   await createUsageConfigFromUnknown(row)
 }
 
-onMounted(async () => {
-  await Promise.all([fetchUsageConfigList(), fetchUnknownUsageList()])
-})
-
 onActivated(() => {
-  fetchUnknownUsageList()
+  void syncPageData({ silent: true })
 })
 </script>
 

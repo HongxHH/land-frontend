@@ -5,11 +5,15 @@ import { filterAndRankUsageOptions } from '@/utils/textMatchRank.js'
 import {
   USAGE_CATEGORY_BUILDABLE_OPTIONS as usageCategoryCreateBuildableOptions,
   USAGE_CATEGORY_NON_BUILDABLE_OPTIONS as usageCategoryCreateNonBuildableOptions,
-  floorAreaTypeLabel,
   normalizeUsageCategoryCode,
   resolveFloorAreaTypeByCategory,
   usageCategoryLabel,
 } from '@/constants/usageCategory.js'
+import {
+  mapUsageConfigToPickerOptions,
+  useUsageConfigPageCache,
+  invalidateUsageConfigListCache,
+} from '@/composables/usage-config/useUsageConfigPageCache.js'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 
 const usagePresetMap = {
@@ -33,6 +37,8 @@ export function useCalibrationRoomUsageEditor({
   handleCreateRoom,
   handleDeleteRoom,
 }) {
+  const { knownList, loadKnown } = useUsageConfigPageCache()
+
   const createRoomDialogVisible = ref(false)
   const createRoomFormRef = ref(null)
   const createRoomForm = reactive({
@@ -116,10 +122,9 @@ export function useCalibrationRoomUsageEditor({
   }
 
   const normalizeUsageCategoryText = (value) => usageCategoryLabel(value, '未知')
-  const normalizeFloorAreaTypeText = (value) => floorAreaTypeLabel(value, '未知')
 
   const ensureUsageOptionsLoaded = async () => {
-    if (usagePickerLoading.value || usagePickerOptions.value.length) return
+    if (usagePickerLoading.value) return
     await loadUsagePickerOptions()
   }
 
@@ -194,22 +199,16 @@ export function useCalibrationRoomUsageEditor({
     filterAndRankUsageOptions(usagePickerOptions.value, usagePickerKeyword.value)
   )
 
-  const loadUsagePickerOptions = async () => {
+  const loadUsagePickerOptions = async ({ force = false } = {}) => {
+    if (!force && knownList.value !== null) {
+      usagePickerOptions.value = mapUsageConfigToPickerOptions(knownList.value)
+      return
+    }
+
     usagePickerLoading.value = true
     try {
-      const res = await axios.get('/api/usage-config/list', { params: { _t: Date.now() } })
-      if (res.data?.code !== 200) {
-        usagePickerOptions.value = []
-        return
-      }
-      usagePickerOptions.value = (res.data?.data || []).map((item) => ({
-        id: item.id,
-        usagePattern: item.usagePattern || '-',
-        usageCategory: String(item.usageCategory || '').toUpperCase(),
-        floorAreaType: String(item.floorAreaType || '').toUpperCase(),
-        usageCategoryText: normalizeUsageCategoryText(item.usageCategory),
-        floorAreaTypeText: normalizeFloorAreaTypeText(item.floorAreaType),
-      }))
+      await loadKnown({ force })
+      usagePickerOptions.value = mapUsageConfigToPickerOptions(knownList.value ?? [])
     } catch (error) {
       console.error('获取用途映射失败:', error)
       ElMessage.error('获取用途映射失败，请稍后重试')
@@ -300,7 +299,8 @@ export function useCalibrationRoomUsageEditor({
 
       ElMessage.success('新增用途成功')
       createUsageDialogVisible.value = false
-      await loadUsagePickerOptions()
+      invalidateUsageConfigListCache()
+      await loadUsagePickerOptions({ force: true })
 
       const created = usagePickerOptions.value.find(
         (item) =>

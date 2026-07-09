@@ -50,7 +50,7 @@ const routes = [
         path: 'fields',
         name: 'FieldManagement',
         component: () => import('../views/FieldManagement.vue'),
-        meta: { title: '土地类型管理' },
+        meta: { title: '土地类型管理', keepAlive: true },
       },
       {
         path: 'task-pool',
