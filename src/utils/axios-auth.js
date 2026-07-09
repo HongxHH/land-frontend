@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { clearAuth, getToken, SA_TOKEN_HEADER_NAME } from '@/utils/auth-token'
+import { savePostLoginRedirect } from '@/utils/auth-redirect.js'
 import { getPermissionDeniedMessage, isForbiddenApiPayload } from '@/utils/apiErrorMessage'
 import logger from '@/utils/logger'
 
@@ -34,10 +35,11 @@ function createRequestId() {
 }
 
 function redirectToLogin() {
-  const path = window.location?.pathname || ''
-  if (path.includes('/login') || path.includes('/register')) {
+  const path = `${window.location?.pathname || ''}${window.location?.search || ''}`
+  if (path.startsWith('/login') || path.startsWith('/register')) {
     return
   }
+  savePostLoginRedirect(path)
   clearAuth()
   window.location.href = '/login'
 }

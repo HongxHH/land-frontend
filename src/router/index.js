@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { isLoggedIn } from '@/utils/auth-token'
 import { getUserSession, setUserSession } from '@/utils/auth-session.js'
 import { isRouteAccessDenied } from '@/router/routeAccess.js'
+import { normalizePostLoginRedirect } from '@/utils/auth-redirect.js'
 
 const routes = [
   {
@@ -87,7 +88,11 @@ async function ensureUserSessionHydrated() {
 // 路由守卫：登录态 + 用户管理页权限（与后端 @SaCheckRole 对齐）
 router.beforeEach(async (to, from, next) => {
   if (!PUBLIC_ROUTE_NAMES.includes(to.name) && !isLoggedIn()) {
-    next({ name: 'Login' })
+    const redirect = normalizePostLoginRedirect(to.fullPath)
+    next({
+      name: 'Login',
+      query: redirect ? { redirect } : {},
+    })
     return
   }
   if (!PUBLIC_ROUTE_NAMES.includes(to.name)) {

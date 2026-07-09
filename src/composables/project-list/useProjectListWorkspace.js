@@ -43,6 +43,41 @@ export function useProjectListWorkspace({
   let projectOptionsLoadingPromise = null
   let deepLinkAuditOpening = false
   let auditReturnNavigating = false
+  let syncingWorkspaceRoute = false
+
+  const buildWorkspaceRouteQuery = (projectId, tab) => {
+    const nextQuery = { ...route.query }
+    const pid = String(projectId || '').trim()
+    if (pid) nextQuery.projectId = pid
+    else delete nextQuery.projectId
+
+    const tabName = String(tab || 'archives').trim()
+    if (tabName && tabName !== 'archives') nextQuery.tab = tabName
+    else delete nextQuery.tab
+
+    return nextQuery
+  }
+
+  const isSameWorkspaceRouteQuery = (nextQuery) => {
+    const sameProject =
+      String(route.query.projectId || '') === String(nextQuery.projectId || '')
+    const sameTab =
+      String(route.query.tab || 'archives') === String(nextQuery.tab || 'archives')
+    return sameProject && sameTab
+  }
+
+  const syncWorkspaceToRoute = () => {
+    if (!pageRouteActive.value || projectWorkspaceBootstrapping.value || auditReturnNavigating) {
+      return
+    }
+    const nextQuery = buildWorkspaceRouteQuery(filterProject.value, activeTab.value)
+    if (isSameWorkspaceRouteQuery(nextQuery)) return
+
+    syncingWorkspaceRoute = true
+    router.replace({ query: nextQuery }).finally(() => {
+      syncingWorkspaceRoute = false
+    })
+  }
 
   const handleAuditReturnNavigation = () => {
     const returnTo = String(route.query.returnTo || '').trim()
@@ -254,6 +289,9 @@ export function useProjectListWorkspace({
       })
       resetRefreshCdStatus()
     }
+    if (!projectWorkspaceBootstrapping.value) {
+      syncWorkspaceToRoute()
+    }
   })
 
   watch(
@@ -282,12 +320,26 @@ export function useProjectListWorkspace({
   watch(
     () => route.query.projectId,
     async (projectId) => {
+      if (syncingWorkspaceRoute) return
       const pid = String(projectId || '')
       if (!pid) return
       if (filterProject.value !== pid) {
         filterProject.value = pid
       }
       await handleGlobalSearch()
+    }
+  )
+
+  watch(
+    () => route.query.tab,
+    (tab) => {
+      if (syncingWorkspaceRoute) return
+      if (String(route.query.fromAuditReturn || '') === '1') return
+      const tabName = resolveProjectWorkspaceTab(String(tab || ''))
+      if (!tab || !isProjectWorkspaceTab(tabName)) return
+      if (activeTab.value !== tabName) {
+        activeTab.value = tabName
+      }
     }
   )
 
@@ -304,6 +356,7 @@ export function useProjectListWorkspace({
   )
 
   watch(activeTab, async (tab) => {
+    syncWorkspaceToRoute()
     if (!currentProjectInfo.id) return
     if (tab === 'contractLandEdit' || tab === 'summary') {
       await loadActiveTabData(currentProjectInfo.id)
@@ -399,6 +452,7 @@ export function useProjectListWorkspace({
       }
     } finally {
       projectWorkspaceBootstrapping.value = false
+      syncWorkspaceToRoute()
     }
   })
 

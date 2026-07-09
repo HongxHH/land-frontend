@@ -43,7 +43,8 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { resolvePostLoginRedirect } from '@/utils/auth-redirect.js'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import { setToken } from '@/utils/auth-token'
@@ -51,6 +52,7 @@ import { setUserSession } from '@/utils/auth-session.js'
 import { fetchUnreadStationNotificationsAfterLogin } from '@/services/station-notification.service'
 import { User, Lock } from '@element-plus/icons-vue'
 
+const route = useRoute()
 const router = useRouter()
 const loginFormRef = ref(null)
 const isLoading = ref(false)
@@ -99,7 +101,8 @@ const handleLogin = async () => {
       /* 未读预热失败不影响登录 */
     }
     ElMessage.success('登录成功')
-    router.push('/')
+    const target = resolvePostLoginRedirect(route.query.redirect)
+    await router.push(target || '/')
   } catch (e) {
     const msg = e.response?.data?.msg || e.message || '登录失败'
     ElMessage.error(msg)
