@@ -95,6 +95,7 @@
       <template v-else>
         <div ref="tableBodyHostRef" class="table-body-host">
           <el-table
+            ref="tableRef"
             class="archive-folder-file-table"
             :data="archiveFiles"
             stripe
@@ -103,9 +104,15 @@
             row-key="id"
             scrollbar-always-on
             :row-class-name="archiveFileTableRowClassName"
-            @selection-change="(rows) => emit('selection-change', rows)"
+            @selection-change="handleTableSelectionChange"
           >
-            <el-table-column type="selection" width="48" align="center" :resizable="false" />
+            <el-table-column
+              type="selection"
+              width="48"
+              align="center"
+              :resizable="false"
+              reserve-selection
+            />
             <el-table-column
               v-if="showThumbnailColumn"
               label="缩略图"
@@ -341,7 +348,13 @@
         </div>
 
         <div class="pager-row">
-          <span class="file-count">共 {{ fileTotal }} 个文件，已选 {{ selectedCount }} 个</span>
+          <span class="file-count">
+            共 {{ fileTotal }} 个文件，已选 {{ selectedCount }} 个<span
+              v-if="hasCrossPageSelection"
+              class="file-count-cross-page"
+              >（跨页）</span
+            >
+          </span>
           <el-pagination
             background
             layout="sizes, prev, pager, next"
@@ -359,6 +372,7 @@
 </template>
 
 <script setup>
+import { nextTick, ref, watch } from 'vue'
 import { Picture, Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 import {
@@ -387,6 +401,8 @@ const props = defineProps({
   archiveFiles: { type: Array, default: () => [] },
   fileTotal: { type: Number, default: 0 },
   selectedCount: { type: Number, default: 0 },
+  selectedRowIds: { type: Array, default: () => [] },
+  hasCrossPageSelection: { type: Boolean, default: false },
   showThumbnailColumn: { type: Boolean, default: true },
   canBatchParse: { type: Boolean, default: false },
   canBatchDelete: { type: Boolean, default: false },
@@ -436,6 +452,41 @@ function onAuditSlotClick(row) {
 
 const verifyStatusOptions = ARCHIVE_VERIFY_STATUS_OPTIONS
 const fileStateOptions = ARCHIVE_FILE_STATE_OPTIONS
+
+const tableRef = ref(null)
+let restoringSelection = false
+
+const restoreTableSelection = async () => {
+  if (props.fileLoading) return
+  await nextTick()
+  const table = tableRef.value
+  if (!table || !props.archiveFiles.length) return
+
+  const selectedSet = new Set(props.selectedRowIds.map((id) => String(id)))
+  restoringSelection = true
+  try {
+    for (const row of props.archiveFiles) {
+      const id = String(row?.id ?? '')
+      if (!id) continue
+      table.toggleRowSelection(row, selectedSet.has(id))
+    }
+  } finally {
+    restoringSelection = false
+  }
+}
+
+const handleTableSelectionChange = (rows) => {
+  if (restoringSelection) return
+  emit('selection-change', rows)
+}
+
+watch(
+  () => [props.archiveFiles, props.fileLoading, props.selectedRowIds],
+  () => {
+    restoreTableSelection()
+  },
+  { flush: 'post' }
+)
 
 const {
   tableWrapRef,
@@ -688,6 +739,10 @@ defineExpose({
 .file-count {
   color: #607286;
   font-size: var(--archive-ui-font-size);
+}
+
+.file-count-cross-page {
+  color: #1f4e79;
 }
 
 :deep(.pager-row .el-pagination) {

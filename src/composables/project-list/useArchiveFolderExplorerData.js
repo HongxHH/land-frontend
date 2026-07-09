@@ -31,7 +31,7 @@ export function useArchiveFolderExplorerData(deps) {
 
   const archiveList = ref([])
   const archiveFiles = ref([])
-  const selectedRows = ref([])
+  const selectedRowMap = ref(new Map())
   const fileTotal = ref(0)
   const selectedArchiveId = ref(null)
   const selectedArchiveName = ref('')
@@ -65,6 +65,18 @@ export function useArchiveFolderExplorerData(deps) {
   const showThumbnailColumn = computed(
     () => String(selectedArchive.value?.kind || '').toUpperCase() !== 'PROJECT_PARTY_SURVEY_SUMMARY'
   )
+  const selectedRows = computed(() => Array.from(selectedRowMap.value.values()))
+  const selectedCount = computed(() => selectedRowMap.value.size)
+  const selectedRowIds = computed(() => Array.from(selectedRowMap.value.keys()))
+  const hasCrossPageSelection = computed(() => {
+    if (!selectedRowMap.value.size) return false
+    const currentPageIds = new Set(
+      archiveFiles.value
+        .map((row) => String(getFileRecordId(row) || ''))
+        .filter(Boolean)
+    )
+    return selectedRowIds.value.some((id) => !currentPageIds.has(id))
+  })
   const canBatchParse = computed(() =>
     selectedRows.value.some((row) =>
       ['WAITING_PARSE', 'PARSE_FAIL', 'PARSE_COMPLETE'].includes(row.fileState)
@@ -93,6 +105,52 @@ export function useArchiveFolderExplorerData(deps) {
   const getFileRecordId = getArchiveFileRecordId
 
   const applyArchiveFileRecords = (records) => sortArchiveFilesVerifyFailedFirst(records)
+
+  const clearSelection = () => {
+    selectedRowMap.value = new Map()
+  }
+
+  const refreshSelectedRowSnapshots = () => {
+    if (!selectedRowMap.value.size) return
+    const nextMap = new Map(selectedRowMap.value)
+    let changed = false
+    for (const row of archiveFiles.value) {
+      const id = String(getFileRecordId(row) || '')
+      if (!id || !nextMap.has(id)) continue
+      nextMap.set(id, row)
+      changed = true
+    }
+    if (changed) selectedRowMap.value = nextMap
+  }
+
+  const removeSelectedRowById = (fileId) => {
+    const id = String(fileId || '')
+    if (!id || !selectedRowMap.value.has(id)) return
+    const nextMap = new Map(selectedRowMap.value)
+    nextMap.delete(id)
+    selectedRowMap.value = nextMap
+  }
+
+  const mergePageSelection = (pageSelectedRows) => {
+    const currentPageIds = archiveFiles.value
+      .map((row) => String(getFileRecordId(row) || ''))
+      .filter(Boolean)
+    const pageSelectedIdSet = new Set(
+      pageSelectedRows.map((row) => String(getFileRecordId(row) || '')).filter(Boolean)
+    )
+    const nextMap = new Map(selectedRowMap.value)
+    for (const id of currentPageIds) {
+      if (pageSelectedIdSet.has(id)) {
+        const row =
+          pageSelectedRows.find((item) => String(getFileRecordId(item)) === id) ||
+          archiveFiles.value.find((item) => String(getFileRecordId(item)) === id)
+        if (row) nextMap.set(id, row)
+      } else {
+        nextMap.delete(id)
+      }
+    }
+    selectedRowMap.value = nextMap
+  }
 
   const stopFileStatePolling = () => {
     if (fileStatePollTimer) {
@@ -156,7 +214,7 @@ export function useArchiveFolderExplorerData(deps) {
     selectedArchiveId.value = null
     selectedArchiveName.value = ''
     archiveFiles.value = []
-    selectedRows.value = []
+    clearSelection()
     fileTotal.value = 0
     resetFileQuery()
   }
@@ -173,7 +231,7 @@ export function useArchiveFolderExplorerData(deps) {
     const projectId = toValue(deps.projectId)
     if (!projectId || !selectedArchiveId.value) {
       archiveFiles.value = []
-      selectedRows.value = []
+      clearSelection()
       fileTotal.value = 0
       return
     }
@@ -193,8 +251,8 @@ export function useArchiveFolderExplorerData(deps) {
       const isFresh = Date.now() - Number(cached?.cachedAt || 0) <= ARCHIVE_CACHE_TTL
       if (isFresh) {
         archiveFiles.value = applyArchiveFileRecords(cached.records)
-        selectedRows.value = []
         fileTotal.value = cached.total
+        refreshSelectedRowSnapshots()
         return
       }
     }
@@ -223,8 +281,8 @@ export function useArchiveFolderExplorerData(deps) {
       const parsed = normalizeArchiveQueryResult(res.data?.data)
       const records = applyArchiveFileRecords(parsed.records)
       archiveFiles.value = records
-      selectedRows.value = []
       fileTotal.value = parsed.total
+      refreshSelectedRowSnapshots()
       archiveQueryCache.set(queryKey, {
         records,
         total: parsed.total,
@@ -235,7 +293,7 @@ export function useArchiveFolderExplorerData(deps) {
       if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return
       console.error('查询归档文件失败:', error)
       archiveFiles.value = []
-      selectedRows.value = []
+      clearSelection()
       fileTotal.value = 0
       ElMessage.error('查询归档文件失败，请稍后重试')
     } finally {
@@ -273,6 +331,9 @@ export function useArchiveFolderExplorerData(deps) {
           archiveList.value.find((item) => item.id === oldSelected) ||
           archiveList.value.find((item) => item.id === initialArchiveIdNum) ||
           archiveList.value[0]
+        if (targetArchive.id !== oldSelected) {
+          clearSelection()
+        }
         selectedArchiveId.value = targetArchive.id
         selectedArchiveName.value = targetArchive.name
         queryForm.pageNum = 1
@@ -295,6 +356,7 @@ export function useArchiveFolderExplorerData(deps) {
   }
 
   const selectArchiveForAudit = async (archiveId, archiveName) => {
+    clearSelection()
     selectedArchiveId.value = archiveId
     selectedArchiveName.value = archiveName || ''
     queryForm.pageNum = 1
@@ -345,18 +407,19 @@ export function useArchiveFolderExplorerData(deps) {
     if (!data?.archiveId) return
     selectedArchiveId.value = data.archiveId
     selectedArchiveName.value = data.name
-    selectedRows.value = []
+    clearSelection()
     queryForm.pageNum = 1
     deps.syncUploadContextByArchive?.()
     fetchArchiveFiles()
   }
 
   const handleSelectionChange = (rows) => {
-    selectedRows.value = rows
+    mergePageSelection(rows)
   }
 
   const triggerAutoQuery = () => {
     if (!selectedArchiveId.value) return
+    clearSelection()
     queryForm.pageNum = 1
     fetchArchiveFiles()
   }
@@ -376,6 +439,7 @@ export function useArchiveFolderExplorerData(deps) {
 
   const handleSearch = () => {
     if (!selectedArchiveId.value) return
+    clearSelection()
     queryForm.pageNum = 1
     fetchArchiveFiles()
   }
@@ -385,6 +449,7 @@ export function useArchiveFolderExplorerData(deps) {
     autoQuerySuppressed = true
     resetFileQuery()
     autoQuerySuppressed = false
+    clearSelection()
     fetchArchiveFiles()
   }
 
@@ -461,6 +526,7 @@ export function useArchiveFolderExplorerData(deps) {
       const res = await deleteFileById(fileId)
       if (res.data?.code === 200) {
         ElMessage.success(res.data?.msg || '文件删除成功')
+        removeSelectedRowById(fileId)
         fetchArchiveFiles({ force: true })
       } else {
         ElMessage.warning(res.data?.msg || '文件删除失败')
@@ -500,6 +566,7 @@ export function useArchiveFolderExplorerData(deps) {
     try {
       await Promise.all(ids.map((id) => deleteFileById(id)))
       ElMessage.success('批量删除完成')
+      clearSelection()
       await fetchArchiveFiles({ force: true })
     } catch (error) {
       console.error('批量删除失败:', error)
@@ -534,6 +601,7 @@ export function useArchiveFolderExplorerData(deps) {
     try {
       await Promise.all(ids.map((id) => parseFileById(id)))
       ElMessage.success('批量解析任务已提交')
+      clearSelection()
       await fetchArchiveFiles({ force: true })
     } catch (error) {
       console.error('批量解析失败:', error)
@@ -548,6 +616,7 @@ export function useArchiveFolderExplorerData(deps) {
     if (!targetId || !Array.isArray(archiveList.value) || archiveList.value.length === 0) return
     const target = archiveList.value.find((item) => Number(item.id) === targetId)
     if (!target || Number(selectedArchiveId.value) === targetId) return
+    clearSelection()
     selectedArchiveId.value = target.id
     selectedArchiveName.value = target.name
     queryForm.pageNum = 1
@@ -572,6 +641,9 @@ export function useArchiveFolderExplorerData(deps) {
     archiveList,
     archiveFiles,
     selectedRows,
+    selectedCount,
+    selectedRowIds,
+    hasCrossPageSelection,
     fileTotal,
     selectedArchiveId,
     selectedArchiveName,

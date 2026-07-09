@@ -44,7 +44,9 @@
           :file-loading="fileLoading"
           :archive-files="archiveFiles"
           :file-total="fileTotal"
-          :selected-count="selectedRows.length"
+          :selected-count="selectedCount"
+          :selected-row-ids="selectedRowIds"
+          :has-cross-page-selection="hasCrossPageSelection"
           :show-thumbnail-column="showThumbnailColumn"
           :can-batch-parse="canBatchParse"
           :can-batch-delete="canBatchDelete"
@@ -197,7 +199,9 @@ const {
   batchParseLoading,
   archiveList,
   archiveFiles,
-  selectedRows,
+  selectedCount,
+  selectedRowIds,
+  hasCrossPageSelection,
   fileTotal,
   selectedArchiveId,
   selectedArchiveName,

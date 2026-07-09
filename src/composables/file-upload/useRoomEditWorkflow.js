@@ -9,6 +9,7 @@ import {
   searchMissingUsageByPages as searchMissingUsageByPagesRaw,
   searchRoomInfosByPages as searchRoomInfosByPagesRaw,
 } from '@/composables/file-upload/roomInfoPageSearch.js'
+import { normalizeRoomField, validateRoomForCreate } from '@/utils/roomInfoValidation.js'
 
 const SAVE_CONCURRENCY = 5
 const MAX_DIRTY_ROWS = 200
@@ -101,11 +102,6 @@ export function useRoomEditWorkflow(options = {}) {
 
   const syncRoomInfoHasMore = (loadedCount, total) => loadedCount < total
 
-  const normalizeDisplayField = (value) => {
-    const text = String(value ?? '').trim()
-    return text === '-' ? '' : text
-  }
-
   const resolveFloorAreaTypeForUpdate = (row, preset) => {
     const text = String(row.floorAreaType || '').trim()
     if (text === '计容') return 'BUILDABLE'
@@ -121,18 +117,28 @@ export function useRoomEditWorkflow(options = {}) {
 
     return {
       id: Number(row.id),
-      roomLevel: normalizeDisplayField(row.roomLevel),
-      roomNumber: normalizeDisplayField(row.roomNumber),
+      roomLevel: normalizeRoomField(row.roomLevel),
+      roomNumber: normalizeRoomField(row.roomNumber),
       buildingArea: Number(row.buildingArea || 0),
       innerArea: Number(row.innerArea || 0),
       balconyArea: Number(row.balconyArea || 0),
       sharedArea: Number(row.sharedArea || 0),
       roomUsage,
-      remark: normalizeDisplayField(row.remark),
+      remark: normalizeRoomField(row.remark),
       isCalculate: Number(row.isCalculate || 0),
       usageCategory: preset.usageCategory,
       floorAreaType: resolveFloorAreaTypeForUpdate(row, preset),
     }
+  }
+
+  const collectKnownRoomRows = () => {
+    const rows = [...(roomInfoData?.value || [])]
+    for (const row of offPageRowEdits.values()) {
+      if (!rows.some((item) => String(item.id) === String(row.id))) {
+        rows.push(row)
+      }
+    }
+    return rows
   }
 
   const persistRoomRow = async (
@@ -141,8 +147,9 @@ export function useRoomEditWorkflow(options = {}) {
   ) => {
     const sourceRow = ensureEditableRow(row)
     if (!sourceRow?.id) {
-      if (!silentError) ElMessage.warning('缺少户室ID，无法保存')
-      return false
+      const message = '缺少户室ID，无法保存'
+      if (!silentError) ElMessage.warning(message)
+      return { ok: false, message }
     }
 
     try {
@@ -151,18 +158,26 @@ export function useRoomEditWorkflow(options = {}) {
         buildRoomInfoUpdateDTO(sourceRow)
       )
       if (res.data?.code !== 200) {
-        if (!silentError) ElMessage.error(res.data?.msg || '保存失败')
-        return false
+        const message = res.data?.msg || '保存失败'
+        if (!silentError) ElMessage.error(message)
+        return { ok: false, message }
       }
-      if (skipReload) return true
-      return reloadRoomAndSummaryData({
+      if (skipReload) return { ok: true }
+      const reloadOk = await reloadRoomAndSummaryData({
         refreshReport,
         silentRefresh,
       })
+      if (!reloadOk) {
+        const message = '保存成功但刷新列表失败'
+        if (!silentError) ElMessage.error(message)
+        return { ok: false, message }
+      }
+      return { ok: true }
     } catch (error) {
       console.error('保存户室数据失败:', error)
-      if (!silentError) ElMessage.error(error?.response?.data?.msg || '保存失败，请重试')
-      return false
+      const message = error?.response?.data?.msg || '保存失败，请重试'
+      if (!silentError) ElMessage.error(message)
+      return { ok: false, message }
     }
   }
 
@@ -512,8 +527,8 @@ export function useRoomEditWorkflow(options = {}) {
     const snapshot = originalByRowId.get(id)
     if (!row || !isRowModified(row, snapshot)) {
       originalByRowId.delete(id)
-      bumpDirty()
     }
+    bumpDirty()
   }
 
   const getDirtyRowIds = () => {
@@ -522,11 +537,8 @@ export function useRoomEditWorkflow(options = {}) {
       const row = findRoomRowById(id)
       if (row && isRowModified(row, snapshot)) {
         ids.push(id)
-      } else {
-        originalByRowId.delete(id)
       }
     }
-    if (ids.length !== originalByRowId.size) bumpDirty()
     return ids
   }
 
@@ -686,7 +698,7 @@ export function useRoomEditWorkflow(options = {}) {
     try {
       const results = await runPool(dirtyIds, SAVE_CONCURRENCY, async (id) => {
         const row = findRoomRowById(id)
-        if (!row) return false
+        if (!row) return { ok: false, message: '户室数据不存在' }
         return persistRoomRow(row, {
           refreshReport: false,
           skipReload: true,
@@ -694,14 +706,20 @@ export function useRoomEditWorkflow(options = {}) {
         })
       })
 
-      const failedCount = results.filter((ok) => !ok).length
-      if (failedCount > 0) {
+      const failures = results.filter((result) => !result?.ok)
+      if (failures.length > 0) {
         await reloadRoomAndSummaryData({
           refreshReport: false,
           silentRefresh: true,
           resetToFirstPage: true,
         })
-        ElMessage.error(`${failedCount} 条保存失败，请检查后重试`)
+        const reasons = [...new Set(failures.map((item) => item.message).filter(Boolean))]
+        const detail = reasons.slice(0, 3).join('；')
+        ElMessage.error(
+          detail
+            ? `${failures.length} 条保存失败：${detail}${reasons.length > 3 ? '…' : ''}`
+            : `${failures.length} 条保存失败，请检查后重试`
+        )
         return false
       }
 
@@ -733,14 +751,20 @@ export function useRoomEditWorkflow(options = {}) {
 
     roomCreateLoading.value = true
     try {
+      const validation = validateRoomForCreate(payload, collectKnownRoomRows())
+      if (!validation.ok) {
+        ElMessage.warning(validation.message)
+        return false
+      }
+
       const preset = resolveUsagePresetByCategory(payload.usageCategory)
       const body = {
         projectId,
         fileRecordId,
         surveyReportInfoId: surveyReportId,
         usageCategory: preset.usageCategory,
-        roomLevel: payload.roomLevel || '',
-        roomNumber: payload.roomNumber || '',
+        roomLevel: normalizeRoomField(payload.roomLevel),
+        roomNumber: normalizeRoomField(payload.roomNumber),
         buildingArea: Number(payload.buildingArea || 0),
         innerArea: Number(payload.innerArea || 0),
         balconyArea: Number(payload.balconyArea || 0),

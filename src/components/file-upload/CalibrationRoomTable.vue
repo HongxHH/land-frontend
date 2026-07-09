@@ -81,10 +81,10 @@
       >
         <template #default="{ row }">
           <RoomTableEditableCell
-            :row="row"
+            :row="resolveEditRow(row)"
             field="roomLevel"
-            :display="row.roomLevel || '-'"
-            :display-title="row.roomLevel || '-'"
+            :display="resolveEditRow(row).roomLevel || '-'"
+            :display-title="resolveEditRow(row).roomLevel || '-'"
             :active="isCellActive(row, 'roomLevel')"
             placeholder="楼层"
             @activate="startCellEdit(row, 'roomLevel')"
@@ -102,10 +102,10 @@
       >
         <template #default="{ row }">
           <RoomTableEditableCell
-            :row="row"
+            :row="resolveEditRow(row)"
             field="roomNumber"
-            :display="row.roomNumber || '-'"
-            :display-title="row.roomNumber || '-'"
+            :display="resolveEditRow(row).roomNumber || '-'"
+            :display-title="resolveEditRow(row).roomNumber || '-'"
             :active="isCellActive(row, 'roomNumber')"
             placeholder="房号"
             @activate="startCellEdit(row, 'roomNumber')"
@@ -123,10 +123,10 @@
       >
         <template #default="{ row }">
           <RoomTableEditableCell
-            :row="row"
+            :row="resolveEditRow(row)"
             field="buildingArea"
-            :display="row.buildingArea || '0.00'"
-            :display-title="row.buildingArea || '0.00'"
+            :display="resolveEditRow(row).buildingArea || '0.00'"
+            :display-title="resolveEditRow(row).buildingArea || '0.00'"
             :active="isCellActive(row, 'buildingArea')"
             input-type="number"
             @activate="startCellEdit(row, 'buildingArea')"
@@ -144,10 +144,10 @@
       >
         <template #default="{ row }">
           <RoomTableEditableCell
-            :row="row"
+            :row="resolveEditRow(row)"
             field="innerArea"
-            :display="row.innerArea || '0.00'"
-            :display-title="row.innerArea || '0.00'"
+            :display="resolveEditRow(row).innerArea || '0.00'"
+            :display-title="resolveEditRow(row).innerArea || '0.00'"
             :active="isCellActive(row, 'innerArea')"
             input-type="number"
             @activate="startCellEdit(row, 'innerArea')"
@@ -165,10 +165,10 @@
       >
         <template #default="{ row }">
           <RoomTableEditableCell
-            :row="row"
+            :row="resolveEditRow(row)"
             field="balconyArea"
-            :display="row.balconyArea || '0.00'"
-            :display-title="row.balconyArea || '0.00'"
+            :display="resolveEditRow(row).balconyArea || '0.00'"
+            :display-title="resolveEditRow(row).balconyArea || '0.00'"
             :active="isCellActive(row, 'balconyArea')"
             input-type="number"
             @activate="startCellEdit(row, 'balconyArea')"
@@ -186,10 +186,10 @@
       >
         <template #default="{ row }">
           <RoomTableEditableCell
-            :row="row"
+            :row="resolveEditRow(row)"
             field="sharedArea"
-            :display="row.sharedArea || '0.00'"
-            :display-title="row.sharedArea || '0.00'"
+            :display="resolveEditRow(row).sharedArea || '0.00'"
+            :display-title="resolveEditRow(row).sharedArea || '0.00'"
             :active="isCellActive(row, 'sharedArea')"
             input-type="number"
             @activate="startCellEdit(row, 'sharedArea')"
@@ -328,10 +328,10 @@
       >
         <template #default="{ row }">
           <RoomTableEditableCell
-            :row="row"
+            :row="resolveEditRow(row)"
             field="remark"
-            :display="row.remark || '-'"
-            :display-title="row.remark || '-'"
+            :display="resolveEditRow(row).remark || '-'"
+            :display-title="resolveEditRow(row).remark || '-'"
             :active="isCellActive(row, 'remark')"
             placeholder="备注"
             @activate="startCellEdit(row, 'remark')"
@@ -449,12 +449,12 @@
       </el-form-item>
       <el-row :gutter="12">
         <el-col :span="12">
-          <el-form-item label="楼层">
+          <el-form-item label="楼层" required>
             <el-input v-model="createRoomForm.roomLevel" placeholder="如 1层" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="房号">
+          <el-form-item label="房号" required>
             <el-input v-model="createRoomForm.roomNumber" placeholder="如 101" />
           </el-form-item>
         </el-col>
@@ -859,6 +859,8 @@ watch(openRef, (open) => {
 onBeforeUnmount(() => {
   clearRoomToolbarRefreshCooldownTimer()
 })
+
+const resolveEditRow = (row) => props.getRoomRowById?.(row?.id) ?? row
 
 const getRoomRowClassName = ({ row }) => {
   const classes = []
