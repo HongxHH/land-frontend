@@ -24,7 +24,7 @@ export function useParseActions({ startPolling }) {
             ElMessage.error('无法连接到解析服务')
           })
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
   const cancelProcessing = (row) => {
@@ -39,15 +39,21 @@ export function useParseActions({ startPolling }) {
     )
       .then(async () => {
         try {
-          await cancelParseByFileId(row.rawId, 'user_cancel')
-          ElMessage.success(`已取消文件 "${row.name}" 的解析任务`)
-          row.status = 'WAITING_PARSE'
+          const res = await cancelParseByFileId(row.rawId, 'user_cancel')
+          if (res.data?.code === 200) {
+            ElMessage.success(res.data?.msg || `已取消文件 "${row.name}" 的解析任务`)
+            row.status = 'WAITING_PARSE'
+            startPolling?.()
+            return
+          }
+          ElMessage.warning(res.data?.msg || '取消解析失败')
+          startPolling?.()
         } catch (err) {
           console.error('取消解析失败:', err)
           ElMessage.error(err.response?.data?.msg || '取消解析任务失败，请重试')
         }
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
   return {
