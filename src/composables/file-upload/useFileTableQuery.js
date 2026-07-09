@@ -23,6 +23,7 @@ function mapApiFileToTableRow(item) {
     phase: item.phase ?? null,
     fileContextType: item.fileContextType || null,
     autoParseQueuedAt: item.autoParseQueuedAt ?? null,
+    autoParseSuppressed: Boolean(item.autoParseSuppressed),
     status: item.fileState || 'WAITING_PARSE',
     isVerified: item.isVerified,
     errorMessage: item.parseMessage,

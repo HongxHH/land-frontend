@@ -51,10 +51,13 @@ export const FILE_STATE_FILTER_OPTIONS = BACKEND_FILE_STATE_CODES.map((value) =>
   label: FILE_STATE_FILTER_LABELS[value] ?? FILE_STATE_LABELS[value] ?? value
 }))
 
-/** @typedef {{ fileContextType?: string }} FileStateLabelContext */
+/** @typedef {{ fileContextType?: string, autoParseSuppressed?: boolean }} FileStateLabelContext */
 
 function resolveWaitingParseLabel(context) {
   if (!isAutoParseFileContext(context?.fileContextType)) {
+    return FILE_STATE_LABELS.WAITING_PARSE
+  }
+  if (context?.autoParseSuppressed) {
     return FILE_STATE_LABELS.WAITING_PARSE
   }
   return '等待自动解析'
@@ -81,15 +84,20 @@ export function getFileStateLabel(state, context) {
 }
 
 /**
- * @param {{ fileState?: string, status?: string, fileContextType?: string }} row
+ * @param {{ fileState?: string, status?: string, fileContextType?: string, autoParseSuppressed?: boolean }} row
  */
 export function getParseButtonText(row) {
   const state = row?.fileState ?? row?.status
   if (state === 'PARSE_FAIL') return '重试解析'
   if (state === 'PARSE_COMPLETE') return '重新解析'
-  if (state === 'WAITING_PARSE' && isAutoParseFileContext(row?.fileContextType)) {
+  if (
+    state === 'WAITING_PARSE'
+    && isAutoParseFileContext(row?.fileContextType)
+    && !row?.autoParseSuppressed
+  ) {
     return '提前解析'
   }
+  if (state === 'WAITING_PARSE') return '解析'
   return '开始解析'
 }
 

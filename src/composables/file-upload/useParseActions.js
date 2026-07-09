@@ -43,6 +43,7 @@ export function useParseActions({ startPolling }) {
           if (res.data?.code === 200) {
             ElMessage.success(res.data?.msg || `已取消文件 "${row.name}" 的解析任务`)
             row.status = 'WAITING_PARSE'
+            row.autoParseSuppressed = true
             startPolling?.()
             return
           }

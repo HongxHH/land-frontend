@@ -86,6 +86,7 @@
                 statusMap[row.status]?.text ||
                 getFileStateLabel(row.status, {
                   fileContextType: row.fileContextType,
+                  autoParseSuppressed: row.autoParseSuppressed,
                 })
               }}
             </el-tag>
@@ -95,6 +96,7 @@
               statusMap[row.status]?.text ||
               getFileStateLabel(row.status, {
                 fileContextType: row.fileContextType,
+                autoParseSuppressed: row.autoParseSuppressed,
               })
             }}
           </el-tag>
@@ -118,7 +120,7 @@
               type="primary"
               @click="$emit('start-processing', row)"
             >
-              {{ row.status === 'PARSE_FAIL' ? '重试解析' : '开始解析' }}
+              {{ getParseButtonText(row) }}
             </el-button>
             <el-button
               v-if="row.status === 'PARSE_COMPLETE'"
@@ -180,7 +182,7 @@
 
 <script setup>
 import { EditPen, Picture } from '@element-plus/icons-vue'
-import { getFileStateLabel, getFileStateTagType } from '@/utils/fileStatePresent.js'
+import { getFileStateLabel, getFileStateTagType, getParseButtonText } from '@/utils/fileStatePresent.js'
 
 defineProps({
   fileTableData: {
