@@ -211,16 +211,20 @@ export function useProjectListWorkspace({
   const tryConsumeDeepLinkOpenAudit = async () => {
     const fid = String(route.query.openAuditFileId || '').trim()
     const expectPid = String(route.query.projectId || '').trim()
+    const focusUsageName = String(route.query.focusUsageName || '').trim()
     if (!fid || !expectPid) return
     if (String(filterProject.value) !== expectPid) return
     if (!currentProjectInfo.id || String(currentProjectInfo.id) !== expectPid) return
     if (deepLinkAuditOpening) return
     deepLinkAuditOpening = true
     try {
-      const ok = await handleOpenAuditByFileRecordId(fid)
+      const ok = await handleOpenAuditByFileRecordId(
+        focusUsageName ? { fileRecordId: fid, usageName: focusUsageName } : fid
+      )
       if (ok) {
         const q = { ...route.query }
         delete q.openAuditFileId
+        delete q.focusUsageName
         await router.replace({ query: q })
       }
     } finally {
