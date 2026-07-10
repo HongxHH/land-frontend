@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { useUploadDialog } from '@/composables/file-upload/useUploadDialog.js'
@@ -27,8 +27,10 @@ function deferred() {
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 function makeUploadFile(uid) {
-  const raw = new Blob([`file-${uid}`], { type: 'text/plain' })
-  raw.name = `${uid}.txt`
+  const raw = {
+    name: `${uid}.txt`,
+    size: 8,
+  }
   return {
     uid,
     name: raw.name,
@@ -49,9 +51,18 @@ function uploadSuccess(fileId) {
 }
 
 describe('useUploadDialog', () => {
+  const originalFormData = globalThis.FormData
+
   beforeEach(() => {
     vi.clearAllMocks()
     ElMessageBox.confirm.mockResolvedValue()
+    globalThis.FormData = class {
+      append = vi.fn()
+    }
+  })
+
+  afterEach(() => {
+    globalThis.FormData = originalFormData
   })
 
   it('uses the confirmed upload context for every file in a batch', async () => {
