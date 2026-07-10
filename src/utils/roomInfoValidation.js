@@ -55,7 +55,7 @@ export function findDuplicateRoom(existingRows, roomLevel, roomNumber, excludeRo
   return null
 }
 
-export function validateRoomForCreate(form, existingRows) {
+function validateRoomForSave(form, existingRows, excludeRoomId = null) {
   const identity = validateRoomIdentity(form.roomLevel, form.roomNumber)
   if (!identity.ok) return identity
 
@@ -67,11 +67,19 @@ export function validateRoomForCreate(form, existingRows) {
   )
   if (!area.ok) return area
 
-  const duplicate = findDuplicateRoom(existingRows, form.roomLevel, form.roomNumber)
+  const duplicate = findDuplicateRoom(existingRows, form.roomLevel, form.roomNumber, excludeRoomId)
   if (duplicate) {
     const level = normalizeRoomField(form.roomLevel)
     const number = normalizeRoomField(form.roomNumber)
     return { ok: false, message: `已存在相同楼层+房号的户室：${level} / ${number}` }
   }
   return { ok: true }
+}
+
+export function validateRoomForCreate(form, existingRows) {
+  return validateRoomForSave(form, existingRows)
+}
+
+export function validateRoomForUpdate(row, existingRows) {
+  return validateRoomForSave(row, existingRows, row?.id)
 }

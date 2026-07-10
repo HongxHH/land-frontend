@@ -78,18 +78,18 @@ export function useUploadDialog({
     return fileUploadStates.get(uid) || null
   }
 
-  const buildUploadParams = () => ({
+  const createUploadContext = () => ({
     projectId: currentProject.value,
     fileContextType: tempUploadType.value,
     phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : undefined,
   })
 
-  const executeUpload = async (filesToUpload) => {
+  const executeUpload = async (filesToUpload, uploadContext = createUploadContext()) => {
     uploadLoading.value = true
     try {
       const result = await runConcurrentUploads({
         files: filesToUpload,
-        buildParams: buildUploadParams,
+        buildParams: uploadContext,
         concurrency: 4,
         uploadApi,
         onFileState: applyFileState,
@@ -99,8 +99,8 @@ export function useUploadDialog({
             {
               fileId,
               fileName,
-              fileContextType: tempUploadType.value,
-              phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : null,
+              fileContextType: uploadContext.fileContextType,
+              phase: uploadContext.fileContextType === 'SURVEY_REPORT' ? uploadContext.phase : null,
             },
           ])
         },
@@ -132,12 +132,12 @@ export function useUploadDialog({
     }
   }
 
-  const handleRealUpload = async () => {
-    if (!currentProject.value) return ElMessage.warning('请先选择作业项目')
+  const handleRealUpload = async (uploadContext = createUploadContext()) => {
+    if (!uploadContext.projectId) return ElMessage.warning('请先选择作业项目')
     if (tempFiles.value.length === 0) return ElMessage.warning('请至少选择一个文件')
 
     const uploadFilesList = [...tempFiles.value]
-    const result = await executeUpload(uploadFilesList)
+    const result = await executeUpload(uploadFilesList, uploadContext)
 
     if (result.successCount > 0 && result.errorCount === 0) {
       uploadDialogVisible.value = false
@@ -153,9 +153,10 @@ export function useUploadDialog({
   const confirmUpload = () => {
     if (tempFiles.value.length === 0) return ElMessage.warning('请先选择文件')
 
-    const typeName = tempUploadType.value === 'CONTRACT' ? '合同文件' : '实测报告'
+    const uploadContext = createUploadContext()
+    const typeName = uploadContext.fileContextType === 'CONTRACT' ? '合同文件' : '实测报告'
     const projectName =
-      projectOptions.value.find((p) => p.id === currentProject.value)?.name || '未知项目'
+      projectOptions.value.find((p) => p.id === uploadContext.projectId)?.name || '未知项目'
 
     const msg = `
       <div style="text-align: left; font-size: 14px;">
@@ -163,7 +164,7 @@ export function useUploadDialog({
         <ul style="list-style: none; padding-left: 10px; background: #f5f7fa; padding: 10px; border-radius: 4px;">
           <li><strong>文件数量：</strong> <span style="color: #409EFF; font-weight: bold; font-size: 16px;">${tempFiles.value.length}</span> 份</li>
           <li><strong>归属项目：</strong> ${projectName}</li>
-          ${tempUploadType.value === 'SURVEY_REPORT' ? `<li><strong>所属期数：</strong> <span style="color: #E6A23C; font-weight: bold;">第 ${uploadPhase.value} 期</span></li>` : ''}
+          ${uploadContext.fileContextType === 'SURVEY_REPORT' ? `<li><strong>所属期数：</strong> <span style="color: #E6A23C; font-weight: bold;">第 ${uploadContext.phase} 期</span></li>` : ''}
           <li><strong>文件类型：</strong> <span style="color: #F56C6C; font-weight: bold;">${typeName}</span></li>
         </ul>
         <p style="margin-top: 10px; color: #909399; font-size: 12px;">确认后将并发上传，每个文件入库完成后自动开始解析。</p>
@@ -177,7 +178,7 @@ export function useUploadDialog({
       type: 'info',
       center: true,
     })
-      .then(() => handleRealUpload())
+      .then(() => handleRealUpload(uploadContext))
       .catch(() => { })
   }
 

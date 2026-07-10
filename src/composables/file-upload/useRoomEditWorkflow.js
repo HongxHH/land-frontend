@@ -9,7 +9,11 @@ import {
   searchMissingUsageByPages as searchMissingUsageByPagesRaw,
   searchRoomInfosByPages as searchRoomInfosByPagesRaw,
 } from '@/composables/file-upload/roomInfoPageSearch.js'
-import { normalizeRoomField, validateRoomForCreate } from '@/utils/roomInfoValidation.js'
+import {
+  normalizeRoomField,
+  validateRoomForCreate,
+  validateRoomForUpdate,
+} from '@/utils/roomInfoValidation.js'
 
 const SAVE_CONCURRENCY = 5
 const MAX_DIRTY_ROWS = 200
@@ -141,6 +145,8 @@ export function useRoomEditWorkflow(options = {}) {
     return rows
   }
 
+  const validateRoomRowForUpdate = (row) => validateRoomForUpdate(row, collectKnownRoomRows())
+
   const persistRoomRow = async (
     row,
     { refreshReport = true, silentRefresh = true, skipReload = false, silentError = false } = {}
@@ -150,6 +156,12 @@ export function useRoomEditWorkflow(options = {}) {
       const message = '缺少户室ID，无法保存'
       if (!silentError) ElMessage.warning(message)
       return { ok: false, message }
+    }
+
+    const validation = validateRoomRowForUpdate(sourceRow)
+    if (!validation.ok) {
+      if (!silentError) ElMessage.warning(validation.message)
+      return { ok: false, message: validation.message }
     }
 
     try {
@@ -694,6 +706,27 @@ export function useRoomEditWorkflow(options = {}) {
       return false
     }
 
+    const validationFailures = []
+    for (const id of dirtyIds) {
+      const row = findRoomRowById(id)
+      if (!row) {
+        validationFailures.push('户室数据不存在')
+        continue
+      }
+      const validation = validateRoomRowForUpdate(row)
+      if (!validation.ok) validationFailures.push(validation.message)
+    }
+    if (validationFailures.length > 0) {
+      const reasons = [...new Set(validationFailures.filter(Boolean))]
+      const detail = reasons.slice(0, 3).join('；')
+      ElMessage.error(
+        detail
+          ? `${validationFailures.length} 条保存校验失败：${detail}${reasons.length > 3 ? '…' : ''}`
+          : `${validationFailures.length} 条保存校验失败，请检查后重试`
+      )
+      return false
+    }
+
     localBatchUpdateLoading.value = true
     try {
       const results = await runPool(dirtyIds, SAVE_CONCURRENCY, async (id) => {
@@ -747,6 +780,12 @@ export function useRoomEditWorkflow(options = {}) {
     if (!ok) {
       ElMessage.warning('缺少项目/文件/报告信息，无法新增户室')
       return false
+    }
+
+    commitActiveCell()
+    if (hasUnsavedChanges.value) {
+      const canProceed = await confirmDiscardUnsavedChanges()
+      if (!canProceed) return false
     }
 
     roomCreateLoading.value = true
@@ -816,6 +855,13 @@ export function useRoomEditWorkflow(options = {}) {
       })
     } catch {
       return false
+    }
+
+    commitActiveCell()
+    const otherDirtyIds = getDirtyRowIds().filter((id) => id !== String(roomId))
+    if (otherDirtyIds.length > 0) {
+      const canProceed = await confirmDiscardUnsavedChanges()
+      if (!canProceed) return false
     }
 
     roomDeleteLoading.value = true
