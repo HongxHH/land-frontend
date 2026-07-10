@@ -89,7 +89,7 @@ export function useUploadDialog({
     try {
       const result = await runConcurrentUploads({
         files: filesToUpload,
-        buildParams: uploadContext,
+        buildParams: () => uploadContext,
         concurrency: 4,
         uploadApi,
         onFileState: applyFileState,
