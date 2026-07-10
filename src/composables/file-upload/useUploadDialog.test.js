@@ -26,6 +26,13 @@ function deferred() {
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
+async function waitForCallCount(mockFn, expectedCount) {
+  for (let i = 0; i < 20; i += 1) {
+    if (mockFn.mock.calls.length === expectedCount) return
+    await flushPromises()
+  }
+}
+
 function makeUploadFile(uid) {
   const raw = {
     name: `${uid}.txt`,
@@ -88,7 +95,8 @@ describe('useUploadDialog', () => {
     dialog.tempFiles.value = Array.from({ length: 5 }, (_, index) => makeUploadFile(`f-${index}`))
 
     dialog.confirmUpload()
-    await flushPromises()
+    expect(ElMessageBox.confirm).toHaveBeenCalledTimes(1)
+    await waitForCallCount(uploadApi, 4)
 
     expect(uploadApi).toHaveBeenCalledTimes(4)
     currentProject.value = 'project-b'
@@ -96,7 +104,7 @@ describe('useUploadDialog', () => {
     dialog.uploadPhase.value = 2
 
     pendingUploads.slice(0, 4).forEach((pending, index) => pending.resolve(uploadSuccess(index + 1)))
-    await flushPromises()
+    await waitForCallCount(uploadApi, 5)
 
     expect(uploadApi).toHaveBeenCalledTimes(5)
     pendingUploads[4].resolve(uploadSuccess(5))
