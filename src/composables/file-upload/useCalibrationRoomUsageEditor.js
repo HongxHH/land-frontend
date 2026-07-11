@@ -12,7 +12,7 @@ import {
 import {
   mapUsageConfigToPickerOptions,
   useUsageConfigPageCache,
-  invalidateUsageConfigListCache,
+  invalidateUsageConfigPageCaches,
 } from '@/composables/usage-config/useUsageConfigPageCache.js'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 import { validateRoomAreaFields, normalizeRoomAreaForCommit, ROOM_AREA_FIELDS } from '@/utils/roomInfoValidation.js'
@@ -313,7 +313,8 @@ export function useCalibrationRoomUsageEditor({
 
       ElMessage.success('新增用途成功')
       createUsageDialogVisible.value = false
-      invalidateUsageConfigListCache()
+      // 后端会关闭同名 pending；清空两端缓存后再拉已知列表
+      invalidateUsageConfigPageCaches()
       await loadUsagePickerOptions({ force: true })
 
       const created = usagePickerOptions.value.find(

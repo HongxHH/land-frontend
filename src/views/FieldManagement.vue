@@ -314,7 +314,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onActivated, reactive, ref } from 'vue'
+import { computed, nextTick, onActivated, onMounted, reactive, ref } from 'vue'
 import { useSectionCardTableHeight } from '@/composables/field-management/useSectionCardTableHeight.js'
 import { useRouter } from 'vue-router'
 import { Check, Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
@@ -356,10 +356,9 @@ const {
   unknownList,
   knownLoading,
   unknownLoading,
-  loadKnown,
-  loadUnknown,
   refreshAll,
   syncPage,
+  reload,
 } = useUsageConfigPageCache()
 
 const knownSearchKeyword = ref('')
@@ -387,7 +386,15 @@ const {
 const DEFAULT_USAGE_PRIORITY = 100
 const DEFAULT_IS_REGEX = 0
 
-const categoryMap = TARGET_CATEGORY_MAP
+const EMPTY_USAGE_FORM = () => ({
+  usagePattern: '',
+  usageCategory: '',
+  floorAreaType: 'BUILDABLE',
+  priority: DEFAULT_USAGE_PRIORITY,
+  status: '1',
+  remark: '',
+  collectionName: '',
+})
 
 const formRules = reactive({
   usagePattern: [{ required: true, message: '请输入用途匹配模式', trigger: 'blur' }],
@@ -398,26 +405,8 @@ const formRules = reactive({
 const usageCategoryBuildableOptions = USAGE_CATEGORY_BUILDABLE_OPTIONS
 const usageCategoryNonBuildableOptions = USAGE_CATEGORY_NON_BUILDABLE_OPTIONS
 
-const addForm = reactive({
-  usagePattern: '',
-  usageCategory: '',
-  floorAreaType: 'BUILDABLE',
-  priority: DEFAULT_USAGE_PRIORITY,
-  status: '1',
-  remark: '',
-  collectionName: '',
-})
-
-const editForm = reactive({
-  id: '',
-  usagePattern: '',
-  usageCategory: '',
-  floorAreaType: 'BUILDABLE',
-  priority: DEFAULT_USAGE_PRIORITY,
-  status: '1',
-  remark: '',
-  collectionName: '',
-})
+const addForm = reactive(EMPTY_USAGE_FORM())
+const editForm = reactive({ id: '', ...EMPTY_USAGE_FORM() })
 
 const formatTime = (timeStr) => {
   if (!timeStr) return '-'
@@ -490,64 +479,43 @@ const unknownCountText = computed(() => {
 })
 
 const reloadAfterMutation = async (targets) => {
-  const jobs = []
-  if (targets.includes('known')) {
-    jobs.push(
-      loadKnown({ force: true }).catch((error) => {
-        console.error('获取用途配置失败:', error)
-        ElMessage.error('获取用途配置失败，请重试')
-      })
-    )
+  try {
+    await reload(targets)
+  } catch (error) {
+    console.error('刷新用途数据失败:', error)
+    ElMessage.error('刷新列表失败，请重试')
   }
-  if (targets.includes('unknown')) {
-    jobs.push(
-      loadUnknown({ force: true }).catch((error) => {
-        console.error('获取未知用途失败:', error)
-        ElMessage.error('获取未知用途失败，请重试')
-      })
-    )
-  }
-  await Promise.all(jobs)
 }
 
-const syncPageData = ({ silent = false } = {}) =>
-  syncPage({ silent }).catch((error) => {
+const syncPageData = ({ silent = false } = {}) => {
+  const hasCache = knownList.value !== null && unknownList.value !== null
+  const suppressErrorToast = silent && hasCache
+  return syncPage({ silent }).catch((error) => {
     console.error('同步土地类型数据失败:', error)
-    if (!silent) {
+    if (!suppressErrorToast) {
       ElMessage.error('加载数据失败，请重试')
     }
   })
-
-const addUsageConfig = async (formData) => {
-  const loadingInst = ElLoading.service({ lock: true, text: '正在新增配置...' })
-  try {
-    const submitData = { ...formData }
-    delete submitData.id
-    const res = await axios.post('/api/usage-config', submitData)
-    if (res.data.code === 200) return true
-    ElMessage.error(res.data.msg || '新增失败')
-    return false
-  } catch (error) {
-    console.error('新增用途配置失败:', error)
-    ElMessage.error('新增失败，请重试')
-    return false
-  } finally {
-    loadingInst.close()
-  }
 }
 
-const updateUsageConfig = async (id, formData) => {
-  const loadingInst = ElLoading.service({ lock: true, text: '正在更新配置...' })
+const saveUsageConfig = async (mode, formData) => {
+  const isCreate = mode === 'create'
+  const loadingInst = ElLoading.service({
+    lock: true,
+    text: isCreate ? '正在新增配置...' : '正在更新配置...',
+  })
   try {
     const submitData = { ...formData }
     delete submitData.id
-    const res = await axios.put(`/api/usage-config/${id}`, submitData)
+    const res = isCreate
+      ? await axios.post('/api/usage-config', submitData)
+      : await axios.put(`/api/usage-config/${formData.id}`, submitData)
     if (res.data.code === 200) return true
-    ElMessage.error(res.data.msg || '更新失败')
+    ElMessage.error(res.data.msg || (isCreate ? '新增失败' : '更新失败'))
     return false
   } catch (error) {
-    console.error('更新用途配置失败:', error)
-    ElMessage.error('更新失败，请重试')
+    console.error(isCreate ? '新增用途配置失败:' : '更新用途配置失败:', error)
+    ElMessage.error(isCreate ? '新增失败，请重试' : '更新失败，请重试')
     return false
   } finally {
     loadingInst.close()
@@ -586,7 +554,7 @@ const createUsageConfigFromUnknown = async (row) => {
   }
   const loadingInst = ElLoading.service({ lock: true, text: '正在处理未知用途...' })
   try {
-    const { usageCategory, floorAreaType } = categoryMap[row.targetCategory]
+    const { usageCategory, floorAreaType } = TARGET_CATEGORY_MAP[row.targetCategory]
     const params = {
       unknownUsageId: row.id,
       usageCategory,
@@ -617,15 +585,7 @@ const openAddDialog = () => {
 
 const resetAddForm = () => {
   addFormRef.value?.resetFields()
-  Object.assign(addForm, {
-    usagePattern: '',
-    usageCategory: '',
-    floorAreaType: 'BUILDABLE',
-    priority: DEFAULT_USAGE_PRIORITY,
-    status: '1',
-    remark: '',
-    collectionName: '',
-  })
+  Object.assign(addForm, EMPTY_USAGE_FORM())
 }
 
 const submitAddForm = async () => {
@@ -637,11 +597,12 @@ const submitAddForm = async () => {
       isRegex: DEFAULT_IS_REGEX,
       floorAreaType: resolveFloorAreaTypeByCategory(addForm.usageCategory),
     }
-    const ok = await addUsageConfig(payload)
+    const ok = await saveUsageConfig('create', payload)
     if (!ok) return
     addDialogVisible.value = false
     ElMessage.success('新增成功')
-    await reloadAfterMutation(['known'])
+    // 后端会按 pattern 关闭同名 pending，需同时刷新未知用途
+    await reloadAfterMutation(['known', 'unknown'])
   } catch {
     ElMessage.warning('请完善必填项后提交')
   }
@@ -663,16 +624,7 @@ const openEditDialog = (row) => {
 
 const resetEditForm = () => {
   editFormRef.value?.resetFields()
-  Object.assign(editForm, {
-    id: '',
-    usagePattern: '',
-    usageCategory: '',
-    floorAreaType: 'BUILDABLE',
-    priority: DEFAULT_USAGE_PRIORITY,
-    status: '1',
-    remark: '',
-    collectionName: '',
-  })
+  Object.assign(editForm, { id: '', ...EMPTY_USAGE_FORM() })
 }
 
 const submitEditForm = async () => {
@@ -684,11 +636,11 @@ const submitEditForm = async () => {
       isRegex: DEFAULT_IS_REGEX,
       floorAreaType: resolveFloorAreaTypeByCategory(editForm.usageCategory),
     }
-    const ok = await updateUsageConfig(editForm.id, payload)
+    const ok = await saveUsageConfig('update', payload)
     if (!ok) return
     editDialogVisible.value = false
     ElMessage.success('更新成功')
-    await reloadAfterMutation(['known'])
+    await reloadAfterMutation(['known', 'unknown'])
   } catch {
     ElMessage.warning('请完善必填项后提交')
   }
@@ -731,21 +683,40 @@ const saveSpecialConfig = async (row) => {
     ElMessage.warning('请先选择归属类别')
     return
   }
-  if (!categoryMap[row.targetCategory]) {
+  if (!TARGET_CATEGORY_MAP[row.targetCategory]) {
     ElMessage.error('归属类别无效，请重新选择')
     return
   }
   await createUsageConfigFromUnknown(row)
 }
 
-onActivated(() => {
-  void syncPageData({ silent: true })
+let suppressActivatedSync = false
+
+const scheduleTableMeasure = () => {
   nextTick(() => {
     bindKnownTableHeight()
     bindUnknownTableHeight()
     measureKnownTableHeight()
     measureUnknownTableHeight()
   })
+}
+
+// Layout 的 keep-alive 包的是 router-view，页面 onActivated 首次常不触发；
+// 数据加载以 onMounted 为准。若两者都触发，跳过紧随 mount 的那次 activated，避免双请求。
+onMounted(() => {
+  suppressActivatedSync = true
+  void syncPageData({ silent: false })
+  scheduleTableMeasure()
+})
+
+onActivated(() => {
+  if (suppressActivatedSync) {
+    suppressActivatedSync = false
+    scheduleTableMeasure()
+    return
+  }
+  void syncPageData({ silent: true })
+  scheduleTableMeasure()
 })
 </script>
 

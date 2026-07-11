@@ -40,7 +40,6 @@ export function useUsageConfigRelatedFiles() {
           pageNum: pagination.current,
           pageSize: pagination.size,
           keyword: keyword.value.trim() || undefined,
-          _t: Date.now(),
         },
       })
       if (res.data.code !== 200) {

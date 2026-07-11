@@ -7,8 +7,15 @@ const knownList = shallowRef(null)
 /** @type {import('vue').ShallowRef<Array|null>} */
 const unknownList = shallowRef(null)
 
+/** 模块级 loading，保证任意调用方触发加载时页面 v-loading 都能响应 */
+const knownLoading = ref(false)
+const unknownLoading = ref(false)
+
 const knownInflightRef = { current: null }
 const unknownInflightRef = { current: null }
+/** 世代号：invalidate / 新 force 请求后丢弃过期响应，避免脏写 */
+const knownGeneration = { value: 0 }
+const unknownGeneration = { value: 0 }
 
 function normalizeKnownRows(data) {
   return (data || []).map((item) => ({
@@ -56,6 +63,7 @@ async function requestUnknownList(cacheBust = false) {
 async function runCachedLoad({
   cacheRef,
   inflightRef,
+  generation,
   request,
   force,
   silent,
@@ -68,6 +76,7 @@ async function runCachedLoad({
       void runCachedLoad({
         cacheRef,
         inflightRef,
+        generation,
         request,
         force: true,
         silent: true,
@@ -84,6 +93,8 @@ async function runCachedLoad({
     return inflightRef.current
   }
 
+  const requestGen = force ? ++generation.value : generation.value
+  // 仅无缓存的首次加载展示 loading；force 刷新保留旧数据避免闪空
   const showLoading = !silent && cached === null
   if (showLoading) {
     loadingRef.value = true
@@ -91,12 +102,17 @@ async function runCachedLoad({
 
   const task = request(cacheBust)
     .then((rows) => {
+      if (requestGen !== generation.value) {
+        return cacheRef.value ?? rows
+      }
       cacheRef.value = rows
       return rows
     })
     .finally(() => {
-      inflightRef.current = null
-      if (showLoading) {
+      if (inflightRef.current === task) {
+        inflightRef.current = null
+      }
+      if (showLoading && requestGen === generation.value) {
         loadingRef.value = false
       }
     })
@@ -106,13 +122,17 @@ async function runCachedLoad({
 }
 
 export function invalidateUsageConfigListCache() {
+  knownGeneration.value += 1
   knownList.value = null
   knownInflightRef.current = null
+  knownLoading.value = false
 }
 
 export function invalidateUnknownUsagePendingCache() {
+  unknownGeneration.value += 1
   unknownList.value = null
   unknownInflightRef.current = null
+  unknownLoading.value = false
 }
 
 export function invalidateUsageConfigPageCaches() {
@@ -132,13 +152,11 @@ export function mapUsageConfigToPickerOptions(items) {
 }
 
 export function useUsageConfigPageCache() {
-  const knownLoading = ref(false)
-  const unknownLoading = ref(false)
-
   const loadKnown = (options = {}) =>
     runCachedLoad({
       cacheRef: knownList,
       inflightRef: knownInflightRef,
+      generation: knownGeneration,
       request: requestKnownList,
       loadingRef: knownLoading,
       force: Boolean(options.force),
@@ -150,6 +168,7 @@ export function useUsageConfigPageCache() {
     runCachedLoad({
       cacheRef: unknownList,
       inflightRef: unknownInflightRef,
+      generation: unknownGeneration,
       request: requestUnknownList,
       loadingRef: unknownLoading,
       force: Boolean(options.force),
@@ -157,19 +176,25 @@ export function useUsageConfigPageCache() {
       cacheBust: Boolean(options.cacheBust),
     })
 
-  const refreshAll = async ({ cacheBust = true } = {}) => {
-    invalidateUsageConfigPageCaches()
-    await Promise.all([
+  /** 强制刷新，保留旧数据直到新数据返回（避免列表闪空） */
+  const refreshAll = ({ cacheBust = true } = {}) =>
+    Promise.all([
       loadKnown({ force: true, cacheBust }),
       loadUnknown({ force: true, cacheBust }),
     ])
-  }
 
   const syncPage = ({ silent = false } = {}) =>
     Promise.all([
       loadKnown({ silent: silent && knownList.value !== null }),
       loadUnknown({ silent: silent && unknownList.value !== null }),
     ])
+
+  const reload = (targets = ['known', 'unknown']) => {
+    const jobs = []
+    if (targets.includes('known')) jobs.push(loadKnown({ force: true }))
+    if (targets.includes('unknown')) jobs.push(loadUnknown({ force: true }))
+    return Promise.all(jobs)
+  }
 
   return {
     knownList,
@@ -180,6 +205,7 @@ export function useUsageConfigPageCache() {
     loadUnknown,
     refreshAll,
     syncPage,
+    reload,
     invalidateKnown: invalidateUsageConfigListCache,
     invalidateUnknown: invalidateUnknownUsagePendingCache,
     invalidateAll: invalidateUsageConfigPageCaches,
