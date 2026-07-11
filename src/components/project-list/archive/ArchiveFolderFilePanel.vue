@@ -24,6 +24,7 @@
         批量删除
       </el-button>
       <el-button
+        v-if="showParseAuditActions"
         class="query-bar-btn"
         size="small"
         type="primary"
@@ -176,7 +177,7 @@
             >
               <template #default="{ row }">
                 <el-tag
-                  v-if="row.parseJobId"
+                  v-if="row.parseJobId && showParseAuditActions"
                   :type="getArchiveStateTagType(row.fileState)"
                   size="small"
                   effect="light"
@@ -271,7 +272,7 @@
             </el-table-column>
             <el-table-column
               label="操作"
-              width="260"
+              :width="showParseAuditActions ? 260 : 100"
               align="center"
               fixed="right"
               :resizable="false"
@@ -279,8 +280,11 @@
               label-class-name="col-actions"
             >
               <template #default="{ row }">
-                <div class="archive-file-op-actions">
-                  <div class="op-action-slot">
+                <div
+                  class="archive-file-op-actions"
+                  :class="{ 'archive-file-op-actions--delete-only': !showParseAuditActions }"
+                >
+                  <div v-if="showParseAuditActions" class="op-action-slot">
                     <el-tooltip
                       :disabled="!getRowActions(row).parse.tooltip"
                       :content="getRowActions(row).parse.tooltip"
@@ -300,7 +304,7 @@
                       </span>
                     </el-tooltip>
                   </div>
-                  <div class="op-action-slot">
+                  <div v-if="showParseAuditActions" class="op-action-slot">
                     <el-tooltip
                       :disabled="!getRowActions(row).audit.tooltip"
                       :content="getRowActions(row).audit.tooltip"
@@ -384,7 +388,7 @@
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { Picture, Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 import {
@@ -399,6 +403,7 @@ import {
   getArchiveVerifyStatus,
 } from '@/composables/project-list/archiveFolderPresent.js'
 import {
+  archiveSupportsParseAndAudit,
   resolveArchiveRowActions,
   getArchiveFileStateLabel,
 } from '@/composables/project-list/archiveFileRowPresent.js'
@@ -444,6 +449,10 @@ const emit = defineEmits([
 ])
 
 const setQueryField = createFormFieldPatcher(props, emit, 'queryForm')
+
+const showParseAuditActions = computed(() =>
+  archiveSupportsParseAndAudit(props.selectedArchiveKind)
+)
 
 const ROW_LOCK_TIP = '批量删除中，暂不可操作'
 
@@ -805,6 +814,11 @@ defineExpose({
   width: 100%;
   padding: 2px 0;
   box-sizing: border-box;
+}
+
+.archive-file-op-actions--delete-only {
+  grid-template-columns: minmax(72px, 1fr);
+  justify-items: center;
 }
 
 .op-action-slot {

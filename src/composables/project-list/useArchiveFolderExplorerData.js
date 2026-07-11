@@ -1,6 +1,9 @@
 import { computed, reactive, ref, toValue } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { canDeleteArchiveFile } from '@/composables/project-list/archiveFileRowPresent.js'
+import {
+  archiveSupportsParseAndAudit,
+  canDeleteArchiveFile,
+} from '@/composables/project-list/archiveFileRowPresent.js'
 import {
   getArchiveFileRecordId,
   normalizeArchiveQueryResult,
@@ -77,11 +80,12 @@ export function useArchiveFolderExplorerData(deps) {
     )
     return selectedRowIds.value.some((id) => !currentPageIds.has(id))
   })
-  const canBatchParse = computed(() =>
-    selectedRows.value.some((row) =>
+  const canBatchParse = computed(() => {
+    if (!archiveSupportsParseAndAudit(selectedArchive.value?.kind)) return false
+    return selectedRows.value.some((row) =>
       ['WAITING_PARSE', 'PARSE_FAIL', 'PARSE_COMPLETE'].includes(row.fileState)
     )
-  )
+  })
   const canBatchDelete = computed(() => selectedRows.value.some((row) => canDeleteArchiveFile(row)))
 
   const treeData = computed(() => {

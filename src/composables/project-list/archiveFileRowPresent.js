@@ -1,10 +1,16 @@
 /** 归档文件列表：状态文案与行内操作按钮可见性 */
 
+import { isAutoParseFileContext } from '@/utils/autoParseContext.js'
 import {
   FILE_STATE_LABELS,
   getFileStateLabel as getSharedFileStateLabel,
   getParseButtonText as getSharedParseButtonText,
 } from '@/utils/fileStatePresent.js'
+
+/** 仅自动解析类归档夹展示解析/审核（OTHER 与用户自定义夹不展示） */
+export function archiveSupportsParseAndAudit(selectedArchiveKind = '') {
+  return isAutoParseFileContext(selectedArchiveKind)
+}
 
 export const ARCHIVE_FILE_STATE_LABELS = FILE_STATE_LABELS
 
@@ -85,15 +91,27 @@ function getArchiveAuditSlotDisabledReason(row) {
 }
 
 /**
- * 归档列表操作列：固定三槽位（解析 / 审核 / 删除），不可用时不隐藏而 disabled + tooltip。
+ * 归档列表操作列：可解析类归档夹为三槽位（解析 / 审核 / 删除）；
+ * OTHER/自定义夹仅删除。可解析夹内不可用时不隐藏而 disabled + tooltip。
  * @returns {{ parse: ArchiveActionSlot, audit: ArchiveActionSlot, delete: ArchiveActionSlot }}
  */
 export function resolveArchiveRowActions(row, selectedArchiveKind = '') {
   const state = row?.fileState
+  const supportsParseAudit = archiveSupportsParseAndAudit(selectedArchiveKind)
 
   /** @type {ArchiveActionSlot} */
   let parse
-  if (showArchiveCancelParseButton(row)) {
+  if (!supportsParseAudit) {
+    parse = {
+      label: '解析',
+      enabled: false,
+      tooltip: '该归档夹不支持解析',
+      action: 'none',
+      buttonType: 'primary',
+      plain: false,
+      hidden: true,
+    }
+  } else if (showArchiveCancelParseButton(row)) {
     parse = {
       label: '取消解析',
       enabled: true,
@@ -124,7 +142,17 @@ export function resolveArchiveRowActions(row, selectedArchiveKind = '') {
 
   /** @type {ArchiveActionSlot} */
   let audit
-  if (showArchiveAuditButton(row, selectedArchiveKind)) {
+  if (!supportsParseAudit) {
+    audit = {
+      label: '审核',
+      enabled: false,
+      tooltip: '该归档夹不支持审核',
+      action: 'none',
+      buttonType: 'info',
+      plain: true,
+      hidden: true,
+    }
+  } else if (showArchiveAuditButton(row, selectedArchiveKind)) {
     audit = {
       label: state === 'AUDIT_PASS' ? '查看' : '审核',
       enabled: true,
@@ -167,5 +195,6 @@ export function resolveArchiveRowActions(row, selectedArchiveKind = '') {
  *   action: ArchiveRowActionKind
  *   buttonType: 'primary'|'warning'|'danger'|'info'
  *   plain: boolean
+ *   hidden?: boolean
  * }} ArchiveActionSlot
  */
