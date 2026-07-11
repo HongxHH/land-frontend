@@ -1,9 +1,12 @@
 ﻿import { computed, ref } from 'vue'
 import axios from 'axios'
-import { enrichAuditSummaryFromVerificationReason } from '@/composables/file-upload/auditSummaryMetrics'
+import {
+  enrichAuditSummaryFromVerificationReason,
+  OCR_SUM_FIELD_KEYS,
+} from '@/composables/file-upload/auditSummaryMetrics'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { queryRoomInfos } from '@/services/project.service'
+import { queryRoomInfos, updateSurveyReportInfo } from '@/services/project.service'
 import {
   fetchRoomInfoById as fetchRoomInfoByIdRaw,
   searchMissingUsageByPages as searchMissingUsageByPagesRaw,
@@ -15,10 +18,13 @@ import {
   validateChangedRoomAreaFields,
   getChangedRoomAreaFields,
   getRoomAreaNumericError,
+  getRoomAreaFieldError,
   normalizeRoomAreaForCommit,
   ROOM_AREA_FIELDS,
   formatRoomAreaFromApi,
 } from '@/utils/roomInfoValidation.js'
+
+const OCR_SUM_FIELD_SET = new Set(OCR_SUM_FIELD_KEYS)
 
 const SAVE_CONCURRENCY = 5
 const MAX_DIRTY_ROWS = 200
@@ -919,6 +925,62 @@ export function useRoomEditWorkflow(options = {}) {
     return ok
   }
 
+  /** 校正 OCR 合计：落库后由后端重跑校验，前端只刷新汇总 */
+  const handleSaveOcrSum = async (field, rawValue) => {
+    if (!OCR_SUM_FIELD_SET.has(field)) return false
+
+    const surveyReportId = Number(realSurveyReportId?.value || 0)
+    if (!surveyReportId) {
+      ElMessage.warning('缺少实测报告ID，无法保存 OCR 合计')
+      return false
+    }
+
+    const text = String(rawValue ?? '').trim()
+    if (text === '') {
+      ElMessage.warning('OCR 合计不能为空')
+      return false
+    }
+
+    const areaError = getRoomAreaFieldError('buildingArea', text)
+    if (areaError) {
+      ElMessage.warning(areaError.replaceAll('建筑面积', 'OCR 合计'))
+      return false
+    }
+
+    const normalized = normalizeRoomAreaForCommit(text)
+    if (normalized === null || normalized === '') {
+      ElMessage.warning('OCR 合计格式无效')
+      return false
+    }
+    const nextValue = Number(normalized)
+    if (!Number.isFinite(nextValue)) {
+      ElMessage.warning('OCR 合计格式无效')
+      return false
+    }
+    const currentValue = Number(auditSummaryData?.[field] || 0)
+    if (Number.isFinite(currentValue) && Math.abs(currentValue - nextValue) < 0.00005) {
+      return true
+    }
+
+    try {
+      const res = await updateSurveyReportInfo({
+        id: surveyReportId,
+        [field]: nextValue,
+      })
+      if (res?.data?.code !== 200) {
+        ElMessage.error(res?.data?.msg || '保存 OCR 合计失败')
+        return false
+      }
+      await reloadSummaryOnly()
+      ElMessage.success('OCR 合计已保存并重新校验')
+      return true
+    } catch (error) {
+      console.error('保存 OCR 合计失败:', error)
+      ElMessage.error(error?.response?.data?.msg || '保存 OCR 合计失败')
+      return false
+    }
+  }
+
   const syncRoomRow = (row) => ensureEditableRow(row)
 
   const getRoomRowById = (rowId) => findRoomRowById(rowId)
@@ -940,6 +1002,7 @@ export function useRoomEditWorkflow(options = {}) {
     getRoomRowById,
     clearDirtyState,
     handleRefreshSurveyReport,
+    handleSaveOcrSum,
     handleCreateRoom,
     handleDeleteRoom,
     roomCreateLoading,

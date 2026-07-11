@@ -8,21 +8,15 @@ import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
 
 /** @typedef {'contract'|'calibration'|'planning_review'|'capacity_indicator'|'party_summary'|null} AuditStrategy */
 
-const ALL_UPLOAD_FILE_CONTEXT_KINDS = [
+/** 上传弹窗可识别的归档 kind（与后端 FileContextType 一致；含规划复核以便归档管理） */
+export const UPLOAD_FILE_CONTEXT_KINDS = new Set([
   'CONTRACT',
   'SURVEY_REPORT',
   'PLANNING_REVIEW',
   'CAPACITY_INDICATOR',
   'PROJECT_PARTY_SURVEY_SUMMARY',
   'OTHER',
-]
-
-/** 上传弹窗可识别的归档 kind（与后端 FileContextType 一致） */
-export const UPLOAD_FILE_CONTEXT_KINDS = new Set(
-  ALL_UPLOAD_FILE_CONTEXT_KINDS.filter(
-    (kind) => kind !== 'PLANNING_REVIEW' || isPlanningReviewEnabled()
-  )
-)
+])
 
 /** 上传弹窗 / 列表展示用中文名 */
 export const FILE_CONTEXT_TYPE_LABELS = {
@@ -48,15 +42,10 @@ export function normalizeFileContextType(value) {
   return String(value || '').toUpperCase()
 }
 
-export function isPlanningReviewFileContext(fileContextType) {
-  return normalizeFileContextType(fileContextType) === 'PLANNING_REVIEW'
-}
-
-/** 过滤不可见的默认归档夹（如功能关闭时的规划复核表） */
+/** 归档夹列表：始终展示全部（含规划复核表），便于删除文件/清空项目 */
 export function filterVisibleArchives(archives) {
   if (!Array.isArray(archives)) return []
-  if (isPlanningReviewEnabled()) return archives
-  return archives.filter((item) => !isPlanningReviewFileContext(item?.kind))
+  return archives
 }
 
 export function resolveUploadFileContextType(kind) {

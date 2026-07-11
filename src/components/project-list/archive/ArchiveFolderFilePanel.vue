@@ -112,6 +112,7 @@
               align="center"
               :resizable="false"
               reserve-selection
+              :selectable="() => !batchDeleteLoading"
             />
             <el-table-column
               v-if="showThumbnailColumn"
@@ -124,9 +125,12 @@
                 <el-image
                   v-if="getArchiveThumbnailUrl(row)"
                   class="thumb"
+                  :class="{ 'thumb--locked': isRowInteractionLocked(row) }"
                   :src="getArchiveThumbnailUrl(row)"
                   fit="cover"
-                  :preview-src-list="getArchiveThumbnailPreviewList(row)"
+                  :preview-src-list="
+                    isRowInteractionLocked(row) ? [] : getArchiveThumbnailPreviewList(row)
+                  "
                   :preview-teleported="true"
                 >
                   <template #error>
@@ -147,8 +151,13 @@
                   type="primary"
                   :underline="false"
                   class="archive-file-name-link"
-                  :title="`点击预览：${row.originalName || ''}`"
-                  @click="emit('preview', row)"
+                  :disabled="isRowInteractionLocked(row)"
+                  :title="
+                    isRowInteractionLocked(row)
+                      ? '批量删除中，暂不可预览'
+                      : `点击预览：${row.originalName || ''}`
+                  "
+                  @click="onPreviewClick(row)"
                 >
                   {{ row.originalName || '-' }}
                 </el-link>
@@ -172,8 +181,11 @@
                   size="small"
                   effect="light"
                   class="state-tag-parse-flow"
-                  title="点击查看解析流程"
-                  @click.stop="emit('open-parse-flow', row)"
+                  :class="{ 'state-tag-parse-flow--locked': isRowInteractionLocked(row) }"
+                  :title="
+                    isRowInteractionLocked(row) ? '批量删除中，暂不可查看' : '点击查看解析流程'
+                  "
+                  @click.stop="onParseFlowClick(row)"
                 >
                   {{ getArchiveFileStateLabel(row.fileState, row) }}
                 </el-tag>
@@ -433,8 +445,33 @@ const emit = defineEmits([
 
 const setQueryField = createFormFieldPatcher(props, emit, 'queryForm')
 
+const ROW_LOCK_TIP = '批量删除中，暂不可操作'
+
+function isRowInteractionLocked(row) {
+  if (!props.batchDeleteLoading) return false
+  const id = String(row?.id ?? '')
+  if (!id) return false
+  return props.selectedRowIds.some((selectedId) => String(selectedId) === id)
+}
+
 function getRowActions(row) {
-  return resolveArchiveRowActions(row, props.selectedArchiveKind)
+  const actions = resolveArchiveRowActions(row, props.selectedArchiveKind)
+  if (!isRowInteractionLocked(row)) return actions
+  return {
+    parse: { ...actions.parse, enabled: false, tooltip: ROW_LOCK_TIP },
+    audit: { ...actions.audit, enabled: false, tooltip: ROW_LOCK_TIP },
+    delete: { ...actions.delete, enabled: false, tooltip: ROW_LOCK_TIP },
+  }
+}
+
+function onPreviewClick(row) {
+  if (isRowInteractionLocked(row)) return
+  emit('preview', row)
+}
+
+function onParseFlowClick(row) {
+  if (isRowInteractionLocked(row)) return
+  emit('open-parse-flow', row)
 }
 
 function onParseSlotClick(row) {
@@ -476,7 +513,7 @@ const restoreTableSelection = async () => {
 }
 
 const handleTableSelectionChange = (rows) => {
-  if (restoringSelection) return
+  if (restoringSelection || props.batchDeleteLoading) return
   emit('selection-change', rows)
 }
 
@@ -713,6 +750,11 @@ defineExpose({
   border: 1px solid #e5e7eb;
 }
 
+.thumb--locked {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .thumb-placeholder {
   display: flex;
   align-items: center;
@@ -811,6 +853,14 @@ defineExpose({
 .state-tag-parse-flow:hover {
   filter: brightness(0.97);
   box-shadow: 0 0 0 1px rgba(31, 78, 121, 0.2);
+}
+
+.state-tag-parse-flow--locked,
+.state-tag-parse-flow--locked:hover {
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+  opacity: 0.72;
 }
 
 .archive-file-name-link,

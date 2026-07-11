@@ -28,6 +28,7 @@
         :notify-row-touched="notifyRowTouched"
         :prepare-row-for-edit="prepareRowForEdit"
         :handle-refresh-survey-report="handleRefreshSurveyReport"
+        :handle-save-ocr-sum="handleSaveOcrSum"
         :handle-create-room="handleCreateRoom"
         :handle-delete-room="handleDeleteRoom"
         :room-create-loading="roomCreateLoading"
@@ -70,6 +71,7 @@ const props = defineProps({
   notifyRowTouched: { type: Function, default: null },
   prepareRowForEdit: { type: Function, default: null },
   handleRefreshSurveyReport: { type: Function, default: null },
+  handleSaveOcrSum: { type: Function, default: null },
   handleCreateRoom: { type: Function, default: null },
   handleDeleteRoom: { type: Function, default: null },
   roomCreateLoading: { type: Boolean, default: false },

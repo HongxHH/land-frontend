@@ -415,9 +415,25 @@
             v-for="item in summaryMetrics"
             :key="`ocr-${item.key}`"
             class="room-table-compare__cell room-table-compare__cell--ocr"
-            :class="{ 'room-table-compare__cell--mismatch': item.mismatch }"
+            :class="{
+              'room-table-compare__cell--mismatch': item.mismatch,
+              'room-table-compare__cell--ocr-editing': isOcrCellActive(item.key),
+              'room-table-compare__cell--ocr-editable': canEditOcr,
+            }"
           >
-            {{ item.ocr }}
+            <RoomTableEditableCell
+              :row="ocrEditRow"
+              :field="OCR_SUM_FIELD_BY_METRIC_KEY[item.key]"
+              :display="formatRoomAreaDisplay(ocrEditRow[OCR_SUM_FIELD_BY_METRIC_KEY[item.key]])"
+              :display-title="canEditOcr ? `点击修改 OCR ${item.title}` : item.ocr"
+              :active="isOcrCellActive(item.key)"
+              input-type="number"
+              non-negative
+              :max-decimals="ROOM_AREA_MAX_DECIMALS"
+              :placeholder="item.title"
+              @activate="startOcrCellEdit(item.key)"
+              @commit="commitOcrCellEdit"
+            />
           </span>
         </div>
       </div>
@@ -631,20 +647,24 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, watch, toRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch, toRef } from 'vue'
 import { useCalibrationRoomTableFilter } from '@/composables/file-upload/useCalibrationRoomTableFilter'
 import { FILTER_PRESET_MISSING_USAGE } from '@/composables/file-upload/surveyUsagePending'
 import { useRoomTableInfiniteScroll } from '@/composables/file-upload/useRoomTableInfiniteScroll'
 import { useCalibrationRoomUsageEditor } from '@/composables/file-upload/useCalibrationRoomUsageEditor'
 import {
+  AREA_COMPARE_TOLERANCE,
   buildSummaryMetrics,
   sortMetricsForCompare,
+  OCR_SUM_FIELD_KEYS,
+  OCR_SUM_FIELD_BY_METRIC_KEY,
 } from '@/composables/file-upload/auditSummaryMetrics'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 import RoomTableEditableCell from '@/components/file-upload/RoomTableEditableCell.vue'
 import {
   clampRoomAreaInput,
   formatRoomAreaDisplay,
+  formatRoomAreaFromApi,
   ROOM_AREA_MAX_DECIMALS,
 } from '@/utils/roomInfoValidation.js'
 import { Loading, Search } from '@element-plus/icons-vue'
@@ -678,6 +698,7 @@ const props = defineProps({
   notifyRowTouched: { type: Function, default: null },
   prepareRowForEdit: { type: Function, default: null },
   handleRefreshSurveyReport: { type: Function, default: null },
+  handleSaveOcrSum: { type: Function, default: null },
   handleCreateRoom: { type: Function, default: null },
   handleDeleteRoom: { type: Function, default: null },
   roomCreateLoading: { type: Boolean, default: false },
@@ -888,12 +909,84 @@ const onCreateRoomAreaInput = (field, value) => {
   createRoomForm[field] = clampRoomAreaInput(value)
 }
 
+const summaryMetrics = computed(() =>
+  sortMetricsForCompare(buildSummaryMetrics(props.auditSummaryData, AREA_COMPARE_TOLERANCE))
+)
+
+const ocrEditRow = reactive(
+  Object.fromEntries(OCR_SUM_FIELD_KEYS.map((key) => [key, '']))
+)
+const activeOcrField = ref('')
+const ocrCommitting = ref(false)
+const canEditOcr = computed(() => typeof props.handleSaveOcrSum === 'function')
+
+const syncOcrEditRowFromSummary = () => {
+  for (const field of OCR_SUM_FIELD_KEYS) {
+    if (activeOcrField.value === field) continue
+    ocrEditRow[field] = formatRoomAreaFromApi(props.auditSummaryData?.[field])
+  }
+}
+
+watch(
+  () => OCR_SUM_FIELD_KEYS.map((field) => props.auditSummaryData?.[field]),
+  () => syncOcrEditRowFromSummary(),
+  { immediate: true }
+)
+
+const isOcrCellActive = (metricKey) =>
+  activeOcrField.value === OCR_SUM_FIELD_BY_METRIC_KEY[metricKey]
+
+const startOcrCellEdit = (metricKey) => {
+  if (!canEditOcr.value || ocrCommitting.value) return
+  props.commitActiveCell?.()
+  const field = OCR_SUM_FIELD_BY_METRIC_KEY[metricKey]
+  if (!field) return
+  ocrEditRow[field] = formatRoomAreaFromApi(props.auditSummaryData?.[field])
+  activeOcrField.value = field
+}
+
+const commitOcrCellEdit = async () => {
+  const field = activeOcrField.value
+  if (!field || ocrCommitting.value) return
+
+  const previous = formatRoomAreaFromApi(props.auditSummaryData?.[field])
+  const next = String(ocrEditRow[field] ?? '').trim()
+  activeOcrField.value = ''
+
+  const prevNum = Number(previous)
+  const nextNum = Number(next)
+  const unchanged =
+    next === previous ||
+    (next !== '' &&
+      Number.isFinite(prevNum) &&
+      Number.isFinite(nextNum) &&
+      Math.abs(prevNum - nextNum) < 0.00005)
+
+  if (unchanged || !canEditOcr.value) {
+    ocrEditRow[field] = previous
+    return
+  }
+
+  ocrCommitting.value = true
+  try {
+    const ok = await props.handleSaveOcrSum(field, next)
+    if (!ok) {
+      ocrEditRow[field] = previous
+    }
+  } finally {
+    ocrCommitting.value = false
+    syncOcrEditRowFromSummary()
+  }
+}
+
 watch(openRef, (open) => {
   if (!open) {
     clearRoomTableKeyword()
     clearRoomToolbarRefreshCooldownTimer()
     roomToolbarRefreshCooldown.value = false
     resetUsageEditorState()
+    activeOcrField.value = ''
+    ocrCommitting.value = false
   }
 })
 
@@ -911,12 +1004,6 @@ const getRoomRowClassName = ({ row }) => {
   if (Number(row?.isCalculate ?? 0) !== 1) classes.push('non-calculate-row')
   return classes.join(' ')
 }
-
-const AREA_COMPARE_TOLERANCE = 0.01
-
-const summaryMetrics = computed(() =>
-  sortMetricsForCompare(buildSummaryMetrics(props.auditSummaryData, AREA_COMPARE_TOLERANCE))
-)
 
 const compareTableRef = ref(null)
 const compareTableScrollable = ref(false)
@@ -940,6 +1027,10 @@ watch(
     props.auditSummaryData?.roomInfoInnerAreaSum,
     props.auditSummaryData?.roomInfoBalconyAreaSum,
     props.auditSummaryData?.roomInfoSharedAreaSum,
+    props.auditSummaryData?.roomInfoBuildingAreaSumFromOcr,
+    props.auditSummaryData?.roomInfoInnerAreaSumFromOcr,
+    props.auditSummaryData?.roomInfoBalconyAreaSumFromOcr,
+    props.auditSummaryData?.roomInfoSharedAreaSumFromOcr,
     props.auditSummaryData?.verificationErrorReason,
   ],
   () => {

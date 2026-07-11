@@ -41,6 +41,13 @@ const METRIC_FIELD_MAP = [
   },
 ]
 
+/** OCR 合计字段名（与 SurveyReportInfo / 更新 DTO 一致） */
+export const OCR_SUM_FIELD_KEYS = METRIC_FIELD_MAP.map((m) => m.ocrKey)
+
+export const OCR_SUM_FIELD_BY_METRIC_KEY = Object.fromEntries(
+  METRIC_FIELD_MAP.map((m) => [m.key, m.ocrKey])
+)
+
 export const AREA_COMPARE_TOLERANCE = 0.01
 
 const METRIC_SORT_ORDER = { building: 0, inner: 1, balcony: 2, shared: 3 }

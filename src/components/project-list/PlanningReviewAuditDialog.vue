@@ -125,30 +125,54 @@ onBeforeUnmount(() => {
 })
 </script>
 
+<style>
+/* teleport 到 body 的全屏 Dialog 需非 scoped 样式，否则 flex 链断裂、下方留白 */
+.el-dialog.is-fullscreen.planning-audit-dialog {
+  margin: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.el-dialog.is-fullscreen.planning-audit-dialog .el-dialog__header {
+  flex: 0 0 auto;
+  margin-right: 0;
+  padding-bottom: 8px;
+}
+
+.el-dialog.is-fullscreen.planning-audit-dialog .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 8px !important;
+  box-sizing: border-box;
+}
+</style>
+
 <style scoped>
-:deep(.planning-audit-dialog.is-fullscreen) {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  overflow: hidden;
-}
-
-:deep(.planning-audit-dialog .el-dialog__body) {
-  flex: 1;
+.planning-audit-shell {
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-}
-
-.planning-audit-shell.audit-split-layout {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
+  align-self: stretch;
   background: #f3f6fa;
   border-radius: 10px;
   padding: 8px;
+  box-sizing: border-box;
+}
+
+.planning-audit-shell.audit-split-layout {
+  height: 100%;
+}
+
+.audit-preview-shell :deep(.audit-doc-preview) {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 }
 
 @media (max-width: 1280px) {
@@ -157,7 +181,7 @@ onBeforeUnmount(() => {
     min-height: 0;
   }
 
-  .planning-audit-shell .pdf-panel {
+  .planning-audit-shell .audit-preview-shell {
     height: 50vh;
     min-height: 360px;
   }

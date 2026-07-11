@@ -653,9 +653,12 @@ defineExpose({
   background: #fff;
   padding: 10px;
   min-height: 0;
+  height: 100%;
+  align-self: stretch;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .audit-split-layout__right.rows-panel {

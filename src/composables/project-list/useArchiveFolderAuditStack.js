@@ -15,7 +15,6 @@ import {
 import { queryPlanningReviewForms, queryCapacityIndicatorForms } from '@/services/project.service'
 import { queryFiles } from '@/services/file.service'
 import { getAuditStrategy, normalizeFileContextType } from '@/utils/fileContextTypeRegistry.js'
-import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
 
 /**
  * 归档 Tab：实测校准工作区 + 规划复核/项目方汇总表审核弹窗编排
@@ -100,6 +99,7 @@ export function useArchiveFolderAuditStack(deps) {
     syncRoomRow,
     getRoomRowById,
     handleRefreshSurveyReport,
+    handleSaveOcrSum,
     handleCreateRoom,
     handleDeleteRoom,
     roomCreateLoading,
@@ -237,10 +237,6 @@ export function useArchiveFolderAuditStack(deps) {
       return
     }
     if (strategy === 'planning_review') {
-      if (!isPlanningReviewEnabled()) {
-        ElMessage.warning('规划复核功能未启用')
-        return
-      }
       await openPlanningReviewAudit(row)
       return
     }
@@ -459,6 +455,7 @@ export function useArchiveFolderAuditStack(deps) {
     syncRoomRow,
     getRoomRowById,
     handleRefreshSurveyReport,
+    handleSaveOcrSum,
     handleCreateRoom,
     handleDeleteRoom,
     handleCalibrationBack,

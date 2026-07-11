@@ -1,6 +1,9 @@
 /**
  * 本地项目文件夹扫描：按文件名规则识别 FileContextType。
  * 规则优先级从高到低，先匹配先锁定。
+ *
+ * 规划复核识别受 VITE_FEATURE_PLANNING_REVIEW 控制：关闭时新建项目智能导入
+ * 不自动归类、也不提供「规划复核」类型选项（归档内手动上传不受此限）。
  */
 
 import { isPlanningReviewEnabled } from '@/config/featureFlags.js'

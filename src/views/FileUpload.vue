@@ -95,6 +95,7 @@
       :notify-row-touched="notifyRowTouched"
       :prepare-row-for-edit="prepareRowForEdit"
       :handle-refresh-survey-report="handleRefreshSurveyReport"
+      :handle-save-ocr-sum="handleSaveOcrSum"
       :handle-create-room="handleCreateRoom"
       :handle-delete-room="handleDeleteRoom"
       :room-create-loading="roomCreateLoading"
@@ -201,6 +202,7 @@ const {
   syncRoomRow,
   getRoomRowById,
   handleRefreshSurveyReport,
+  handleSaveOcrSum,
   handleCreateRoom,
   handleDeleteRoom,
   roomCreateLoading,
