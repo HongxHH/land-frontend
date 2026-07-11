@@ -19,7 +19,8 @@
 
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important; /* ✅ 不允许整页滚 */
+  overflow: hidden !important;
+  /* ✅ 不允许整页滚 */
 }
 
 /* header 固定 */
@@ -41,9 +42,11 @@
   min-height: 0;
   padding: 0 !important;
 
-  overflow: hidden !important; /* ✅ body 不滚 */
+  overflow: hidden !important;
+  /* ✅ body 不滚 */
   display: flex;
-  flex-direction: column; /* ✅ split-view 才能按高度伸展 */
+  flex-direction: column;
+  /* ✅ split-view 才能按高度伸展 */
 }
 
 .split-view.audit-split-layout {
@@ -88,7 +91,8 @@
 .cali-right-panel {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden; /* ✅不滚 */
+  overflow: hidden;
+  /* ✅不滚 */
   display: flex;
   flex-direction: column;
 }
@@ -103,7 +107,8 @@
 .room-table-wrap {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden; /* ✅不滚 */
+  overflow: hidden;
+  /* ✅不滚 */
   display: flex;
   flex-direction: column;
 }
@@ -112,7 +117,8 @@
 :deep(.room-table) {
   flex: 1 1 auto;
   min-height: 0;
-  height: 0; /* ✅关键：让它吃剩余高度 */
+  height: 0;
+  /* ✅关键：让它吃剩余高度 */
 }
 
 :deep(.room-table--readable.el-table) {
@@ -130,15 +136,18 @@
   flex-direction: column;
   min-height: 0;
 }
+
 :deep(.room-table .el-table__body-wrapper) {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto !important;
 }
+
 /* 如果内部用了 el-scrollbar，补齐高度 */
 :deep(.room-table .el-scrollbar) {
   height: 100%;
 }
+
 :deep(.room-table .el-scrollbar__wrap) {
   overflow: auto !important;
 }
@@ -706,6 +715,9 @@
   line-height: 24px;
   cursor: text;
   border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .room-cell-display:hover {

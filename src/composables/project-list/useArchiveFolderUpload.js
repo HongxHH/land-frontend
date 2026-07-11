@@ -8,6 +8,11 @@ import {
   UPLOAD_FILE_STATUS,
 } from '@/composables/file-upload/useConcurrentFileUpload.js'
 import { useArchiveUploadMeter } from '@/composables/project-list/useArchiveUploadMeter.js'
+import {
+  processUploadFileSelection,
+  resolveUploadHttpError,
+  validateUploadBatchSize,
+} from '@/utils/fileUploadLimit.js'
 
 /** 归档 Tab：批量上传弹窗状态与提交（并发单文件上传） */
 export function useArchiveFolderUpload(deps) {
@@ -103,8 +108,15 @@ export function useArchiveFolderUpload(deps) {
   }
 
   const handleUploadFileChange = (_, list) => {
-    uploadFiles.value = list
-    for (const item of list) {
+    const { accepted, errors, warnings } = processUploadFileSelection(list)
+    for (const message of errors) {
+      ElMessage.error(message)
+    }
+    for (const message of warnings) {
+      ElMessage.warning(message)
+    }
+    uploadFiles.value = accepted
+    for (const item of accepted) {
       const uid = resolveUploadFileUid(item)
       if (!fileUploadStates.has(uid)) {
         fileUploadStates.set(uid, {
@@ -197,6 +209,15 @@ export function useArchiveFolderUpload(deps) {
       return
     }
 
+    const batchCheck = validateUploadBatchSize(uploadFiles.value)
+    if (!batchCheck.ok) {
+      ElMessage.error(batchCheck.message)
+      return
+    }
+    if (batchCheck.warning) {
+      ElMessage.warning(batchCheck.warning)
+    }
+
     try {
       const result = await runUploadBatch([...uploadFiles.value])
 
@@ -213,7 +234,7 @@ export function useArchiveFolderUpload(deps) {
         )
         await deps.onUploadSuccess?.()
       } else {
-        ElMessage.warning('没有文件上传成功')
+        ElMessage.warning('没有文件上传成功，请查看各行错误说明')
       }
 
       if (result.errorCount === 0 && result.successCount > 0) {
@@ -223,7 +244,7 @@ export function useArchiveFolderUpload(deps) {
     } catch (error) {
       if (!isUploadAbortError(error)) {
         console.error('文件上传失败:', error)
-        ElMessage.error(error?.message || '文件上传失败')
+        ElMessage.error(resolveUploadHttpError(error, '文件上传失败'))
       }
     }
   }

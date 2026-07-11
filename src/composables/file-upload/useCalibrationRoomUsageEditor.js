@@ -15,6 +15,7 @@ import {
   invalidateUsageConfigListCache,
 } from '@/composables/usage-config/useUsageConfigPageCache.js'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
+import { validateRoomAreaFields, normalizeRoomAreaForCommit, ROOM_AREA_FIELDS } from '@/utils/roomInfoValidation.js'
 
 const usagePresetMap = {
   RESIDENTIAL: { roomUsage: '住宅', floorAreaType: 'BUILDABLE', floorAreaTypeText: '计容' },
@@ -85,6 +86,19 @@ export function useCalibrationRoomUsageEditor({
   const handleSubmitCreateRoom = async () => {
     if (!createRoomForm.usageCategory) {
       ElMessage.warning('请先选择用途类别')
+      return
+    }
+    for (const field of ROOM_AREA_FIELDS) {
+      const normalized = normalizeRoomAreaForCommit(createRoomForm[field])
+      if (normalized === null && createRoomForm[field] !== '' && createRoomForm[field] != null) {
+        ElMessage.warning('面积格式无效')
+        return
+      }
+      createRoomForm[field] = normalized
+    }
+    const areaValidation = validateRoomAreaFields(createRoomForm)
+    if (!areaValidation.ok) {
+      ElMessage.warning(areaValidation.message)
       return
     }
     if (typeof handleCreateRoom !== 'function') return

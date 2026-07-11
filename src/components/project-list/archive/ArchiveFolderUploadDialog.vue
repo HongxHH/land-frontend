@@ -65,12 +65,15 @@
         <div v-if="!uploadFiles.length" class="upload-drop-inner">
           <el-icon class="upload-icon"><UploadFilled /></el-icon>
           <div class="upload-drop-title">拖拽文件到这里</div>
+          <div class="upload-limit-hint">单文件不超过 {{ maxSingleFileUploadLabel }}</div>
         </div>
         <div v-else class="upload-drop-compact">
           <el-icon class="upload-drop-compact-icon"><UploadFilled /></el-icon>
           <div class="upload-drop-compact-text">
             <span class="upload-drop-compact-title">继续添加文件</span>
-            <span class="upload-drop-compact-sub">拖拽到此处，或点击选择（支持多选）</span>
+            <span class="upload-drop-compact-sub"
+              >拖拽到此处，或点击选择（支持多选，单文件不超过 {{ maxSingleFileUploadLabel }}）</span
+            >
           </div>
         </div>
       </el-upload>
@@ -139,6 +142,9 @@ import {
   getFileContextLabel,
   resolveUploadFileContextType,
 } from '@/utils/fileContextTypeRegistry.js'
+import { MAX_SINGLE_FILE_UPLOAD_LABEL } from '@/utils/fileUploadLimit.js'
+
+const maxSingleFileUploadLabel = MAX_SINGLE_FILE_UPLOAD_LABEL
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },

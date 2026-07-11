@@ -5,6 +5,7 @@ import {
   querySurveyReports,
   updateSurveyReportInfo,
 } from '@/services/project.service'
+import { formatRoomAreaFromApi } from '@/utils/roomInfoValidation.js'
 
 const usageCategoryMap = {
   RESIDENTIAL: '住宅',
@@ -124,10 +125,10 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
           id: item.id,
           roomLevel: item.roomLevel || '-',
           roomNumber: item.roomNumber || '-',
-          buildingArea: (item.buildingArea || 0).toFixed(2),
-          innerArea: (item.innerArea || 0).toFixed(2),
-          balconyArea: (item.balconyArea || 0).toFixed(2),
-          sharedArea: (item.sharedArea || 0).toFixed(2),
+          buildingArea: formatRoomAreaFromApi(item.buildingArea),
+          innerArea: formatRoomAreaFromApi(item.innerArea),
+          balconyArea: formatRoomAreaFromApi(item.balconyArea),
+          sharedArea: formatRoomAreaFromApi(item.sharedArea),
           isCalculate: item.isCalculate || 0,
           usageCategory: usageCategoryMap[item.usageCategory] || '未知',
           roomUsage: item.roomUsage || '-',

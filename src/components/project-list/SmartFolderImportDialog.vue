@@ -137,6 +137,7 @@
                       v-if="uploadLoading && uploadItemMap[entry.id]"
                       class="smart-folder-import__row-status"
                       :class="`is-${resolveUploadState(entry.id)?.status ?? 'pending'}`"
+                      :title="uploadStatusTitle(entry.id)"
                     >
                       {{ uploadStatusLabel(entry.id) }}
                     </span>
@@ -234,6 +235,7 @@
                     v-if="uploadLoading && uploadItemMap[entry.id]"
                     class="smart-folder-import__row-status"
                     :class="`is-${resolveUploadState(entry.id)?.status ?? 'pending'}`"
+                    :title="uploadStatusTitle(entry.id)"
                   >
                     {{ uploadStatusLabel(entry.id) }}
                   </span>
@@ -373,8 +375,20 @@ const UPLOAD_STATUS_LABELS = {
 }
 
 const uploadStatusLabel = (entryId) => {
-  const status = resolveUploadState(entryId)?.status ?? 'pending'
+  const state = resolveUploadState(entryId)
+  const status = state?.status ?? 'pending'
+  if (status === 'error' && state?.error) {
+    return state.error
+  }
   return UPLOAD_STATUS_LABELS[status] || status
+}
+
+const uploadStatusTitle = (entryId) => {
+  const state = resolveUploadState(entryId)
+  if (state?.status === 'error' && state?.error) {
+    return state.error
+  }
+  return UPLOAD_STATUS_LABELS[state?.status ?? 'pending'] || state?.status || ''
 }
 
 const getSelectableDirEntries = (dirGroup, isUnmatched) => {
@@ -841,6 +855,10 @@ defineExpose({ pickFolder })
 
 .smart-folder-import__row-status.is-error {
   color: #dc2626;
+  max-width: min(260px, 42vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .smart-folder-import__type-select {

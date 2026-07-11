@@ -1,6 +1,6 @@
 <template>
   <div class="field-mgmt-container admin-mgmt-page">
-    <el-card class="section-card" shadow="never">
+    <el-card ref="knownCardRef" class="section-card" shadow="never">
       <div class="table-toolbar admin-mgmt-toolbar">
         <div class="table-toolbar__main">
           <span class="title">已知用途</span>
@@ -29,7 +29,7 @@
           border
           stripe
           table-layout="fixed"
-          :max-height="tableMaxHeight"
+          :height="knownTableHeight"
           v-loading="knownLoading"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
@@ -96,7 +96,7 @@
       </div>
     </el-card>
 
-    <el-card class="section-card" shadow="never">
+    <el-card ref="unknownCardRef" class="section-card" shadow="never">
       <div class="table-toolbar admin-mgmt-toolbar">
         <div class="table-toolbar__main">
           <span class="title">未知用途</span>
@@ -117,7 +117,7 @@
           border
           stripe
           table-layout="fixed"
-          :max-height="tableMaxHeight"
+          :height="unknownTableHeight"
           v-loading="unknownLoading"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
@@ -314,7 +314,8 @@
 </template>
 
 <script setup>
-import { computed, onActivated, reactive, ref } from 'vue'
+import { computed, nextTick, onActivated, reactive, ref } from 'vue'
+import { useSectionCardTableHeight } from '@/composables/field-management/useSectionCardTableHeight.js'
 import { useRouter } from 'vue-router'
 import { Check, Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
 import { ElLoading, ElMessage, ElMessageBox } from 'element-plus'
@@ -369,7 +370,18 @@ const editDialogVisible = ref(false)
 const addFormRef = ref(null)
 const editFormRef = ref(null)
 
-const tableMaxHeight = computed(() => Math.max(220, Math.floor((window.innerHeight - 274) / 2)))
+const {
+  cardRef: knownCardRef,
+  tableHeight: knownTableHeight,
+  measure: measureKnownTableHeight,
+  bind: bindKnownTableHeight,
+} = useSectionCardTableHeight()
+const {
+  cardRef: unknownCardRef,
+  tableHeight: unknownTableHeight,
+  measure: measureUnknownTableHeight,
+  bind: bindUnknownTableHeight,
+} = useSectionCardTableHeight()
 
 /** 后端仍需要 priority / isRegex；界面不展示，固定为默认值 */
 const DEFAULT_USAGE_PRIORITY = 100
@@ -728,6 +740,12 @@ const saveSpecialConfig = async (row) => {
 
 onActivated(() => {
   void syncPageData({ silent: true })
+  nextTick(() => {
+    bindKnownTableHeight()
+    bindUnknownTableHeight()
+    measureKnownTableHeight()
+    measureUnknownTableHeight()
+  })
 })
 </script>
 
@@ -774,6 +792,7 @@ onActivated(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-shrink: 0;
   padding: 14px 16px;
   border-bottom: 1px solid rgba(219, 228, 239, 0.9);
   background: linear-gradient(
@@ -815,6 +834,7 @@ onActivated(() => {
   background: linear-gradient(180deg, rgba(248, 250, 252, 0.7) 0%, rgba(241, 245, 249, 0.55) 100%);
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .field-table-actions {
@@ -828,6 +848,10 @@ onActivated(() => {
 :deep(.el-card__body) {
   padding: 0;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 :deep(.el-table .el-table__body-wrapper) {

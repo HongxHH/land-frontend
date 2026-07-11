@@ -14,8 +14,11 @@
     size="small"
     class="room-table-field"
     :type="inputType"
+    :min="nonNegative ? 0 : undefined"
+    step="any"
     :placeholder="placeholder"
     @update:model-value="onInput"
+    @keydown="onKeydown"
     @blur="emit('commit')"
     @keydown.enter="emit('commit')"
   />
@@ -23,6 +26,7 @@
 
 <script setup>
 import { nextTick, ref, watch } from 'vue'
+import { clampRoomAreaInput, sanitizeRoomAreaInputText } from '@/utils/roomInfoValidation.js'
 
 const props = defineProps({
   row: { type: Object, required: true },
@@ -32,6 +36,8 @@ const props = defineProps({
   active: { type: Boolean, default: false },
   inputType: { type: String, default: 'text' },
   placeholder: { type: String, default: '' },
+  nonNegative: { type: Boolean, default: false },
+  maxDecimals: { type: Number, default: null },
 })
 
 const emit = defineEmits(['activate', 'commit', 'update:field'])
@@ -39,7 +45,21 @@ const emit = defineEmits(['activate', 'commit', 'update:field'])
 const inputRef = ref(null)
 
 const onInput = (value) => {
-  props.row[props.field] = value
+  let next = value
+  if (props.nonNegative) {
+    next = sanitizeRoomAreaInputText(String(value ?? ''))
+  }
+  if (props.maxDecimals != null) {
+    next = clampRoomAreaInput(next, props.maxDecimals)
+  }
+  props.row[props.field] = next
+}
+
+const onKeydown = (event) => {
+  if (!props.nonNegative) return
+  if (event.key === '-' || event.key === 'Subtract') {
+    event.preventDefault()
+  }
 }
 
 watch(

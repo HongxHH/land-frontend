@@ -18,6 +18,7 @@ import {
   scanLocalFolderFiles,
 } from '@/utils/localFolderFileMatcher.js'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
+import { isFileOverUploadLimit, MAX_SINGLE_FILE_UPLOAD_LABEL, resolveUploadHttpError, validateUploadBatchSize } from '@/utils/fileUploadLimit.js'
 
 /** 新建项目：智能文件夹扫描与批量上传 */
 export function useSmartFolderImport() {
@@ -95,6 +96,14 @@ export function useSmartFolderImport() {
     importedRootFolderName.value = extractRootFolderNameFromFiles(list)
     scannedEntries.value = scanLocalFolderFiles(list)
     fileUploadStates.clear()
+    const oversizedCount = scannedEntries.value.filter((entry) =>
+      isFileOverUploadLimit(entry.file?.size)
+    ).length
+    if (oversizedCount > 0) {
+      ElMessage.warning(
+        `${oversizedCount} 个文件超过单文件 ${MAX_SINGLE_FILE_UPLOAD_LABEL} 限制，上传时将失败`
+      )
+    }
     if (!scannedEntries.value.length) {
       ElMessage.warning('文件夹中未找到可识别的 PDF/Excel 业务文件')
     }
@@ -190,6 +199,15 @@ export function useSmartFolderImport() {
       return { success: false, successCount: 0, errorCount: 0 }
     }
 
+    const batchCheck = validateUploadBatchSize(uploadItems)
+    if (!batchCheck.ok) {
+      ElMessage.error(batchCheck.message)
+      return { success: false, successCount: 0, errorCount: uploadItems.length }
+    }
+    if (batchCheck.warning) {
+      ElMessage.warning(batchCheck.warning)
+    }
+
     uploadAbortController.value?.abort()
     const ac = new AbortController()
     uploadAbortController.value = ac
@@ -247,7 +265,7 @@ export function useSmartFolderImport() {
             : `全部 ${result.successCount} 个文件已入库，后台将自动后处理与解析`
         )
       } else {
-        ElMessage.warning('没有文件上传成功')
+        ElMessage.warning('没有文件上传成功，请查看各行错误说明')
       }
 
       return {
@@ -258,7 +276,7 @@ export function useSmartFolderImport() {
     } catch (error) {
       if (!isUploadAbortError(error)) {
         console.error('智能文件夹上传失败:', error)
-        ElMessage.error(error?.message || '文件上传失败')
+        ElMessage.error(resolveUploadHttpError(error, '文件上传失败'))
       }
       return { success: false, successCount: 0, errorCount: uploadItems.length }
     } finally {

@@ -9,7 +9,16 @@ import {
   searchMissingUsageByPages as searchMissingUsageByPagesRaw,
   searchRoomInfosByPages as searchRoomInfosByPagesRaw,
 } from '@/composables/file-upload/roomInfoPageSearch.js'
-import { normalizeRoomField, validateRoomForCreate } from '@/utils/roomInfoValidation.js'
+import {
+  normalizeRoomField,
+  validateRoomForCreate,
+  validateChangedRoomAreaFields,
+  getChangedRoomAreaFields,
+  getRoomAreaNumericError,
+  normalizeRoomAreaForCommit,
+  ROOM_AREA_FIELDS,
+  formatRoomAreaFromApi,
+} from '@/utils/roomInfoValidation.js'
 
 const SAVE_CONCURRENCY = 5
 const MAX_DIRTY_ROWS = 200
@@ -186,10 +195,10 @@ export function useRoomEditWorkflow(options = {}) {
       id: item.id,
       roomLevel: item.roomLevel || '-',
       roomNumber: item.roomNumber || '-',
-      buildingArea: Number(item.buildingArea || 0).toFixed(2),
-      innerArea: Number(item.innerArea || 0).toFixed(2),
-      balconyArea: Number(item.balconyArea || 0).toFixed(2),
-      sharedArea: Number(item.sharedArea || 0).toFixed(2),
+      buildingArea: formatRoomAreaFromApi(item.buildingArea),
+      innerArea: formatRoomAreaFromApi(item.innerArea),
+      balconyArea: formatRoomAreaFromApi(item.balconyArea),
+      sharedArea: formatRoomAreaFromApi(item.sharedArea),
       isCalculate: Number(item.isCalculate ?? 0),
       usageCategory: usageCategoryMap?.[item.usageCategory] || '未知',
       roomUsage: item.roomUsage || '-',
@@ -568,7 +577,32 @@ export function useRoomEditWorkflow(options = {}) {
   }
 
   const commitActiveCell = () => {
-    const { rowId } = activeCell.value
+    const { rowId, field } = activeCell.value
+    if (rowId && ROOM_AREA_FIELDS.includes(field)) {
+      const row = findRoomRowById(rowId)
+      const snapshot = originalByRowId.get(rowId)
+      const numericError = getRoomAreaNumericError(field, row?.[field])
+      if (numericError) {
+        ElMessage.warning(numericError)
+        if (row && snapshot) {
+          row[field] = snapshot[field]
+        }
+        activeCell.value = { rowId: '', field: '' }
+        return
+      }
+      const normalized = normalizeRoomAreaForCommit(row?.[field])
+      if (normalized === null) {
+        ElMessage.warning('面积格式无效')
+        if (row && snapshot) {
+          row[field] = snapshot[field]
+        }
+        activeCell.value = { rowId: '', field: '' }
+        return
+      }
+      if (row) {
+        row[field] = normalized
+      }
+    }
     if (rowId) markRowDirtyIfChanged(rowId)
     activeCell.value = { rowId: '', field: '' }
   }
@@ -692,6 +726,28 @@ export function useRoomEditWorkflow(options = {}) {
     if (dirtyIds.length > MAX_DIRTY_ROWS) {
       ElMessage.warning(`单次最多保存 ${MAX_DIRTY_ROWS} 条，请分批操作`)
       return false
+    }
+
+    for (const id of dirtyIds) {
+      const row = findRoomRowById(id)
+      const snapshot = originalByRowId.get(id)
+      const validation = validateChangedRoomAreaFields(row, snapshot)
+      if (!validation.ok) {
+        const level = normalizeRoomField(row?.roomLevel) || '-'
+        const number = normalizeRoomField(row?.roomNumber) || '-'
+        ElMessage.warning(`${validation.message}（${level} / ${number}）`)
+        return false
+      }
+      for (const field of getChangedRoomAreaFields(row, snapshot)) {
+        const normalized = normalizeRoomAreaForCommit(row?.[field])
+        if (normalized === null) {
+          const level = normalizeRoomField(row?.roomLevel) || '-'
+          const number = normalizeRoomField(row?.roomNumber) || '-'
+          ElMessage.warning(`面积格式无效（${level} / ${number}）`)
+          return false
+        }
+        row[field] = normalized
+      }
     }
 
     localBatchUpdateLoading.value = true

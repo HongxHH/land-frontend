@@ -125,10 +125,12 @@
           <RoomTableEditableCell
             :row="resolveEditRow(row)"
             field="buildingArea"
-            :display="resolveEditRow(row).buildingArea || '0.00'"
-            :display-title="resolveEditRow(row).buildingArea || '0.00'"
+            :display="formatRoomAreaDisplay(resolveEditRow(row).buildingArea)"
+            :display-title="formatRoomAreaDisplay(resolveEditRow(row).buildingArea)"
             :active="isCellActive(row, 'buildingArea')"
             input-type="number"
+            non-negative
+            :max-decimals="ROOM_AREA_MAX_DECIMALS"
             @activate="startCellEdit(row, 'buildingArea')"
             @commit="commitActiveCell"
           />
@@ -146,10 +148,12 @@
           <RoomTableEditableCell
             :row="resolveEditRow(row)"
             field="innerArea"
-            :display="resolveEditRow(row).innerArea || '0.00'"
-            :display-title="resolveEditRow(row).innerArea || '0.00'"
+            :display="formatRoomAreaDisplay(resolveEditRow(row).innerArea)"
+            :display-title="formatRoomAreaDisplay(resolveEditRow(row).innerArea)"
             :active="isCellActive(row, 'innerArea')"
             input-type="number"
+            non-negative
+            :max-decimals="ROOM_AREA_MAX_DECIMALS"
             @activate="startCellEdit(row, 'innerArea')"
             @commit="commitActiveCell"
           />
@@ -167,10 +171,12 @@
           <RoomTableEditableCell
             :row="resolveEditRow(row)"
             field="balconyArea"
-            :display="resolveEditRow(row).balconyArea || '0.00'"
-            :display-title="resolveEditRow(row).balconyArea || '0.00'"
+            :display="formatRoomAreaDisplay(resolveEditRow(row).balconyArea)"
+            :display-title="formatRoomAreaDisplay(resolveEditRow(row).balconyArea)"
             :active="isCellActive(row, 'balconyArea')"
             input-type="number"
+            non-negative
+            :max-decimals="ROOM_AREA_MAX_DECIMALS"
             @activate="startCellEdit(row, 'balconyArea')"
             @commit="commitActiveCell"
           />
@@ -188,10 +194,12 @@
           <RoomTableEditableCell
             :row="resolveEditRow(row)"
             field="sharedArea"
-            :display="resolveEditRow(row).sharedArea || '0.00'"
-            :display-title="resolveEditRow(row).sharedArea || '0.00'"
+            :display="formatRoomAreaDisplay(resolveEditRow(row).sharedArea)"
+            :display-title="formatRoomAreaDisplay(resolveEditRow(row).sharedArea)"
             :active="isCellActive(row, 'sharedArea')"
             input-type="number"
+            non-negative
+            :max-decimals="ROOM_AREA_MAX_DECIMALS"
             @activate="startCellEdit(row, 'sharedArea')"
             @commit="commitActiveCell"
           />
@@ -462,24 +470,48 @@
       <el-row :gutter="12">
         <el-col :span="12">
           <el-form-item label="建筑面积(㎡)">
-            <el-input v-model="createRoomForm.buildingArea" type="number" />
+            <el-input
+              :model-value="createRoomForm.buildingArea"
+              type="number"
+              min="0"
+              step="any"
+              @update:model-value="(v) => onCreateRoomAreaInput('buildingArea', v)"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="套内面积(㎡)">
-            <el-input v-model="createRoomForm.innerArea" type="number" />
+            <el-input
+              :model-value="createRoomForm.innerArea"
+              type="number"
+              min="0"
+              step="any"
+              @update:model-value="(v) => onCreateRoomAreaInput('innerArea', v)"
+            />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="12">
         <el-col :span="12">
           <el-form-item label="阳台面积(㎡)">
-            <el-input v-model="createRoomForm.balconyArea" type="number" />
+            <el-input
+              :model-value="createRoomForm.balconyArea"
+              type="number"
+              min="0"
+              step="any"
+              @update:model-value="(v) => onCreateRoomAreaInput('balconyArea', v)"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="分摊面积(㎡)">
-            <el-input v-model="createRoomForm.sharedArea" type="number" />
+            <el-input
+              :model-value="createRoomForm.sharedArea"
+              type="number"
+              min="0"
+              step="any"
+              @update:model-value="(v) => onCreateRoomAreaInput('sharedArea', v)"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -610,6 +642,11 @@ import {
 } from '@/composables/file-upload/auditSummaryMetrics'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 import RoomTableEditableCell from '@/components/file-upload/RoomTableEditableCell.vue'
+import {
+  clampRoomAreaInput,
+  formatRoomAreaDisplay,
+  ROOM_AREA_MAX_DECIMALS,
+} from '@/utils/roomInfoValidation.js'
 import { Loading, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -846,6 +883,10 @@ const {
   openCreateUsageDialogForRow,
   resetUsageEditorState,
 } = usageEditor
+
+const onCreateRoomAreaInput = (field, value) => {
+  createRoomForm[field] = clampRoomAreaInput(value)
+}
 
 watch(openRef, (open) => {
   if (!open) {

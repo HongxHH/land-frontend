@@ -7,6 +7,11 @@ import {
   UPLOAD_FILE_STATUS,
 } from '@/composables/file-upload/useConcurrentFileUpload.js'
 import { uploadFile as defaultUploadApi } from '@/services/file.service'
+import {
+  processUploadFileSelection,
+  resolveUploadHttpError,
+  validateUploadBatchSize,
+} from '@/utils/fileUploadLimit.js'
 
 export function useUploadDialog({
   currentProject,
@@ -39,8 +44,15 @@ export function useUploadDialog({
   }
 
   const handleFileChange = (_, fileList) => {
-    tempFiles.value = fileList
-    for (const item of fileList) {
+    const { accepted, errors, warnings } = processUploadFileSelection(fileList)
+    for (const message of errors) {
+      ElMessage.error(message)
+    }
+    for (const message of warnings) {
+      ElMessage.warning(message)
+    }
+    tempFiles.value = accepted
+    for (const item of accepted) {
       const uid = resolveUploadFileUid(item)
       if (!fileUploadStates.has(uid)) {
         fileUploadStates.set(uid, {
@@ -85,6 +97,15 @@ export function useUploadDialog({
   })
 
   const executeUpload = async (filesToUpload) => {
+    const batchCheck = validateUploadBatchSize(filesToUpload)
+    if (!batchCheck.ok) {
+      ElMessage.error(batchCheck.message)
+      return { successCount: 0, errorCount: filesToUpload.length, cancelled: false }
+    }
+    if (batchCheck.warning) {
+      ElMessage.warning(batchCheck.warning)
+    }
+
     uploadLoading.value = true
     try {
       const result = await runConcurrentUploads({
@@ -118,7 +139,7 @@ export function useUploadDialog({
       } else if (result.successCount > 0) {
         ElMessage.success(`${result.successCount} 个文件已入库，正在后台后处理与解析`)
       } else if (!result.cancelled) {
-        ElMessage.error('文件上传失败')
+        ElMessage.error('文件上传失败，请查看各行错误说明')
       }
 
       return result
@@ -200,7 +221,5 @@ export function useUploadDialog({
 }
 
 function extractUploadError(err) {
-  if (err?.response?.data?.msg) return err.response.data.msg
-  if (err?.message) return err.message
-  return '未知错误，上传失败'
+  return resolveUploadHttpError(err, '未知错误，上传失败')
 }

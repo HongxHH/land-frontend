@@ -4,6 +4,7 @@ import {
   enrichAuditSummaryFromVerificationReason,
   isAreaSumMissing,
 } from '@/composables/file-upload/auditSummaryMetrics'
+import { formatRoomAreaFromApi } from '@/utils/roomInfoValidation.js'
 import { ElMessage } from 'element-plus'
 import { downloadGridFsFile } from '@/services/file.service'
 import { queryRoomInfos } from '@/services/project.service'
@@ -296,10 +297,10 @@ export function useCalibrationViewer({
               id: item.id,
               roomLevel: item.roomLevel || '-',
               roomNumber: item.roomNumber || '-',
-              buildingArea: Number(item.buildingArea || 0).toFixed(2),
-              innerArea: Number(item.innerArea || 0).toFixed(2),
-              balconyArea: Number(item.balconyArea || 0).toFixed(2),
-              sharedArea: Number(item.sharedArea || 0).toFixed(2),
+              buildingArea: formatRoomAreaFromApi(item.buildingArea),
+              innerArea: formatRoomAreaFromApi(item.innerArea),
+              balconyArea: formatRoomAreaFromApi(item.balconyArea),
+              sharedArea: formatRoomAreaFromApi(item.sharedArea),
               isCalculate: Number(item.isCalculate ?? 0),
               usageCategory: usageCategoryMap[item.usageCategory] || '未知',
               roomUsage: item.roomUsage || '-',
@@ -346,7 +347,7 @@ export function useCalibrationViewer({
     }
   }
 
-  const pdfLoaded = () => {}
+  const pdfLoaded = () => { }
 
   const pdfLoadError = () => {
     ElMessage.warning('PDF预览失败，可通过下载接口查看文件')

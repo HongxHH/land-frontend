@@ -1,5 +1,10 @@
 import axios from 'axios'
 import { uploadFile } from '@/services/file.service'
+import {
+  getFileOverLimitMessage,
+  isFileOverUploadLimit,
+  resolveUploadHttpError,
+} from '@/utils/fileUploadLimit.js'
 
 export const UPLOAD_FILE_STATUS = {
   PENDING: 'pending',
@@ -22,10 +27,8 @@ function resolveRawFile(fileItem) {
   return fileItem?.raw ?? fileItem
 }
 
-function extractErrorMessage(error) {
-  return (
-    error?.response?.data?.msg || error?.response?.data?.message || error?.message || '文件上传失败'
-  )
+function extractErrorMessage(error, context) {
+  return resolveUploadHttpError(error, '文件上传失败', context)
 }
 
 function createInitialState(fileItem) {
@@ -95,6 +98,14 @@ export async function runConcurrentUploads({
     }
 
     const state = states.get(uid)
+    if (isFileOverUploadLimit(raw.size)) {
+      state.status = UPLOAD_FILE_STATUS.ERROR
+      state.error = getFileOverLimitMessage(raw.name, raw.size)
+      errorCount += 1
+      notify(uid)
+      return
+    }
+
     state.status = UPLOAD_FILE_STATUS.UPLOADING
     state.progress = 0
     state.loaded = 0
@@ -152,7 +163,11 @@ export async function runConcurrentUploads({
         cancelled = true
       } else {
         state.status = UPLOAD_FILE_STATUS.ERROR
-        state.error = extractErrorMessage(error)
+        state.error = extractErrorMessage(error, {
+          fileSize: raw.size,
+          loadedBytes: state.loaded,
+          batchTotalBytes: state.total,
+        })
         errorCount += 1
       }
     }

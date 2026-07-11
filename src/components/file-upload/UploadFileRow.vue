@@ -121,7 +121,7 @@ const sizeText = computed(() => formatArchiveFileSize(props.sizeBytes))
 .upload-file-row-error {
   font-size: 12px;
   color: var(--el-color-danger);
-  max-width: 140px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

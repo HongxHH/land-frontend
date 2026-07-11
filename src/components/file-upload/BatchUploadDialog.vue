@@ -52,6 +52,7 @@
           </div>
           <div class="upload-title">拖拽文件到这里</div>
           <div class="upload-sub">或点击选择文件上传</div>
+          <div class="upload-limit-hint">单文件不超过 {{ maxSingleFileUploadLabel }}</div>
         </div>
       </el-upload>
 
@@ -97,6 +98,9 @@
 <script setup>
 import { UploadFilled } from '@element-plus/icons-vue'
 import UploadFileRow from '@/components/file-upload/UploadFileRow.vue'
+import { MAX_SINGLE_FILE_UPLOAD_LABEL } from '@/utils/fileUploadLimit.js'
+
+const maxSingleFileUploadLabel = MAX_SINGLE_FILE_UPLOAD_LABEL
 
 const props = defineProps({
   modelValue: {
@@ -239,6 +243,12 @@ const resolveFileState = (item) => props.getFileUploadState?.(item) ?? null
 .upload-sub {
   font-size: 12px;
   color: #475569;
+}
+
+.upload-limit-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 .upload-dropzone .el-upload-dragger {
