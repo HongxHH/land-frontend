@@ -1,5 +1,6 @@
 ﻿import { nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useProjectOptions } from '@/composables/file-upload/useProjectOptions'
 import { useFileTableQuery } from '@/composables/file-upload/useFileTableQuery'
 import {
@@ -17,6 +18,7 @@ export function useFileUploadPage() {
   const route = useRoute()
   const router = useRouter()
   const pendingAuditFileId = ref('')
+  const calibrationProjectId = ref('')
   const { statusMap, usageCategoryMap, usageCategoryReverseMap } = useFileUploadConstants()
   const tableRowClassName = () => 'no-hover-highlight'
 
@@ -104,7 +106,7 @@ export function useFileUploadPage() {
     realSurveyReportId,
     switchView,
     resetCalibrationState,
-    openCalibration,
+    openCalibration: openCalibrationRaw,
     pdfLoaded,
     pdfLoadError,
   } = useCalibrationViewer({
@@ -174,6 +176,29 @@ export function useFileUploadPage() {
     usageCategoryMap,
     usageCategoryReverseMap,
     auditSummaryData,
+    auditProjectId: calibrationProjectId,
+  })
+
+  const openCalibration = async (row) => {
+    calibrationProjectId.value = String(currentProject.value || '')
+    await openCalibrationRaw(row)
+  }
+
+  watch(currentProject, (newProjectId, oldProjectId) => {
+    if (!oldProjectId || String(newProjectId || '') === String(oldProjectId || '')) return
+    calibrationProjectId.value = ''
+    if (!showCalibration.value) return
+    showCalibration.value = false
+    clearDirtyState()
+    resetCalibrationState()
+    currentFile.value = null
+    ElMessage.warning('项目已切换，已关闭原项目的审核窗口')
+  })
+
+  watch(showCalibration, (visible) => {
+    if (!visible) {
+      calibrationProjectId.value = ''
+    }
   })
 
   // 从归档页跳转到审核页时，自动带入项目ID

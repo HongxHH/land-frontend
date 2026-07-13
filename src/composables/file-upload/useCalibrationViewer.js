@@ -115,6 +115,7 @@ export function useCalibrationViewer({
     preprocessGridfsId.value = ''
     calibrationPdfUrl.value = ''
     recognitionMdContent.value = ''
+    realSurveyReportId.value = null
 
     Object.assign(auditSummaryData, {
       pendingConfirmArea: '0.00',
@@ -143,6 +144,7 @@ export function useCalibrationViewer({
     calibrationLoading.value = true
     pdfLoading.value = true
     calibrationPdfUrl.value = ''
+    realSurveyReportId.value = null
     preprocessGridfsId.value = row.preprocessGridfsId || ''
     currentViewType.value = 'original'
 

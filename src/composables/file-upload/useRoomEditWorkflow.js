@@ -71,6 +71,7 @@ export function useRoomEditWorkflow(options = {}) {
     usageCategoryMap,
     usageCategoryReverseMap,
     auditSummaryData,
+    auditProjectId,
   } = options
 
   const localBatchUpdateLoading = batchUpdateLoading || ref(false)
@@ -93,8 +94,8 @@ export function useRoomEditWorkflow(options = {}) {
   const getRoomPageSize = () => Math.max(10, Math.min(200, Number(roomInfoPageSize?.value || 50)))
 
   const fetchRoomInfoPage = async (pageNum) => {
-    const { projectId, surveyReportId } = ensureContext()
-    if (!projectId || !surveyReportId) {
+    const { projectId, surveyReportId, ok } = ensureContext()
+    if (!ok) {
       return { records: [], total: 0, ok: false }
     }
 
@@ -259,19 +260,26 @@ export function useRoomEditWorkflow(options = {}) {
 
   const ensureContext = () => {
     const projectId = Number(currentProject?.value || 0)
+    const expectedProjectId = Number(auditProjectId?.value || projectId)
     const surveyReportId = Number(realSurveyReportId?.value || 0)
     const fileRecordId = Number(currentFile?.value?.rawId || 0)
+    const contextStable = Boolean(projectId && expectedProjectId && projectId === expectedProjectId)
     return {
       projectId,
       surveyReportId,
       fileRecordId,
-      ok: Boolean(projectId && surveyReportId && fileRecordId),
+      ok: Boolean(contextStable && surveyReportId && fileRecordId),
+      contextStable,
     }
   }
 
+  const warnProjectContextDrift = () => {
+    ElMessage.warning('项目已切换，当前审核上下文已失效，请重新打开审核')
+  }
+
   const reloadRoomOnly = async ({ pageNum, preserveDirty = true } = {}) => {
-    const { projectId, surveyReportId } = ensureContext()
-    if (!projectId || !surveyReportId) return
+    const { ok } = ensureContext()
+    if (!ok) return
 
     roomInfoLoading.value = true
     try {
@@ -306,8 +314,8 @@ export function useRoomEditWorkflow(options = {}) {
   }
 
   const loadMoreRoomInfo = async () => {
-    const { projectId, surveyReportId } = ensureContext()
-    if (!projectId || !surveyReportId) return false
+    const { ok } = ensureContext()
+    if (!ok) return false
     if (roomInfoLoading.value || roomInfoLoadingMore.value) return false
 
     const total = Number(roomInfoTotal?.value || 0)
@@ -692,13 +700,12 @@ export function useRoomEditWorkflow(options = {}) {
   }
 
   const searchRoomInfosByPages = async (keyword, { signal, onProgress } = {}) => {
-    const projectId = Number(currentProject?.value || 0)
-    const surveyReportInfoId = Number(realSurveyReportId?.value || 0)
-    if (!projectId || !surveyReportInfoId) return []
+    const { projectId, surveyReportId, ok } = ensureContext()
+    if (!ok) return []
 
     return searchRoomInfosByPagesRaw({
       projectId,
-      surveyReportInfoId,
+      surveyReportInfoId: surveyReportId,
       keyword,
       signal,
       onProgress,
@@ -708,13 +715,12 @@ export function useRoomEditWorkflow(options = {}) {
   }
 
   const searchMissingUsageByPages = async ({ signal, onProgress } = {}) => {
-    const projectId = Number(currentProject?.value || 0)
-    const surveyReportInfoId = Number(realSurveyReportId?.value || 0)
-    if (!projectId || !surveyReportInfoId) return []
+    const { projectId, surveyReportId, ok } = ensureContext()
+    if (!ok) return []
 
     return searchMissingUsageByPagesRaw({
       projectId,
-      surveyReportInfoId,
+      surveyReportInfoId: surveyReportId,
       signal,
       onProgress,
       queryRoomInfos,
@@ -724,6 +730,11 @@ export function useRoomEditWorkflow(options = {}) {
 
   const handleSaveDirtyRows = async () => {
     commitActiveCell()
+    const context = ensureContext()
+    if (!context.contextStable) {
+      warnProjectContextDrift()
+      return false
+    }
     const dirtyIds = getDirtyRowIds()
     if (!dirtyIds.length) {
       ElMessage.info('无修改')
@@ -805,7 +816,11 @@ export function useRoomEditWorkflow(options = {}) {
   }
 
   const handleCreateRoom = async (payload = {}) => {
-    const { projectId, surveyReportId, fileRecordId, ok } = ensureContext()
+    const { projectId, surveyReportId, fileRecordId, ok, contextStable } = ensureContext()
+    if (!contextStable) {
+      warnProjectContextDrift()
+      return false
+    }
     if (!ok) {
       ElMessage.warning('缺少项目/文件/报告信息，无法新增户室')
       return false
@@ -864,6 +879,11 @@ export function useRoomEditWorkflow(options = {}) {
   }
 
   const handleDeleteRoom = async (row) => {
+    const context = ensureContext()
+    if (!context.contextStable) {
+      warnProjectContextDrift()
+      return false
+    }
     const roomId = Number(row?.id || 0)
     if (!roomId) {
       ElMessage.warning('缺少户室ID，无法删除')
@@ -909,6 +929,11 @@ export function useRoomEditWorkflow(options = {}) {
 
   const handleRefreshSurveyReport = async () => {
     commitActiveCell()
+    const context = ensureContext()
+    if (!context.contextStable) {
+      warnProjectContextDrift()
+      return false
+    }
     if (hasUnsavedChanges.value) {
       const canProceed = await confirmDiscardUnsavedChanges()
       if (!canProceed) return false
@@ -929,6 +954,11 @@ export function useRoomEditWorkflow(options = {}) {
   const handleSaveOcrSum = async (field, rawValue) => {
     if (!OCR_SUM_FIELD_SET.has(field)) return false
 
+    const context = ensureContext()
+    if (!context.contextStable) {
+      warnProjectContextDrift()
+      return false
+    }
     const surveyReportId = Number(realSurveyReportId?.value || 0)
     if (!surveyReportId) {
       ElMessage.warning('缺少实测报告ID，无法保存 OCR 合计')

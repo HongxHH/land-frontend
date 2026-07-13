@@ -1,4 +1,4 @@
-import { computed, ref, toValue } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useCalibrationState } from '@/composables/file-upload/useCalibrationState'
 import { useCalibrationViewer } from '@/composables/file-upload/useCalibrationViewer'
@@ -30,6 +30,7 @@ export function useArchiveFolderAuditStack(deps) {
   const capacityIndicatorAuditInitialFile = ref(null)
   const auditFocusUsageName = ref('')
   const auditFocusMode = ref('')
+  const auditProjectId = ref('')
 
   const currentProject = computed(() => String(toValue(deps.projectId) || ''))
 
@@ -124,6 +125,48 @@ export function useArchiveFolderAuditStack(deps) {
     usageCategoryMap,
     usageCategoryReverseMap,
     auditSummaryData,
+    auditProjectId,
+  })
+
+  const resetAuditSurfaces = () => {
+    showCalibration.value = false
+    clearDirtyState()
+    auditFocusUsageName.value = ''
+    auditFocusMode.value = ''
+    auditProjectId.value = ''
+    currentFile.value = null
+    resetCalibrationState()
+    planningReviewAuditVisible.value = false
+    planningReviewAuditForm.value = null
+    partySummaryAuditVisible.value = false
+    partySummaryAuditFileRecordId.value = ''
+    partySummaryAuditInitialFile.value = null
+    capacityIndicatorAuditVisible.value = false
+    capacityIndicatorAuditFileRecordId.value = ''
+    capacityIndicatorAuditInitialFile.value = null
+  }
+
+  const hasOpenAuditSurface = () =>
+    showCalibration.value ||
+    planningReviewAuditVisible.value ||
+    partySummaryAuditVisible.value ||
+    capacityIndicatorAuditVisible.value
+
+  const openCalibrationForCurrentProject = async (row) => {
+    auditProjectId.value = currentProject.value
+    await openCalibration(row)
+  }
+
+  watch(currentProject, (nextProjectId, previousProjectId) => {
+    if (!previousProjectId || nextProjectId === previousProjectId || !hasOpenAuditSurface()) return
+    resetAuditSurfaces()
+    ElMessage.warning('项目已切换，已关闭原项目的审核窗口')
+  })
+
+  watch(showCalibration, (visible) => {
+    if (!visible) {
+      auditProjectId.value = ''
+    }
   })
 
   const openPlanningReviewAudit = async (row) => {
@@ -261,7 +304,7 @@ export function useArchiveFolderAuditStack(deps) {
       ElMessage.warning('该文件缺少可预览的源文件ID，无法进入审核')
       return
     }
-    openCalibration(currentRow)
+    await openCalibrationForCurrentProject(currentRow)
   }
 
   const findFileByRecordIdDirect = async (targetFileRecordId) => {
@@ -405,10 +448,7 @@ export function useArchiveFolderAuditStack(deps) {
   }
 
   const handleCalibrationClosed = async () => {
-    clearDirtyState()
-    auditFocusUsageName.value = ''
-    auditFocusMode.value = ''
-    resetCalibrationState()
+    resetAuditSurfaces()
     await refreshArchiveFiles()
     deps.onAuditReturnNavigate?.()
   }
