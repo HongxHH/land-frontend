@@ -38,6 +38,7 @@
           <VueOfficeExcelAsync
             v-if="excelSrc"
             :src="excelSrc"
+            :options="{ xls: true }"
             class="archive-preview-excel-view"
             @rendered="onExcelRendered"
             @error="emit('excel-error', $event)"
