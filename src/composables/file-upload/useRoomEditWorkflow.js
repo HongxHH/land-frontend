@@ -257,6 +257,17 @@ export function useRoomEditWorkflow(options = {}) {
     bumpDirty()
   }
 
+  const markRowsPersisted = (rowIds = []) => {
+    let changed = false
+    for (const rowId of rowIds) {
+      const id = String(rowId || '')
+      if (!id) continue
+      changed = originalByRowId.delete(id) || changed
+      changed = offPageRowEdits.delete(id) || changed
+    }
+    if (changed) bumpDirty()
+  }
+
   const ensureContext = () => {
     const projectId = Number(currentProject?.value || 0)
     const surveyReportId = Number(realSurveyReportId?.value || 0)
@@ -770,6 +781,8 @@ export function useRoomEditWorkflow(options = {}) {
 
       const failures = results.filter((result) => !result?.ok)
       if (failures.length > 0) {
+        const persistedIds = dirtyIds.filter((id, index) => results[index]?.ok)
+        markRowsPersisted(persistedIds)
         await reloadRoomAndSummaryData({
           refreshReport: false,
           silentRefresh: true,
