@@ -2,6 +2,7 @@
 import axios from 'axios'
 import {
   enrichAuditSummaryFromVerificationReason,
+  isAuditSummaryFieldDerivedFromVerificationReason,
   OCR_SUM_FIELD_KEYS,
 } from '@/composables/file-upload/auditSummaryMetrics'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
@@ -958,7 +959,15 @@ export function useRoomEditWorkflow(options = {}) {
       return false
     }
     const currentValue = Number(auditSummaryData?.[field] || 0)
-    if (Number.isFinite(currentValue) && Math.abs(currentValue - nextValue) < 0.00005) {
+    const currentValueIsDerived = isAuditSummaryFieldDerivedFromVerificationReason(
+      auditSummaryData,
+      field
+    )
+    if (
+      !currentValueIsDerived &&
+      Number.isFinite(currentValue) &&
+      Math.abs(currentValue - nextValue) < 0.00005
+    ) {
       return true
     }
 

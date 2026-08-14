@@ -41,6 +41,8 @@ const METRIC_FIELD_MAP = [
   },
 ]
 
+const DERIVED_AREA_SUM_FIELDS_PROP = '__derivedAreaSumFields'
+
 /** OCR 合计字段名（与 SurveyReportInfo / 更新 DTO 一致） */
 export const OCR_SUM_FIELD_KEYS = METRIC_FIELD_MAP.map((m) => m.ocrKey)
 
@@ -59,6 +61,35 @@ export function toAreaNumber(value) {
 
 export function isAreaSumMissing(value) {
   return toAreaNumber(value) === 0
+}
+
+function getDerivedAreaSumFields(auditSummaryData) {
+  if (!auditSummaryData) return null
+  let fields = auditSummaryData[DERIVED_AREA_SUM_FIELDS_PROP]
+  if (!fields) {
+    fields = {}
+    Object.defineProperty(auditSummaryData, DERIVED_AREA_SUM_FIELDS_PROP, {
+      value: fields,
+      enumerable: false,
+      configurable: true,
+      writable: true,
+    })
+  }
+  return fields
+}
+
+function setAreaSumDerived(auditSummaryData, field, derived) {
+  const fields = getDerivedAreaSumFields(auditSummaryData)
+  if (!fields) return
+  if (derived) {
+    fields[field] = true
+  } else {
+    delete fields[field]
+  }
+}
+
+export function isAuditSummaryFieldDerivedFromVerificationReason(auditSummaryData, field) {
+  return Boolean(auditSummaryData?.[DERIVED_AREA_SUM_FIELDS_PROP]?.[field])
 }
 
 /** 从 verificationErrorReason 解析「列表汇总 / OCR」成对数值 */
@@ -80,12 +111,22 @@ export function enrichAuditSummaryFromVerificationReason(auditSummaryData) {
   const parsed = parseAreaPairsFromVerificationReason(auditSummaryData.verificationErrorReason)
   for (const { key, manualKey, ocrKey } of METRIC_FIELD_MAP) {
     const fromReason = parsed[key]
-    if (!fromReason) continue
+    if (!fromReason) {
+      setAreaSumDerived(auditSummaryData, manualKey, false)
+      setAreaSumDerived(auditSummaryData, ocrKey, false)
+      continue
+    }
     if (isAreaSumMissing(auditSummaryData[manualKey]) && fromReason.manual > 0) {
       auditSummaryData[manualKey] = fromReason.manual.toFixed(2)
+      setAreaSumDerived(auditSummaryData, manualKey, true)
+    } else {
+      setAreaSumDerived(auditSummaryData, manualKey, false)
     }
     if (isAreaSumMissing(auditSummaryData[ocrKey]) && fromReason.ocr > 0) {
       auditSummaryData[ocrKey] = fromReason.ocr.toFixed(2)
+      setAreaSumDerived(auditSummaryData, ocrKey, true)
+    } else {
+      setAreaSumDerived(auditSummaryData, ocrKey, false)
     }
   }
 }
