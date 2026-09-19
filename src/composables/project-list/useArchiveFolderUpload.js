@@ -161,10 +161,16 @@ export function useArchiveFolderUpload(deps) {
     return params
   }
 
+  const createUploadBatchSnapshot = () => ({
+    params: buildUploadParams(),
+    fileContextType: uploadForm.fileContextType,
+  })
+
   const runUploadBatch = async (filesToUpload) => {
     uploadAbortController.value?.abort()
     const ac = new AbortController()
     uploadAbortController.value = ac
+    const batchSnapshot = createUploadBatchSnapshot()
 
     uploadLoading.value = true
     uploadProgress.value = 0
@@ -174,7 +180,7 @@ export function useArchiveFolderUpload(deps) {
 
     const result = await runConcurrentUploads({
       files: filesToUpload,
-      buildParams: buildUploadParams,
+      buildParams: () => ({ ...batchSnapshot.params }),
       concurrency: 4,
       signal: ac.signal,
       onFileState: applyFileState,
@@ -183,7 +189,7 @@ export function useArchiveFolderUpload(deps) {
         deps.onFileUploaded?.({
           fileId,
           fileName,
-          fileContextType: uploadForm.fileContextType,
+          fileContextType: batchSnapshot.fileContextType,
           uploadUserName: toValue(deps.uploadUserName) || '—',
         })
       },

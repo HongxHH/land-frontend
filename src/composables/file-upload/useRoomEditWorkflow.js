@@ -2,6 +2,7 @@
 import axios from 'axios'
 import {
   enrichAuditSummaryFromVerificationReason,
+  isAuditSummaryFieldDerivedFromVerificationReason,
   OCR_SUM_FIELD_KEYS,
 } from '@/composables/file-upload/auditSummaryMetrics'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
@@ -15,6 +16,7 @@ import {
 import {
   normalizeRoomField,
   validateRoomForCreate,
+  validateRoomForUpdate,
   validateChangedRoomAreaFields,
   getChangedRoomAreaFields,
   getRoomAreaNumericError,
@@ -156,6 +158,8 @@ export function useRoomEditWorkflow(options = {}) {
     return rows
   }
 
+  const validateRoomRowForUpdate = (row) => validateRoomForUpdate(row, collectKnownRoomRows())
+
   const persistRoomRow = async (
     row,
     { refreshReport = true, silentRefresh = true, skipReload = false, silentError = false } = {}
@@ -165,6 +169,12 @@ export function useRoomEditWorkflow(options = {}) {
       const message = '缺少户室ID，无法保存'
       if (!silentError) ElMessage.warning(message)
       return { ok: false, message }
+    }
+
+    const validation = validateRoomRowForUpdate(sourceRow)
+    if (!validation.ok) {
+      if (!silentError) ElMessage.warning(validation.message)
+      return { ok: false, message: validation.message }
     }
 
     try {
@@ -255,6 +265,17 @@ export function useRoomEditWorkflow(options = {}) {
     originalByRowId.clear()
     offPageRowEdits.clear()
     bumpDirty()
+  }
+
+  const markRowsPersisted = (rowIds = []) => {
+    let changed = false
+    for (const rowId of rowIds) {
+      const id = String(rowId || '')
+      if (!id) continue
+      changed = originalByRowId.delete(id) || changed
+      changed = offPageRowEdits.delete(id) || changed
+    }
+    if (changed) bumpDirty()
   }
 
   const ensureContext = () => {
@@ -737,6 +758,17 @@ export function useRoomEditWorkflow(options = {}) {
     for (const id of dirtyIds) {
       const row = findRoomRowById(id)
       const snapshot = originalByRowId.get(id)
+      if (!row) {
+        ElMessage.warning('户室数据不存在')
+        return false
+      }
+      const identityValidation = validateRoomRowForUpdate(row)
+      if (!identityValidation.ok) {
+        const level = normalizeRoomField(row?.roomLevel) || '-'
+        const number = normalizeRoomField(row?.roomNumber) || '-'
+        ElMessage.warning(`${identityValidation.message}（${level} / ${number}）`)
+        return false
+      }
       const validation = validateChangedRoomAreaFields(row, snapshot)
       if (!validation.ok) {
         const level = normalizeRoomField(row?.roomLevel) || '-'
@@ -770,6 +802,8 @@ export function useRoomEditWorkflow(options = {}) {
 
       const failures = results.filter((result) => !result?.ok)
       if (failures.length > 0) {
+        const persistedIds = dirtyIds.filter((id, index) => results[index]?.ok)
+        markRowsPersisted(persistedIds)
         await reloadRoomAndSummaryData({
           refreshReport: false,
           silentRefresh: true,
@@ -958,7 +992,15 @@ export function useRoomEditWorkflow(options = {}) {
       return false
     }
     const currentValue = Number(auditSummaryData?.[field] || 0)
-    if (Number.isFinite(currentValue) && Math.abs(currentValue - nextValue) < 0.00005) {
+    const currentValueIsDerived = isAuditSummaryFieldDerivedFromVerificationReason(
+      auditSummaryData,
+      field
+    )
+    if (
+      !currentValueIsDerived &&
+      Number.isFinite(currentValue) &&
+      Math.abs(currentValue - nextValue) < 0.00005
+    ) {
       return true
     }
 

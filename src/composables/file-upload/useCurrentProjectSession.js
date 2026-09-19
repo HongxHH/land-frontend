@@ -9,6 +9,7 @@ export function useCurrentProjectSession({
   stopPolling,
   calibrationPdfUrl,
   clearUploadSelection,
+  clearBatchSelection,
 }) {
   onMounted(async () => {
     await fetchProjectList()
@@ -20,6 +21,8 @@ export function useCurrentProjectSession({
   })
 
   watch(currentProject, (newProjectId) => {
+    clearUploadSelection?.()
+    clearBatchSelection?.()
     if (newProjectId) {
       localStorage.setItem('savedCurrentProject', newProjectId)
       resetFilter()
@@ -34,6 +37,7 @@ export function useCurrentProjectSession({
     if (calibrationPdfUrl.value) {
       URL.revokeObjectURL(calibrationPdfUrl.value)
     }
-    clearUploadSelection()
+    clearUploadSelection?.()
+    clearBatchSelection?.()
   })
 }

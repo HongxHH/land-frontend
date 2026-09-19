@@ -14,6 +14,7 @@
             <el-radio-group
               :model-value="tempUploadType"
               class="upload-type-group"
+              :disabled="uploadLoading"
               @update:model-value="(val) => $emit('update:tempUploadType', val)"
             >
               <el-radio-button value="CONTRACT">合同文件</el-radio-button>
@@ -28,6 +29,7 @@
               :min="1"
               :max="99"
               class="upload-phase"
+              :disabled="uploadLoading"
               @update:model-value="(val) => $emit('update:uploadPhase', val)"
             />
           </el-form-item>

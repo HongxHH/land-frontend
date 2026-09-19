@@ -53,6 +53,7 @@ export function useFileUploadPage() {
     batchLoading,
     canBatchParse,
     handleSelectionChange,
+    clearBatchSelection,
     batchDelete,
     batchParse,
     uploadDialogVisible,
@@ -133,6 +134,7 @@ export function useFileUploadPage() {
     stopPolling,
     calibrationPdfUrl,
     clearUploadSelection,
+    clearBatchSelection,
   })
 
   const {

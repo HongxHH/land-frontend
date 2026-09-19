@@ -658,6 +658,7 @@ import {
   sortMetricsForCompare,
   OCR_SUM_FIELD_KEYS,
   OCR_SUM_FIELD_BY_METRIC_KEY,
+  isAuditSummaryFieldDerivedFromVerificationReason,
 } from '@/composables/file-upload/auditSummaryMetrics'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 import RoomTableEditableCell from '@/components/file-upload/RoomTableEditableCell.vue'
@@ -961,8 +962,12 @@ const commitOcrCellEdit = async () => {
       Number.isFinite(prevNum) &&
       Number.isFinite(nextNum) &&
       Math.abs(prevNum - nextNum) < 0.00005)
+  const previousIsDerived = isAuditSummaryFieldDerivedFromVerificationReason(
+    props.auditSummaryData,
+    field
+  )
 
-  if (unchanged || !canEditOcr.value) {
+  if ((unchanged && !previousIsDerived) || !canEditOcr.value) {
     ocrEditRow[field] = previous
     return
   }

@@ -25,6 +25,7 @@ export function useFileUploadOperations({
     batchLoading,
     canBatchParse,
     handleSelectionChange,
+    clearBatchSelection,
     batchDelete,
     batchParse,
   } = useBatchActions({ refreshData, startPolling })
@@ -61,6 +62,7 @@ export function useFileUploadOperations({
     batchLoading,
     canBatchParse,
     handleSelectionChange,
+    clearBatchSelection,
     batchDelete,
     batchParse,
     uploadDialogVisible,

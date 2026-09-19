@@ -33,9 +33,16 @@ function mapApiFileToTableRow(item) {
   }
 }
 
+function isCanceledQuery(error) {
+  return error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED'
+}
+
 export function useFileTableQuery(currentProject) {
   const fileTableData = ref([])
   const tableLoading = ref(false)
+  const fileQuerySeq = ref(0)
+  let currentFileQueryController = null
+  let lastProjectId = null
 
   const filterStatus = ref('')
   const filterFileName = ref('')
@@ -44,6 +51,12 @@ export function useFileTableQuery(currentProject) {
   const currentPage = ref(1)
   const pageSize = ref(20)
   const total = ref(0)
+
+  const abortCurrentFileQuery = () => {
+    if (!currentFileQueryController) return
+    currentFileQueryController.abort()
+    currentFileQueryController = null
+  }
 
   const prependUploadedFiles = (entries = []) => {
     if (!entries.length) return
@@ -68,22 +81,41 @@ export function useFileTableQuery(currentProject) {
   }
 
   const refreshData = async () => {
-    if (!currentProject.value) {
+    const projectId = currentProject.value
+    if (!projectId) {
+      fileQuerySeq.value += 1
+      abortCurrentFileQuery()
+      lastProjectId = null
       fileTableData.value = []
+      total.value = 0
+      tableLoading.value = false
       return
     }
+
+    const projectKey = String(projectId)
+    if (projectKey !== lastProjectId) {
+      lastProjectId = projectKey
+      fileTableData.value = []
+      total.value = 0
+    }
+
+    abortCurrentFileQuery()
+    const queryController = new AbortController()
+    currentFileQueryController = queryController
+    const currentSeq = ++fileQuerySeq.value
 
     tableLoading.value = true
     try {
       const queryParams = {
-        projectId: currentProject.value,
+        projectId,
         originalName: filterFileName.value || null,
         fileContextType: filterFileType.value || null,
         fileState: filterStatus.value || null,
         pageNum: currentPage.value,
         pageSize: pageSize.value,
       }
-      const res = await queryFiles(queryParams)
+      const res = await queryFiles(queryParams, { signal: queryController.signal })
+      if (currentSeq !== fileQuerySeq.value) return
 
       const list = []
       let pageTotal = 0
@@ -112,9 +144,16 @@ export function useFileTableQuery(currentProject) {
 
       fileTableData.value = sortFilesAttentionFirst(list)
     } catch (error) {
+      if (currentSeq !== fileQuerySeq.value) return
+      if (isCanceledQuery(error)) return
       console.error(error)
     } finally {
-      tableLoading.value = false
+      if (currentFileQueryController === queryController) {
+        currentFileQueryController = null
+      }
+      if (currentSeq === fileQuerySeq.value) {
+        tableLoading.value = false
+      }
     }
   }
 

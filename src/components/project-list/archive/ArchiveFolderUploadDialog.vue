@@ -46,6 +46,7 @@
           :max="99"
           controls-position="right"
           class="upload-phase"
+          :disabled="uploadLoading"
           @update:model-value="setUploadField('phase', $event)"
         />
       </el-form-item>

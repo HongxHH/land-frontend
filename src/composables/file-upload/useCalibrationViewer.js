@@ -31,91 +31,20 @@ export function useCalibrationViewer({
   const calibrationPdfUrl = ref('')
   const pdfLoading = ref(false)
   const realSurveyReportId = ref(null)
+  /** 打开校准会话代次：快速切换文件时丢弃过期异步结果 */
+  const openGeneration = ref(0)
 
-  const loadRecognitionMd = async (fileRecordId) => {
-    if (!fileRecordId) {
-      recognitionMdContent.value = '# 缺少文件记录ID，无法加载识别内容'
-      return
+  const isCurrentGeneration = (generation) => generation === openGeneration.value
+
+  const replaceCalibrationPdfUrl = (nextUrl = '') => {
+    const prev = calibrationPdfUrl.value
+    if (prev && prev !== nextUrl && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+      URL.revokeObjectURL(prev)
     }
-
-    recognitionMdLoading.value = true
-    try {
-      const res = await axios.post('/api/data-tables/ocr-execution-results/query', {
-        fileRecordId,
-        pageNum: 1,
-        pageSize: 20,
-        sortField: 'createTime',
-        sortDirection: 'desc',
-        loadGridFsPayload: true,
-      })
-
-      if (
-        res.data.code === 200 &&
-        Array.isArray(res.data.data.records) &&
-        res.data.data.records.length > 0
-      ) {
-        const ocrResult = res.data.data.records[0]
-        recognitionMdContent.value = ocrResult.markdownContent || '# 暂无识别内容（MD格式）'
-      } else {
-        recognitionMdContent.value = '# 未查询到OCR识别结果'
-      }
-    } catch (error) {
-      console.error('MD 内容加载失败:', error)
-      recognitionMdContent.value = '# 加载失败：' + (error.message || '网络异常')
-    } finally {
-      recognitionMdLoading.value = false
-    }
+    calibrationPdfUrl.value = nextUrl || ''
   }
 
-  const getPdfBlobUrl = async (gridfsId) => {
-    if (!gridfsId) return ''
-    try {
-      const pdfRes = await downloadGridFsFile(gridfsId, { responseType: 'blob' })
-      const blob = new Blob([pdfRes.data], { type: 'application/pdf' })
-      if (calibrationPdfUrl.value) URL.revokeObjectURL(calibrationPdfUrl.value)
-      return URL.createObjectURL(blob)
-    } catch (error) {
-      ElMessage.warning('PDF预览失败')
-      return ''
-    }
-  }
-
-  const switchView = async (viewType) => {
-    if (currentViewType.value === viewType) return
-    calibrationLoading.value = true
-    try {
-      if (viewType === 'recognition') {
-        await loadRecognitionMd(currentFile.value?.rawId)
-        currentViewType.value = viewType
-        return
-      }
-
-      let targetGridfsId = ''
-      if (viewType === 'original') {
-        targetGridfsId = currentFile.value?.fileId || ''
-      } else if (viewType === 'preprocess') {
-        targetGridfsId = preprocessGridfsId.value || ''
-      }
-
-      const newPdfUrl = await getPdfBlobUrl(targetGridfsId)
-      if (newPdfUrl) {
-        if (calibrationPdfUrl.value) URL.revokeObjectURL(calibrationPdfUrl.value)
-        calibrationPdfUrl.value = newPdfUrl
-        currentViewType.value = viewType
-      } else {
-        ElMessage.warning('目标文件加载失败')
-      }
-    } finally {
-      calibrationLoading.value = false
-    }
-  }
-
-  const resetCalibrationState = () => {
-    currentViewType.value = 'original'
-    preprocessGridfsId.value = ''
-    calibrationPdfUrl.value = ''
-    recognitionMdContent.value = ''
-
+  const resetLoadedBusinessData = () => {
     Object.assign(auditSummaryData, {
       pendingConfirmArea: '0.00',
       unknownUsages: '[]',
@@ -135,14 +64,121 @@ export function useCalibrationViewer({
     roomInfoData.value = []
     if (roomInfoTotal) roomInfoTotal.value = 0
     if (roomInfoPageNum) roomInfoPageNum.value = 1
+    realSurveyReportId.value = null
+  }
+
+  const loadRecognitionMd = async (fileRecordId, generation = openGeneration.value) => {
+    if (!fileRecordId) {
+      if (isCurrentGeneration(generation)) {
+        recognitionMdContent.value = '# 缺少文件记录ID，无法加载识别内容'
+      }
+      return
+    }
+
+    if (isCurrentGeneration(generation)) {
+      recognitionMdLoading.value = true
+    }
+    try {
+      const res = await axios.post('/api/data-tables/ocr-execution-results/query', {
+        fileRecordId,
+        pageNum: 1,
+        pageSize: 20,
+        sortField: 'createTime',
+        sortDirection: 'desc',
+        loadGridFsPayload: true,
+      })
+      if (!isCurrentGeneration(generation)) return
+
+      if (
+        res.data.code === 200 &&
+        Array.isArray(res.data.data.records) &&
+        res.data.data.records.length > 0
+      ) {
+        const ocrResult = res.data.data.records[0]
+        recognitionMdContent.value = ocrResult.markdownContent || '# 暂无识别内容（MD格式）'
+      } else {
+        recognitionMdContent.value = '# 未查询到OCR识别结果'
+      }
+    } catch (error) {
+      if (!isCurrentGeneration(generation)) return
+      console.error('MD 内容加载失败:', error)
+      recognitionMdContent.value = '# 加载失败：' + (error.message || '网络异常')
+    } finally {
+      if (isCurrentGeneration(generation)) {
+        recognitionMdLoading.value = false
+      }
+    }
+  }
+
+  const getPdfBlobUrl = async (gridfsId) => {
+    if (!gridfsId) return ''
+    try {
+      const pdfRes = await downloadGridFsFile(gridfsId, { responseType: 'blob' })
+      const blob = new Blob([pdfRes.data], { type: 'application/pdf' })
+      return URL.createObjectURL(blob)
+    } catch (error) {
+      ElMessage.warning('PDF预览失败')
+      return ''
+    }
+  }
+
+  const switchView = async (viewType) => {
+    if (currentViewType.value === viewType) return
+    const generation = openGeneration.value
+    calibrationLoading.value = true
+    try {
+      if (viewType === 'recognition') {
+        await loadRecognitionMd(currentFile.value?.rawId, generation)
+        if (!isCurrentGeneration(generation)) return
+        currentViewType.value = viewType
+        return
+      }
+
+      let targetGridfsId = ''
+      if (viewType === 'original') {
+        targetGridfsId = currentFile.value?.fileId || ''
+      } else if (viewType === 'preprocess') {
+        targetGridfsId = preprocessGridfsId.value || ''
+      }
+
+      const newPdfUrl = await getPdfBlobUrl(targetGridfsId)
+      if (!isCurrentGeneration(generation)) {
+        if (newPdfUrl && URL?.revokeObjectURL) URL.revokeObjectURL(newPdfUrl)
+        return
+      }
+      if (newPdfUrl) {
+        replaceCalibrationPdfUrl(newPdfUrl)
+        currentViewType.value = viewType
+      } else {
+        ElMessage.warning('目标文件加载失败')
+      }
+    } finally {
+      if (isCurrentGeneration(generation)) {
+        calibrationLoading.value = false
+      }
+    }
+  }
+
+  const resetCalibrationState = () => {
+    openGeneration.value += 1
+    currentViewType.value = 'original'
+    preprocessGridfsId.value = ''
+    replaceCalibrationPdfUrl('')
+    recognitionMdContent.value = ''
+    resetLoadedBusinessData()
   }
 
   const openCalibration = async (row) => {
+    const generation = openGeneration.value + 1
+    openGeneration.value = generation
+
     currentFile.value = row
     showCalibration.value = true
     calibrationLoading.value = true
     pdfLoading.value = true
-    calibrationPdfUrl.value = ''
+    replaceCalibrationPdfUrl('')
+    recognitionMdContent.value = ''
+    resetLoadedBusinessData()
     preprocessGridfsId.value = row.preprocessGridfsId || ''
     currentViewType.value = 'original'
 
@@ -150,23 +186,33 @@ export function useCalibrationViewer({
       const loadPdfTask = async () => {
         try {
           const initialPdfUrl = await getPdfBlobUrl(row.fileId)
+          if (!isCurrentGeneration(generation)) {
+            if (initialPdfUrl && URL?.revokeObjectURL) URL.revokeObjectURL(initialPdfUrl)
+            return
+          }
           if (initialPdfUrl) {
-            calibrationPdfUrl.value = initialPdfUrl
+            replaceCalibrationPdfUrl(initialPdfUrl)
           } else {
             ElMessage.warning('原始文件预览失败')
           }
         } catch (error) {
-          ElMessage.warning('原始文件预览失败')
+          if (isCurrentGeneration(generation)) {
+            ElMessage.warning('原始文件预览失败')
+          }
         } finally {
-          pdfLoading.value = false
+          if (isCurrentGeneration(generation)) {
+            pdfLoading.value = false
+          }
         }
       }
 
       const loadBusinessDataTask = async () => {
         if (!currentProject.value || !row.rawId) {
-          ElMessage.warning('缺少项目/报告ID，无法加载数据')
-          calibrationLoading.value = false
-          pdfLoading.value = false
+          if (isCurrentGeneration(generation)) {
+            ElMessage.warning('缺少项目/报告ID，无法加载数据')
+            calibrationLoading.value = false
+            pdfLoading.value = false
+          }
           return
         }
 
@@ -179,6 +225,7 @@ export function useCalibrationViewer({
           const summaryRes = await axios.post('/api/project/survey-reports/query', {
             fileRecordId: row.rawId,
           })
+          if (!isCurrentGeneration(generation)) return
 
           if (
             summaryRes.data.code === 200 &&
@@ -232,6 +279,7 @@ export function useCalibrationViewer({
             return
           }
         } catch (error) {
+          if (!isCurrentGeneration(generation)) return
           ElMessage.warning('query 接口请求失败，无法获取汇总数据和真实报告ID')
           console.error('query 接口异常:', error)
           Object.assign(auditSummaryData, {
@@ -242,6 +290,8 @@ export function useCalibrationViewer({
           })
           return
         }
+
+        if (!isCurrentGeneration(generation)) return
 
         if (!realSurveyReportId.value) {
           ElMessage.warning('未获取到真实报告ID，无法加载户室数据')
@@ -271,6 +321,7 @@ export function useCalibrationViewer({
               sortField: 'id',
               sortDirection: 'asc',
             })
+            if (!isCurrentGeneration(generation)) return
             if (roomRes.data.code !== 200) {
               roomInfoData.value = []
               if (roomInfoTotal) roomInfoTotal.value = 0
@@ -285,6 +336,8 @@ export function useCalibrationViewer({
             }
             page -= 1
           }
+
+          if (!isCurrentGeneration(generation)) return
 
           if (roomRes.data.code === 200) {
             if (roomInfoPageNum && page !== roomInfoPageNum.value) {
@@ -328,22 +381,29 @@ export function useCalibrationViewer({
             enrichAuditSummaryFromVerificationReason(auditSummaryData)
           }
         } catch (error) {
+          if (!isCurrentGeneration(generation)) return
           roomInfoData.value = []
           if (roomInfoTotal) roomInfoTotal.value = 0
           ElMessage.warning('户室数据加载失败')
           console.error('户室数据接口异常:', error)
         } finally {
-          roomInfoLoading.value = false
+          if (isCurrentGeneration(generation)) {
+            roomInfoLoading.value = false
+          }
         }
       }
 
       await Promise.all([loadPdfTask(), loadBusinessDataTask()])
     } catch (error) {
-      ElMessage.error('文件详情加载失败')
-      pdfLoading.value = false
-      roomInfoLoading.value = false
+      if (isCurrentGeneration(generation)) {
+        ElMessage.error('文件详情加载失败')
+        pdfLoading.value = false
+        roomInfoLoading.value = false
+      }
     } finally {
-      calibrationLoading.value = false
+      if (isCurrentGeneration(generation)) {
+        calibrationLoading.value = false
+      }
     }
   }
 
@@ -351,7 +411,7 @@ export function useCalibrationViewer({
 
   const pdfLoadError = () => {
     ElMessage.warning('PDF预览失败，可通过下载接口查看文件')
-    calibrationPdfUrl.value = ''
+    replaceCalibrationPdfUrl('')
   }
 
   return {

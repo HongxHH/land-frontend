@@ -16,6 +16,10 @@ export function useBatchActions({ refreshData, startPolling }) {
     selectedRows.value = val
   }
 
+  const clearBatchSelection = () => {
+    selectedRows.value = []
+  }
+
   const batchDelete = () => {
     if (selectedRows.value.length === 0) return
 
@@ -75,6 +79,7 @@ export function useBatchActions({ refreshData, startPolling }) {
     batchLoading,
     canBatchParse,
     handleSelectionChange,
+    clearBatchSelection,
     batchDelete,
     batchParse,
   }

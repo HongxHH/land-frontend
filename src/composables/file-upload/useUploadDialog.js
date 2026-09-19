@@ -96,6 +96,12 @@ export function useUploadDialog({
     phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : undefined,
   })
 
+  const createUploadBatchSnapshot = () => ({
+    params: buildUploadParams(),
+    fileContextType: tempUploadType.value,
+    phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : null,
+  })
+
   const executeUpload = async (filesToUpload) => {
     const batchCheck = validateUploadBatchSize(filesToUpload)
     if (!batchCheck.ok) {
@@ -106,11 +112,12 @@ export function useUploadDialog({
       ElMessage.warning(batchCheck.warning)
     }
 
+    const batchSnapshot = createUploadBatchSnapshot()
     uploadLoading.value = true
     try {
       const result = await runConcurrentUploads({
         files: filesToUpload,
-        buildParams: buildUploadParams,
+        buildParams: () => ({ ...batchSnapshot.params }),
         concurrency: 4,
         uploadApi,
         onFileState: applyFileState,
@@ -120,8 +127,8 @@ export function useUploadDialog({
             {
               fileId,
               fileName,
-              fileContextType: tempUploadType.value,
-              phase: tempUploadType.value === 'SURVEY_REPORT' ? uploadPhase.value : null,
+              fileContextType: batchSnapshot.fileContextType,
+              phase: batchSnapshot.phase,
             },
           ])
         },
