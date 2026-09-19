@@ -4,6 +4,33 @@
 
 配套后端仓库：[`land-backend`](https://github.com/HongxHH/land-backend)。
 
+## 界面预览
+
+截图放在 `docs/images/`，按下面文件名替换即可（建议 PNG，宽度约 1200–1600px，注意打码敏感数据）。
+
+### 首页仪表盘
+
+![首页仪表盘](docs/images/01-dashboard.png)
+
+> 登录后首页，能看出项目概览/入口。
+
+### 项目信息与归档
+
+![项目信息与归档](docs/images/02-project-archive.png)
+
+> 项目列表或详情内归档夹，含文件状态/解析进度。
+
+### 文件解析流程
+
+![文件上传与校准](docs/images/03-upload-calibration.png)
+
+> 文件解析流程界面。
+
+### 汇总比对
+
+![汇总比对](docs/images/04-area-comparison.png)
+
+
 ## 技术栈
 
 | 项 | 说明 |
