@@ -6,6 +6,8 @@ import {
   updateSurveyReportInfo,
 } from '@/services/project.service'
 import { formatRoomAreaFromApi } from '@/utils/roomInfoValidation.js'
+import { normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
+import { queryFiles } from '@/services/file.service'
 
 const usageCategoryMap = {
   RESIDENTIAL: '住宅',
@@ -26,7 +28,8 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
     pendingConfirmArea: '0.00',
     unknownUsageCount: 0,
     hasUnknownUsage: 0,
-    isVerified: 0,
+    isVerified: null,
+    fileState: null,
     verificationErrorReason: '-',
     roomInfoBuildingAreaSumFromOcr: '0.00',
     roomInfoInnerAreaSumFromOcr: '0.00',
@@ -46,7 +49,8 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
       pendingConfirmArea: '0.00',
       unknownUsageCount: 0,
       hasUnknownUsage: 0,
-      isVerified: 0,
+      isVerified: null,
+      fileState: null,
       verificationErrorReason: '-',
       roomInfoBuildingAreaSumFromOcr: '0.00',
       roomInfoInnerAreaSumFromOcr: '0.00',
@@ -100,7 +104,22 @@ export function useProjectDetailDialog({ currentProjectInfo, rawTableData, fetch
           )
           reportAuditInfo.unknownUsageCount = Number(reportRecord.unknownUsageCount || 0)
           reportAuditInfo.hasUnknownUsage = Number(reportRecord.hasUnknownUsage || 0)
-          reportAuditInfo.isVerified = Number(reportRecord.isVerified || 0)
+          reportAuditInfo.isVerified = normalizeVerifiedFlag(reportRecord.isVerified)
+          const fileRecordId =
+            reportRecord.fileRecordId || row.fileRecordId || row.fileId || row.file_record_id
+          reportAuditInfo.fileState = row.fileState || row.status || null
+          if (!reportAuditInfo.fileState && fileRecordId) {
+            try {
+              const fileRes = await queryFiles({
+                fileId: String(fileRecordId),
+                pageNum: 1,
+                pageSize: 1,
+              })
+              reportAuditInfo.fileState = fileRes?.data?.data?.records?.[0]?.fileState || null
+            } catch (fileError) {
+              console.error('获取实测报告文件状态失败:', fileError)
+            }
+          }
           reportAuditInfo.verificationErrorReason = reportRecord.verificationErrorReason || '-'
           reportAuditInfo.roomInfoBuildingAreaSumFromOcr = Number(
             reportRecord.roomInfoBuildingAreaSumFromOcr || 0

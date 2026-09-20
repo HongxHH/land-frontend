@@ -1,5 +1,5 @@
 ﻿import { computed } from 'vue'
-import { FILE_STATE_LABELS, getFileStateDotColor } from '@/utils/fileStatePresent.js'
+import { FILE_STATE_LABELS, getFileStateDotColor, normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
 
 export function useFileUploadConstants() {
   const statusMap = Object.fromEntries(
@@ -36,12 +36,6 @@ export function useFileUploadConstants() {
     usageCategoryMap,
     usageCategoryReverseMap,
   }
-}
-
-function normalizeVerifiedFlag(value) {
-  if (value === 1 || value === '1' || value === true) return 1
-  if (value === 0 || value === '0' || value === false) return 0
-  return null
 }
 
 export function useAuditSummaryDisplay(auditSummaryData) {

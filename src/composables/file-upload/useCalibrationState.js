@@ -21,7 +21,7 @@ export function useCalibrationState() {
     pendingConfirmArea: '0.00',
     unknownUsages: '[]',
     unknownUsageCount: 0,
-    isVerified: 0,
+    isVerified: null,
     hasUnknownUsage: 0,
     verificationErrorReason: '-',
     roomInfoBuildingAreaSum: '0.00',

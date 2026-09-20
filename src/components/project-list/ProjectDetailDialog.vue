@@ -52,9 +52,9 @@
               size="small"
               effect="light"
               round
-              :type="reportAuditInfo.isVerified === 1 ? 'success' : 'danger'"
+              :type="verifyStatusDisplay.type"
             >
-              {{ reportAuditInfo.isVerified === 1 ? '已通过' : '未通过' }}
+              {{ verifyStatusDisplay.label }}
             </el-tag>
           </div>
         </div>
@@ -202,6 +202,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { CircleCheck, WarningFilled, Select } from '@element-plus/icons-vue'
+import { getFileVerifyStatus } from '@/utils/fileStatePresent.js'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -230,6 +231,13 @@ const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
 })
+
+const verifyStatusDisplay = computed(() =>
+  getFileVerifyStatus({
+    isVerified: props.reportAuditInfo?.isVerified,
+    fileState: props.reportAuditInfo?.fileState || props.currentDetailRow?.fileState,
+  })
+)
 
 const tableContainer = ref(null)
 const isResizing = ref(false)

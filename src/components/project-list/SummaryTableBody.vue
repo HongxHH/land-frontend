@@ -279,6 +279,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { View, DArrowLeft, DArrowRight } from '@element-plus/icons-vue'
+import { normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
 import { useSummaryTableHorizontalScroll } from '@/composables/project-list/useSummaryTableHorizontalScroll'
 import { useClientTablePagination } from '@/composables/shared/useClientTablePagination.js'
 import {
@@ -395,12 +396,6 @@ const verificationErrorReasonColProps = computed(() => {
   }
   return { minWidth: 180 }
 })
-
-const normalizeVerifiedFlag = (value) => {
-  if (value === 1 || value === '1' || value === true) return 1
-  if (value === 0 || value === '0' || value === false) return 0
-  return null
-}
 
 const getVerifiedText = (value) => {
   const normalized = normalizeVerifiedFlag(value)

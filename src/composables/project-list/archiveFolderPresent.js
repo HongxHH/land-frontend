@@ -3,6 +3,7 @@
 import {
   FILE_STATE_FILTER_OPTIONS,
   getFileStateTagType,
+  getFileVerifyStatus,
   isFileAttentionFirst,
   isFileParseFailed,
   isFileVerifyFailed,
@@ -41,14 +42,7 @@ export function isArchiveVerifyFailed(row) {
 }
 
 export function getArchiveVerifyStatus(row) {
-  const value = row?.isVerified
-  if (value === 1 || value === '1' || value === true) {
-    return { label: '已通过', type: 'success' }
-  }
-  if (isArchiveVerifyFailed(row)) {
-    return { label: '未通过', type: 'danger' }
-  }
-  return { label: '未校验', type: 'info' }
+  return getFileVerifyStatus(row)
 }
 
 /** @deprecated 使用 sortFilesAttentionFirst；保留别名兼容旧引用 */

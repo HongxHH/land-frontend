@@ -25,6 +25,7 @@ import {
   ROOM_AREA_FIELDS,
   formatRoomAreaFromApi,
 } from '@/utils/roomInfoValidation.js'
+import { normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
 
 const OCR_SUM_FIELD_SET = new Set(OCR_SUM_FIELD_KEYS)
 
@@ -391,7 +392,7 @@ export function useRoomEditWorkflow(options = {}) {
       )
       auditSummaryData.unknownUsages = currentSummary.unknownUsages || '[]'
       auditSummaryData.unknownUsageCount = Number(currentSummary.unknownUsageCount || 0)
-      auditSummaryData.isVerified = Number(currentSummary.isVerified || 0)
+      auditSummaryData.isVerified = normalizeVerifiedFlag(currentSummary.isVerified)
       auditSummaryData.hasUnknownUsage = Number(currentSummary.hasUnknownUsage || 0)
       auditSummaryData.verificationErrorReason = currentSummary.verificationErrorReason || '-'
       auditSummaryData.roomInfoBuildingAreaSum = Number(

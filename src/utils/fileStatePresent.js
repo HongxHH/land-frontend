@@ -124,10 +124,43 @@ export function isActiveFileProcessState(state) {
   return ACTIVE_FILE_PROCESS_STATES.includes(state)
 }
 
-/** @param {{ isVerified?: number|string|boolean }} row */
+export function isFileParseInProgress(state) {
+  return state === 'PENDING' || state === 'PARSING'
+}
+
+/** 过程态或本轮解析失败：校验结论仍属上一轮，不能当成本轮终态。 */
+export function isPreviousRoundVerifyState(state) {
+  return isFileParseInProgress(state) || state === 'PARSE_FAIL'
+}
+
+export function normalizeVerifiedFlag(value) {
+  if (value === 1 || value === '1' || value === true) return 1
+  if (value === 0 || value === '0' || value === false) return 0
+  return null
+}
+
+/**
+ * 归档/上传表校验标签。PENDING/PARSING/PARSE_FAIL 展示上一轮结论并弱化为 info。
+ * @param {{ isVerified?: number|string|boolean, fileState?: string, status?: string }} row
+ */
+export function getFileVerifyStatus(row) {
+  const state = row?.fileState ?? row?.status
+  const previousRound = isPreviousRoundVerifyState(state)
+  const verified = normalizeVerifiedFlag(row?.isVerified)
+  if (previousRound) {
+    if (verified === 1) return { label: '上一轮已通过', type: 'info' }
+    if (verified === 0) return { label: '上一轮未通过', type: 'info' }
+    return { label: '未校验', type: 'info' }
+  }
+  if (verified === 1) return { label: '已通过', type: 'success' }
+  if (verified === 0) return { label: '未通过', type: 'danger' }
+  return { label: '未校验', type: 'info' }
+}
+
+/** @param {{ isVerified?: number|string|boolean, fileState?: string, status?: string }} row */
 export function isFileVerifyFailed(row) {
-  const value = row?.isVerified
-  return value === 0 || value === '0' || value === false
+  if (isPreviousRoundVerifyState(row?.fileState ?? row?.status)) return false
+  return normalizeVerifiedFlag(row?.isVerified) === 0
 }
 
 /** @param {{ fileState?: string, status?: string }} row */

@@ -15,12 +15,7 @@ import {
   projectHasPendingUnknownUsageRows,
 } from '@/composables/file-upload/surveyUsagePending'
 import { SUMMARY_COMPARISON_GROUP_KEYS } from '@/composables/project-list/summaryComparisonGroupMeta.js'
-
-function normalizeVerifiedFlag(value) {
-  if (value === 1 || value === '1' || value === true) return 1
-  if (value === 0 || value === '0' || value === false) return 0
-  return null
-}
+import { normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
 
 const COMPARISON_GROUP_KEYS = SUMMARY_COMPARISON_GROUP_KEYS
 

@@ -109,6 +109,7 @@ import {
 } from '@/composables/file-upload/surveyUsagePending'
 import UnknownUsagePolicyList from '@/components/shared/UnknownUsagePolicyList.vue'
 import { CircleCheck, WarningFilled } from '@element-plus/icons-vue'
+import { normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
 
 const AREA_COMPARE_TOLERANCE = 0.01
 
@@ -148,7 +149,7 @@ const showUnknownUsagePolicyPanel = computed(
   () => props.open && reportHasPendingUnknownUsage(props.auditSummaryData)
 )
 
-const isAuditPassed = computed(() => Number(props.auditSummaryData?.isVerified) === 1)
+const isAuditPassed = computed(() => normalizeVerifiedFlag(props.auditSummaryData?.isVerified) === 1)
 const hasPendingUnknownUsage = computed(() => reportHasPendingUnknownUsage(props.auditSummaryData))
 
 const auditStripClass = computed(() => {

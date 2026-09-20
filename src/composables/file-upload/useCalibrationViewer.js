@@ -8,6 +8,7 @@ import { formatRoomAreaFromApi } from '@/utils/roomInfoValidation.js'
 import { ElMessage } from 'element-plus'
 import { downloadGridFsFile } from '@/services/file.service'
 import { queryRoomInfos } from '@/services/project.service'
+import { normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
 
 export function useCalibrationViewer({
   currentProject,
@@ -49,7 +50,7 @@ export function useCalibrationViewer({
       pendingConfirmArea: '0.00',
       unknownUsages: '[]',
       unknownUsageCount: 0,
-      isVerified: 0,
+      isVerified: null,
       hasUnknownUsage: 0,
       verificationErrorReason: '-',
       roomInfoBuildingAreaSum: '0.00',
@@ -240,7 +241,7 @@ export function useCalibrationViewer({
             )
             auditSummaryData.unknownUsages = currentSummary.unknownUsages || '[]'
             auditSummaryData.unknownUsageCount = currentSummary.unknownUsageCount || 0
-            auditSummaryData.isVerified = currentSummary.isVerified || 0
+            auditSummaryData.isVerified = normalizeVerifiedFlag(currentSummary.isVerified)
             auditSummaryData.hasUnknownUsage = currentSummary.hasUnknownUsage || 0
             auditSummaryData.verificationErrorReason = currentSummary.verificationErrorReason || '-'
             auditSummaryData.roomInfoBuildingAreaSum = (
