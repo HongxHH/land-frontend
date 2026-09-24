@@ -56,7 +56,8 @@ export default defineConfig({
     proxy: {
       '/api': {
         // 本地开发可通过 .env.local 设置 VITE_API_PROXY_TARGET，避免将内网地址写入仓库
-        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8082',
+        // target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8082',
+        target: 'http://10.123.69.140:8082',
         changeOrigin: true,
         ws: true,
         rewrite: (path) => path.replace(/^\/api/, ''),

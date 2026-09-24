@@ -49,9 +49,11 @@
           :has-cross-page-selection="hasCrossPageSelection"
           :show-thumbnail-column="showThumbnailColumn"
           :can-batch-parse="canBatchParse"
+          :can-batch-download="canBatchDownload"
           :can-batch-delete="canBatchDelete"
           :batch-delete-loading="batchDeleteLoading"
           :batch-parse-loading="batchParseLoading"
+          :batch-download-loading="batchDownloadLoading"
           :can-preview="showPreviewButton"
           @update:query-form="(v) => Object.assign(queryForm, v)"
           @auto-query="handleAutoQuery"
@@ -60,6 +62,7 @@
           @refresh="refreshFiles"
           @batch-delete="handleBatchDelete"
           @batch-parse="handleBatchParse"
+          @batch-download="handleBatchDownload"
           @open-upload="openUploadDialog"
           @selection-change="handleSelectionChange"
           @preview="handlePreview"
@@ -129,7 +132,15 @@
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch, defineAsyncComponent } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  defineAsyncComponent,
+} from 'vue'
 import { ElMessage } from 'element-plus'
 import ArchiveFolderTreePanel from '@/components/project-list/archive/ArchiveFolderTreePanel.vue'
 import ArchiveFolderFilePanel from '@/components/project-list/archive/ArchiveFolderFilePanel.vue'
@@ -142,6 +153,7 @@ const ArchiveFilePreviewDialog = defineAsyncComponent(
 )
 import {
   canPreviewArchiveFile,
+  downloadArchiveSourceFile,
   useArchiveFilePreview,
 } from '@/composables/project-list/useArchiveFilePreview'
 import { useArchiveParseFlow } from '@/composables/project-list/useArchiveParseFlow.js'
@@ -199,6 +211,7 @@ const {
   batchParseLoading,
   archiveList,
   archiveFiles,
+  selectedRows,
   selectedCount,
   selectedRowIds,
   hasCrossPageSelection,
@@ -335,6 +348,47 @@ const {
 } = useArchiveFilePreview()
 
 const showPreviewButton = (row) => canPreviewArchiveFile(row)
+const batchDownloadLoading = ref(false)
+const canBatchDownload = computed(
+  () => !batchDownloadLoading.value && selectedRows.value.some((row) => canPreviewArchiveFile(row))
+)
+
+const handleBatchDownload = async () => {
+  if (batchDownloadLoading.value) return
+
+  const rows = selectedRows.value.filter((row) => canPreviewArchiveFile(row))
+  const skippedCount = selectedRows.value.length - rows.length
+  if (!rows.length) {
+    ElMessage.warning('所选文件缺少可下载的源文件')
+    return
+  }
+
+  batchDownloadLoading.value = true
+  let successCount = 0
+  let failedCount = 0
+  try {
+    for (const row of rows) {
+      try {
+        await downloadArchiveSourceFile(row)
+        successCount += 1
+      } catch (error) {
+        failedCount += 1
+        console.error(`归档文件下载失败: ${row?.originalName || row?.name || '未命名文件'}`, error)
+      }
+    }
+
+    if (failedCount === 0 && skippedCount === 0) {
+      ElMessage.success(`已下载 ${successCount} 个源文件`)
+      return
+    }
+
+    ElMessage.warning(
+      `下载完成：成功 ${successCount} 个，失败 ${failedCount} 个，跳过 ${skippedCount} 个`
+    )
+  } finally {
+    batchDownloadLoading.value = false
+  }
+}
 
 const openCreateDialog = () => {
   createDialogVisible.value = true

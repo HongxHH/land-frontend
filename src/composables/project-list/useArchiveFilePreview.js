@@ -12,8 +12,24 @@ const ARCHIVE_PREVIEW_MODES = {
 const IMAGE_TYPES = new Set(['PNG', 'JPEG', 'JPG', 'GIF'])
 const EXCEL_TYPES = new Set(['XLS', 'XLSX'])
 
-function resolveSourceGridfsId(row) {
+export function resolveArchiveSourceGridfsId(row) {
   return String(row?.gridfsId || row?.fileId || row?.sourceGridfsId || '').trim()
+}
+
+export async function downloadArchiveSourceFile(row) {
+  const gridfsId = resolveArchiveSourceGridfsId(row)
+  if (!gridfsId) throw new Error('缺少文件ID')
+
+  const res = await downloadGridFsFile(gridfsId, { responseType: 'blob' })
+  const blob = res.data instanceof Blob ? res.data : new Blob([res.data])
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = row?.originalName || row?.name || '归档文件'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
 }
 
 function inferArchivePreviewMode(fileType, fileName = '') {
@@ -31,7 +47,7 @@ function inferArchivePreviewMode(fileType, fileName = '') {
 }
 
 export function canPreviewArchiveFile(row) {
-  const gridfsId = resolveSourceGridfsId(row)
+  const gridfsId = resolveArchiveSourceGridfsId(row)
   if (!gridfsId) return false
   const state = String(row?.fileState || '').toUpperCase()
   return !['UPLOADING', 'UPLOAD_FAIL'].includes(state)
@@ -66,7 +82,7 @@ export function useArchiveFilePreview() {
   }
 
   const loadPreviewContent = async (row) => {
-    const gridfsId = resolveSourceGridfsId(row)
+    const gridfsId = resolveArchiveSourceGridfsId(row)
     if (!gridfsId) {
       ElMessage.warning('该文件缺少可预览的源文件ID')
       return false
@@ -142,16 +158,7 @@ export function useArchiveFilePreview() {
       return
     }
     try {
-      const res = await downloadGridFsFile(meta.gridfsId, { responseType: 'blob' })
-      const blob = new Blob([res.data])
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = meta.originalName || '归档文件'
-      document.body.appendChild(anchor)
-      anchor.click()
-      anchor.remove()
-      URL.revokeObjectURL(url)
+      await downloadArchiveSourceFile(meta)
     } catch (error) {
       console.error('归档文件下载失败:', error)
       ElMessage.error('文件下载失败')

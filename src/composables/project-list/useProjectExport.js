@@ -38,8 +38,8 @@ const buildComparisonRows = (tripleLine) => [
   ],
 ]
 
-/** Excel 列宽（与打印比例大致一致，可按 id 微调） */
-const EXCEL_WIDTH_BY_ID = {
+/** Excel 各列的最小宽度，文本列会再根据实际内容自动扩宽 */
+const EXCEL_MIN_WIDTH_BY_ID = {
   index: 6,
   projectName: 22,
   certNo: 20,
@@ -55,6 +55,53 @@ const EXCEL_WIDTH_BY_ID = {
   areaConfirmationNoticeNo: 22,
   reportNo: 24,
   remarks: 14,
+}
+
+/** 限制文本列的最大宽度，极长内容在达到上限后改为自动换行 */
+const EXCEL_MAX_WIDTH_BY_ID = {
+  projectName: 56,
+  certNo: 40,
+  contractNo: 34,
+  phase: 12,
+  areaConfirmationNoticeNo: 38,
+  reportNo: 38,
+  remarks: 40,
+}
+
+function getExcelDisplayWidth(value) {
+  const lines = String(value ?? '').split(/\r?\n/)
+  return Math.max(
+    0,
+    ...lines.map((line) =>
+      Array.from(line).reduce((width, char) => width + (char.codePointAt(0) > 0xff ? 2 : 1), 0)
+    )
+  )
+}
+
+function resolveExcelColumnWidth(def, values) {
+  const minWidth = EXCEL_MIN_WIDTH_BY_ID[def.id] || 12
+  if (def.kind !== 'text') return minWidth
+
+  const contentWidth = Math.max(
+    getExcelDisplayWidth(def.subLabel),
+    ...values.map(getExcelDisplayWidth)
+  )
+  const maxWidth = EXCEL_MAX_WIDTH_BY_ID[def.id] || 32
+  return Math.min(maxWidth, Math.max(minWidth, contentWidth + 3))
+}
+
+function resolveExcelRowHeight(values, columnWidths) {
+  const lineCount = values.reduce((maxLines, value, index) => {
+    const availableWidth = Math.max(1, columnWidths[index] - 2)
+    const lines = String(value ?? '').split(/\r?\n/)
+    const wrappedLines = lines.reduce(
+      (total, line) => total + Math.max(1, Math.ceil(getExcelDisplayWidth(line) / availableWidth)),
+      0
+    )
+    return Math.max(maxLines, wrappedLines)
+  }, 1)
+
+  return Math.max(18, lineCount * 16)
 }
 
 function colToA1(colIndex1Based) {
@@ -144,13 +191,28 @@ export function useProjectExport({
       }
     }
 
-    displayTableData.value.forEach((item, index) => {
-      const values = defs.map((col) => formatSummaryCellValue(col, item, index))
+    const summaryRows = displayTableData.value.map((item, index) =>
+      defs.map((col) => formatSummaryCellValue(col, item, index))
+    )
+    const columnWidths = defs.map((def, columnIndex) =>
+      resolveExcelColumnWidth(
+        def,
+        summaryRows.map((values) => values[columnIndex])
+      )
+    )
+
+    defs.forEach((_, index) => {
+      worksheet.getColumn(index + 1).width = columnWidths[index]
+    })
+
+    summaryRows.forEach((values) => {
       const row = worksheet.addRow(values)
+      row.height = resolveExcelRowHeight(values, columnWidths)
       row.eachCell((cell) => {
         cell.alignment = {
           horizontal: excelHorizontalAlign(),
           vertical: 'middle',
+          wrapText: true,
         }
         cell.border = {
           top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
@@ -159,11 +221,6 @@ export function useProjectExport({
           right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
         }
       })
-    })
-
-    defs.forEach((def, i) => {
-      const col = worksheet.getColumn(i + 1)
-      col.width = EXCEL_WIDTH_BY_ID[def.id] || 12
     })
 
     const summaryLastRow = 2 + displayTableData.value.length

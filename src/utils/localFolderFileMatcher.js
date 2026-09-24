@@ -16,6 +16,7 @@ import { isPlanningReviewEnabled } from '@/config/featureFlags.js'
  * @property {string} relativePath
  * @property {string} displayName
  * @property {SmartImportContextType|null} fileContextType
+ * @property {boolean} unmatchedOrigin
  * @property {boolean} selected
  * @property {number} lastModified
  */
@@ -225,6 +226,7 @@ function toScannedEntry(file) {
     relativePath,
     displayName: getBaseName(relativePath),
     fileContextType,
+    unmatchedOrigin: fileContextType == null,
     selected: fileContextType != null,
     lastModified: Number(file.lastModified || 0),
   }
@@ -253,7 +255,7 @@ export function groupScannedEntries(entries) {
   }
 
   for (const entry of entries) {
-    if (entry.fileContextType) {
+    if (entry.fileContextType && !entry.unmatchedOrigin) {
       groups[entry.fileContextType].push(entry)
     } else {
       groups.UNMATCHED.push(entry)

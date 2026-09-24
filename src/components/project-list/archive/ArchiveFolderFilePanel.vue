@@ -35,6 +35,18 @@
       >
         批量解析
       </el-button>
+      <el-button
+        class="query-bar-btn"
+        size="small"
+        type="primary"
+        plain
+        :icon="Download"
+        :disabled="!canBatchDownload"
+        :loading="batchDownloadLoading"
+        @click="emit('batch-download')"
+      >
+        下载源文件
+      </el-button>
       <span class="query-bar-divider" aria-hidden="true" />
       <el-input
         :model-value="queryForm.keyword"
@@ -145,7 +157,12 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="文件名" min-width="220" :resizable="false" show-overflow-tooltip>
+            <el-table-column
+              label="文件名"
+              min-width="220"
+              :resizable="false"
+              show-overflow-tooltip
+            >
               <template #default="{ row }">
                 <el-link
                   v-if="canPreview(row)"
@@ -389,7 +406,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { Picture, Refresh, UploadFilled } from '@element-plus/icons-vue'
+import { Download, Picture, Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 import {
   ARCHIVE_FILE_STATE_OPTIONS,
@@ -422,9 +439,11 @@ const props = defineProps({
   hasCrossPageSelection: { type: Boolean, default: false },
   showThumbnailColumn: { type: Boolean, default: true },
   canBatchParse: { type: Boolean, default: false },
+  canBatchDownload: { type: Boolean, default: false },
   canBatchDelete: { type: Boolean, default: false },
   batchDeleteLoading: { type: Boolean, default: false },
   batchParseLoading: { type: Boolean, default: false },
+  batchDownloadLoading: { type: Boolean, default: false },
   canPreview: { type: Function, default: () => false },
 })
 
@@ -436,6 +455,7 @@ const emit = defineEmits([
   'refresh',
   'batch-delete',
   'batch-parse',
+  'batch-download',
   'open-upload',
   'selection-change',
   'preview',

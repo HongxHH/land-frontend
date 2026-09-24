@@ -18,7 +18,12 @@ import {
   scanLocalFolderFiles,
 } from '@/utils/localFolderFileMatcher.js'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
-import { isFileOverUploadLimit, MAX_SINGLE_FILE_UPLOAD_LABEL, resolveUploadHttpError, validateUploadBatchSize } from '@/utils/fileUploadLimit.js'
+import {
+  isFileOverUploadLimit,
+  MAX_SINGLE_FILE_UPLOAD_LABEL,
+  resolveUploadHttpError,
+  validateUploadBatchSize,
+} from '@/utils/fileUploadLimit.js'
 
 /** 新建项目：智能文件夹扫描与批量上传 */
 export function useSmartFolderImport() {
@@ -150,6 +155,15 @@ export function useSmartFolderImport() {
     if (!entry) return
     entry.fileContextType = fileContextType || null
     entry.selected = Boolean(fileContextType)
+  }
+
+  const setDirectoryContextType = (entryIds, fileContextType) => {
+    const idSet = new Set(Array.isArray(entryIds) ? entryIds : [])
+    for (const entry of scannedEntries.value) {
+      if (!idSet.has(entry.id)) continue
+      entry.fileContextType = fileContextType || null
+      entry.selected = Boolean(fileContextType)
+    }
   }
 
   const syncAggregateProgress = (uploadItems) => {
@@ -315,6 +329,7 @@ export function useSmartFolderImport() {
     setEntrySelected,
     setDirectoryEntriesSelected,
     setEntryContextType,
+    setDirectoryContextType,
     getFileUploadState,
     uploadToProject,
     cancelUpload,

@@ -158,7 +158,7 @@
           <span class="smart-folder-import__group-title">
             {{ unmatchedDisplayGroup.label }} ({{ unmatchedDisplayGroup.entries.length }})
           </span>
-          <span class="smart-folder-import__group-note">默认不上传</span>
+          <span class="smart-folder-import__group-note">可批量归类</span>
         </header>
 
         <div v-if="unmatchedDisplayGroup.entries.length" class="smart-folder-import__list">
@@ -171,16 +171,30 @@
             >
               <template #title>
                 <div class="smart-folder-import__dir-header">
-                  <el-checkbox
-                    class="smart-folder-import__dir-select-all"
-                    :model-value="isDirAllSelected(dirGroup, true)"
-                    :indeterminate="isDirIndeterminate(dirGroup, true)"
-                    :disabled="uploadLoading || !hasSelectableInDir(dirGroup, true)"
+                  <span class="smart-folder-import__batch-label">批量归类</span>
+                  <el-select
+                    :model-value="resolveDirectoryContextType(dirGroup)"
+                    placeholder="选择目录类型"
+                    clearable
+                    size="small"
+                    class="smart-folder-import__batch-type-select"
+                    :disabled="uploadLoading"
                     @click.stop
-                    @update:model-value="handleDirSelectToggle(dirGroup, true, $event)"
+                    @update:model-value="
+                      emit(
+                        'change-directory-context-type',
+                        dirGroup.entries.map((entry) => entry.id),
+                        $event || null
+                      )
+                    "
                   >
-                    全选
-                  </el-checkbox>
+                    <el-option
+                      v-for="type in contextTypeOptions"
+                      :key="type"
+                      :label="getFileContextLabel(type)"
+                      :value="type"
+                    />
+                  </el-select>
                   <el-icon class="smart-folder-import__dir-icon" aria-hidden="true"
                     ><FolderOpened
                   /></el-icon>
@@ -214,6 +228,16 @@
                   <div class="smart-folder-import__row-main">
                     <div class="smart-folder-import__row-name" :title="entry.relativePath">
                       {{ entry.displayName }}
+                    </div>
+                    <div
+                      class="smart-folder-import__row-context"
+                      :class="{ 'is-unassigned': !entry.fileContextType }"
+                    >
+                      {{
+                        entry.fileContextType
+                          ? `归类：${getFileContextLabel(entry.fileContextType)}`
+                          : '待归类'
+                      }}
                     </div>
                   </div>
                   <el-select
@@ -284,6 +308,7 @@ const emit = defineEmits([
   'toggle-selected',
   'toggle-directory-selected',
   'change-context-type',
+  'change-directory-context-type',
 ])
 
 const folderInputRef = ref(null)
@@ -293,6 +318,15 @@ const expandedDirKeys = ref([])
 const buildDirCollapseKey = (groupKey, directory) => `${groupKey}::${directory}`
 
 const contextTypeOptions = contextTypeOptionsSource
+
+const resolveDirectoryContextType = (dirGroup) => {
+  const types = new Set(
+    (dirGroup?.entries || []).map((entry) => entry.fileContextType).filter(Boolean)
+  )
+  if (types.size !== 1) return ''
+  const [type] = types
+  return (dirGroup.entries || []).every((entry) => entry.fileContextType === type) ? type : ''
+}
 
 const displayGroups = computed(() => {
   return GROUP_ORDER.map((key) => {
@@ -768,6 +802,18 @@ defineExpose({ pickFolder })
   color: #475569;
 }
 
+.smart-folder-import__batch-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.smart-folder-import__batch-type-select {
+  flex: 0 0 132px;
+  width: 132px;
+}
+
 .smart-folder-import__dir-icon {
   flex-shrink: 0;
   color: rgba(37, 99, 235, 0.85);
@@ -834,6 +880,18 @@ defineExpose({ pickFolder })
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.smart-folder-import__row-context {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b45309;
+  line-height: 1.3;
+}
+
+.smart-folder-import__row-context.is-unassigned {
+  color: #94a3b8;
 }
 
 .smart-folder-import__row-status {

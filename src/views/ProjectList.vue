@@ -326,6 +326,7 @@
             @toggle-selected="setEntrySelected"
             @toggle-directory-selected="setDirectoryEntriesSelected"
             @change-context-type="setEntryContextType"
+            @change-directory-context-type="setDirectoryContextType"
           />
         </div>
         <div v-if="smartFolderUploadLoading" class="create-project-upload-bar">
@@ -488,6 +489,7 @@ const {
   setEntrySelected,
   setDirectoryEntriesSelected,
   setEntryContextType,
+  setDirectoryContextType,
   getFileUploadState: getSmartFolderUploadState,
   uploadToProject,
   buildUploadItems
