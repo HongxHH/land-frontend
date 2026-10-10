@@ -5,6 +5,7 @@ const PRINT_FIELDS = [
   { label: '项目时间', key: 'projectTime' },
   { label: '实测报告数', key: 'surveyReportFileCount' },
   { label: '合同文件数', key: 'contractFileCount' },
+  { label: '核查表数', key: 'capacityIndicatorFileCount' },
   { label: '出让方', key: 'transferor' },
   { label: '受让方', key: 'transferee' },
 ]

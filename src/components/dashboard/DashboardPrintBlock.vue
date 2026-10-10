@@ -17,6 +17,7 @@
           </tr>
         </tbody>
       </table>
+      <div class="print-meta print-summary">合计：{{ records.length }} 个项目</div>
     </div>
   </Teleport>
 </template>
@@ -63,5 +64,10 @@ defineProps({
   margin-bottom: 10px;
   font-size: 13px;
   color: #475569;
+}
+
+.print-summary {
+  margin-top: 12px;
+  margin-bottom: 0;
 }
 </style>

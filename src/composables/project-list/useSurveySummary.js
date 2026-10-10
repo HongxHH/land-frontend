@@ -15,6 +15,7 @@ import {
   projectHasPendingUnknownUsageRows,
 } from '@/composables/file-upload/surveyUsagePending'
 import { SUMMARY_COMPARISON_GROUP_KEYS } from '@/composables/project-list/summaryComparisonGroupMeta.js'
+import { sortSurveySummaryRows } from '@/utils/buildingNameSort.js'
 import { normalizeVerifiedFlag } from '@/utils/fileStatePresent.js'
 
 const COMPARISON_GROUP_KEYS = SUMMARY_COMPARISON_GROUP_KEYS
@@ -42,7 +43,7 @@ const createEmptyAreaComparison = () => ({
 export function useSurveySummary() {
   const rawTableData = ref([])
   const unknownUsages = ref([])
-  const displayTableData = computed(() => rawTableData.value)
+  const displayTableData = computed(() => sortSurveySummaryRows(rawTableData.value))
   const requestSeq = ref(0)
   let surveyAbortController = null
 

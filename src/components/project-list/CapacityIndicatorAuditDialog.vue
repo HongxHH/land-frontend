@@ -14,17 +14,35 @@
     >
       <section class="audit-split-layout__left audit-preview-shell" :style="leftPanelStyle">
         <AuditDocumentPreviewPanel
-          :loading="metaLoading || mdLoading || pdfLoading"
+          :loading="metaLoading || pdfLoading"
           :current-view="leftView"
           :download-disabled="!fileMeta.gridfsId"
           :views="previewViews"
-          @update:current-view="leftView = $event"
+          @update:current-view="switchPreview"
           @download="downloadSourceFile"
         >
-          <template #pdf>
-            <iframe v-if="pdfUrl" :src="pdfUrl" class="audit-preview-iframe" title="PDF 预览" />
+          <template #original>
+            <iframe
+              v-if="leftView === 'original' && pdfUrl"
+              :key="pdfUrl"
+              :src="pdfUrl"
+              class="audit-preview-iframe"
+              title="原始文件预览"
+            />
             <div v-else class="audit-preview-empty">
               <el-empty description="暂无可预览 PDF" />
+            </div>
+          </template>
+          <template #preprocess>
+            <iframe
+              v-if="leftView === 'preprocess' && pdfUrl"
+              :key="pdfUrl"
+              :src="pdfUrl"
+              class="audit-preview-iframe"
+              title="预处理文件预览"
+            />
+            <div v-else class="audit-preview-empty">
+              <el-empty description="暂无预处理文件" />
             </div>
           </template>
           <template #markdown>
@@ -55,7 +73,7 @@
 
         <div class="capacity-audit-right__body">
           <div class="summary-card">
-            <div class="summary-title">本次报建建筑面积（㎡）</div>
+            <div class="summary-title">至本次已报建总建筑面积（㎡）</div>
             <el-table
               class="capacity-audit-table project-tab-el-table"
               :data="areaEditRows"
@@ -131,16 +149,22 @@ const dialogVisible = computed({
   set: (v) => emit('update:modelValue', v),
 })
 
-const leftView = ref('pdf')
+const leftView = ref('original')
 const metaLoading = ref(false)
 const mdLoading = ref(false)
 const pdfLoading = ref(false)
 const mainFormSaveLoading = ref(false)
 
-const previewViews = [
-  { id: 'pdf', label: 'PDF预览' },
+const previewViews = computed(() => [
+  { id: 'original', label: '原始文件' },
+  {
+    id: 'preprocess',
+    label: '预处理文件',
+    disabled: !fileMeta.preprocessGridfsId,
+    hint: fileMeta.preprocessGridfsId ? '' : '暂无',
+  },
   { id: 'markdown', label: '解析内容(MD)' },
-]
+])
 
 const areaEditRows = [
   { label: '合计', field: 'totalArea' },
@@ -265,20 +289,41 @@ const fetchFileMeta = async () => {
   }
 }
 
-const fetchPdfPreview = async () => {
+const loadPdfByView = async (view) => {
+  const targetGridfsId = view === 'preprocess' ? fileMeta.preprocessGridfsId : fileMeta.gridfsId
+  if (view === 'preprocess' && !targetGridfsId) {
+    ElMessage.warning('当前文件没有预处理版本')
+    return
+  }
   pdfLoading.value = true
-  clearPdfUrl()
   try {
-    if (!fileMeta.gridfsId) return
-    const res = await downloadGridFsFile(fileMeta.gridfsId, { responseType: 'blob' })
+    if (!targetGridfsId) {
+      clearPdfUrl()
+      leftView.value = view
+      return
+    }
+    const res = await downloadGridFsFile(targetGridfsId, { responseType: 'blob' })
     const blob = new Blob([res.data], { type: 'application/pdf' })
-    pdfUrl.value = URL.createObjectURL(blob)
+    const nextUrl = URL.createObjectURL(blob)
+    const previousUrl = pdfUrl.value
+    pdfUrl.value = nextUrl
+    leftView.value = view
+    if (previousUrl) URL.revokeObjectURL(previousUrl)
   } catch (error) {
     console.error('PDF 预览加载失败:', error)
     ElMessage.warning('PDF 预览加载失败，可下载原文件查看')
   } finally {
     pdfLoading.value = false
   }
+}
+
+const switchPreview = async (view) => {
+  if (view === leftView.value) return
+  if (view === 'markdown') {
+    leftView.value = 'markdown'
+    return
+  }
+  await loadPdfByView(view)
 }
 
 const fetchMarkdown = async () => {
@@ -336,11 +381,11 @@ const loadDialogData = async () => {
     assignMainFormFromDraft(row)
   }
   await fetchFileMeta()
-  await Promise.all([fetchPdfPreview(), fetchMarkdown()])
+  await Promise.all([loadPdfByView('original'), fetchMarkdown()])
 }
 
 const handleClosed = () => {
-  leftView.value = 'pdf'
+  leftView.value = 'original'
   recognitionMdContent.value = ''
   clearPdfUrl()
   resetMainFormEdit()

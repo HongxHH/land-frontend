@@ -9,7 +9,7 @@
           <div class="brand-copy">
             <div class="brand-title-row">
               <span class="brand-title">项目列表</span>
-              <span class="brand-pill">总项目 {{ total }}</span>
+              <span class="brand-pill">当前 {{ total }}</span>
             </div>
           </div>
         </div>
@@ -87,7 +87,9 @@
       </div>
 
       <el-table
+        v-loading="tableLoading"
         :data="tableData"
+        row-key="id"
         border
         stripe
         class="project-table admin-mgmt-table"
@@ -114,6 +116,12 @@
           align="center"
         />
         <el-table-column prop="contractFileCount" label="合同文件数" width="120" align="center" />
+        <el-table-column
+          prop="capacityIndicatorFileCount"
+          label="核查表数"
+          width="110"
+          align="center"
+        />
         <el-table-column prop="transferor" label="出让方" min-width="160" show-overflow-tooltip />
         <el-table-column prop="transferee" label="受让方" min-width="180" show-overflow-tooltip />
         <el-table-column
@@ -145,7 +153,7 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           background
-          @size-change="fetchList"
+          @size-change="handlePageSizeChange"
           @current-change="fetchList"
         />
       </div>
@@ -193,6 +201,7 @@ const { buildPrintData } = useDashboardPrint()
 const { isPrinting, triggerPrint } = usePrint()
 const printRows = ref([])
 const printTitle = ref('项目详情打印报表')
+const printTime = ref('')
 
 const buildPayload = () => {
   const [start, end] = queryForm.projectTimeRange || []
@@ -235,6 +244,11 @@ const handleSearch = async () => {
   await fetchList()
 }
 
+const handlePageSizeChange = async () => {
+  queryForm.pageNum = 1
+  await fetchList()
+}
+
 const handleReset = async () => {
   queryForm.projectName = ''
   queryForm.projectTimeRange = []
@@ -265,7 +279,8 @@ const handlePrintSelected = () => {
     return
   }
   printRows.value = [...selectedRows.value]
-  printTitle.value = `项目详情打印报表（共 ${selectedRows.value.length} 项）`
+  printTitle.value = '项目详情打印报表'
+  printTime.value = new Date().toLocaleString()
   triggerPrint()
 }
 
@@ -298,6 +313,9 @@ const handleDeleteProject = async (row) => {
     const res = await deleteProjectById(projectId)
     if (res.data?.code === 200) {
       ElMessage.success(res.data?.msg || '项目删除成功')
+      if (tableData.value.length <= 1 && queryForm.pageNum > 1) {
+        queryForm.pageNum -= 1
+      }
       await fetchList()
       return
     }
@@ -305,11 +323,10 @@ const handleDeleteProject = async (row) => {
   } catch (error) {
     if (error === 'cancel' || error === 'close') return
     console.error('删除项目失败:', error)
-    ElMessage.error(error?.response?.data?.msg || '删除失败，请稍后重试')
+    ElMessage.error(getApiErrorMessage(error, '删除失败，请稍后重试'))
   }
 }
 
-const printTime = computed(() => new Date().toLocaleString())
 const printData = computed(() => buildPrintData(printRows.value))
 
 onMounted(() => {

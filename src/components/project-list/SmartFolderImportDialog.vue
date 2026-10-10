@@ -35,11 +35,13 @@
         >
           选择项目文件夹
         </el-button>
+        <el-button link type="primary" @click.stop="openRuleGuide">查看自动归类规则</el-button>
       </div>
       <div v-else class="smart-folder-import__drop-compact">
         <el-icon><FolderOpened /></el-icon>
         <span>重新选择文件夹</span>
         <el-button link type="primary" @click="pickFolder">更换文件夹</el-button>
+        <el-button link type="primary" @click.stop="openRuleGuide">查看自动归类规则</el-button>
       </div>
     </div>
 
@@ -159,6 +161,7 @@
             {{ unmatchedDisplayGroup.label }} ({{ unmatchedDisplayGroup.entries.length }})
           </span>
           <span class="smart-folder-import__group-note">可批量归类</span>
+          <el-button link type="primary" @click="openRuleGuide">查看规则</el-button>
         </header>
 
         <div v-if="unmatchedDisplayGroup.entries.length" class="smart-folder-import__list">
@@ -271,6 +274,8 @@
         <div v-else class="smart-folder-import__empty">— 无未识别文件</div>
       </section>
     </div>
+
+    <SmartImportRuleDialog v-model="ruleGuideVisible" />
   </div>
 </template>
 
@@ -278,6 +283,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { FolderOpened } from '@element-plus/icons-vue'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
+import SmartImportRuleDialog from '@/components/project-list/SmartImportRuleDialog.vue'
 import {
   SMART_IMPORT_CONTEXT_TYPES as contextTypeOptionsSource,
   groupEntriesByDirectory,
@@ -314,6 +320,11 @@ const emit = defineEmits([
 const folderInputRef = ref(null)
 const dragOver = ref(false)
 const expandedDirKeys = ref([])
+const ruleGuideVisible = ref(false)
+
+const openRuleGuide = () => {
+  ruleGuideVisible.value = true
+}
 
 const buildDirCollapseKey = (groupKey, directory) => `${groupKey}::${directory}`
 
