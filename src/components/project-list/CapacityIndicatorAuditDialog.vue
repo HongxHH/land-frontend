@@ -126,6 +126,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import AuditDocumentPreviewPanel from '@/components/audit/AuditDocumentPreviewPanel.vue'
+import { usePdfObjectUrl } from '@/composables/shared/usePdfObjectUrl'
 import { downloadGridFsFile, queryFiles } from '@/services/file.service'
 import {
   queryCapacityIndicatorForms,
@@ -152,8 +153,8 @@ const dialogVisible = computed({
 const leftView = ref('original')
 const metaLoading = ref(false)
 const mdLoading = ref(false)
-const pdfLoading = ref(false)
 const mainFormSaveLoading = ref(false)
+let loadSession = 0
 
 const previewViews = computed(() => [
   { id: 'original', label: '原始文件' },
@@ -182,7 +183,7 @@ const fileMeta = reactive({
   preprocessGridfsId: '',
 })
 
-const pdfUrl = ref('')
+const { pdfUrl, pdfLoading, loadPdf, clearPdf } = usePdfObjectUrl()
 
 const { auditLayoutRef, leftPanelStyle, onSplitterMouseDown } = useAuditSplitPanel()
 
@@ -224,13 +225,6 @@ const normalizePage = (payload) => {
   return { records, total: Number(payload?.total ?? records.length) }
 }
 
-const clearPdfUrl = () => {
-  if (pdfUrl.value) {
-    URL.revokeObjectURL(pdfUrl.value)
-    pdfUrl.value = ''
-  }
-}
-
 const fetchCapacityFormRow = async () => {
   if (!props.fileRecordId || !props.projectId) return null
   try {
@@ -250,12 +244,13 @@ const fetchCapacityFormRow = async () => {
   }
 }
 
-const fetchFileMeta = async () => {
+const fetchFileMeta = async (session) => {
   if (!props.fileRecordId) return
   metaLoading.value = true
   try {
     const fromProps = props.initialFile || null
     if (fromProps?.gridfsId) {
+      if (session !== loadSession) return
       Object.assign(fileMeta, {
         id: fromProps.id,
         originalName: fromProps.originalName || '',
@@ -269,6 +264,7 @@ const fetchFileMeta = async () => {
       pageSize: 1,
       fileId: String(props.fileRecordId),
     })
+    if (session !== loadSession) return
     const parsed = normalizePage(res.data?.data)
     const hit = parsed.records?.[0]
     if (!hit) {
@@ -283,9 +279,9 @@ const fetchFileMeta = async () => {
     })
   } catch (error) {
     console.error('查询容量指标核查文件失败:', error)
-    ElMessage.error('查询文件信息失败')
+    if (session === loadSession) ElMessage.error('查询文件信息失败')
   } finally {
-    metaLoading.value = false
+    if (session === loadSession) metaLoading.value = false
   }
 }
 
@@ -295,40 +291,30 @@ const loadPdfByView = async (view) => {
     ElMessage.warning('当前文件没有预处理版本')
     return
   }
-  pdfLoading.value = true
-  try {
-    if (!targetGridfsId) {
-      clearPdfUrl()
-      leftView.value = view
-      return
+  const result = await loadPdf(targetGridfsId)
+  if (!result.ok) {
+    if (result.reason === 'error') {
+      console.error('PDF 预览加载失败:', result.error)
+      ElMessage.warning('PDF 预览加载失败，可下载原文件查看')
     }
-    const res = await downloadGridFsFile(targetGridfsId, { responseType: 'blob' })
-    const blob = new Blob([res.data], { type: 'application/pdf' })
-    const nextUrl = URL.createObjectURL(blob)
-    const previousUrl = pdfUrl.value
-    pdfUrl.value = nextUrl
-    leftView.value = view
-    if (previousUrl) URL.revokeObjectURL(previousUrl)
-  } catch (error) {
-    console.error('PDF 预览加载失败:', error)
-    ElMessage.warning('PDF 预览加载失败，可下载原文件查看')
-  } finally {
-    pdfLoading.value = false
+    return
   }
+  leftView.value = view
 }
 
 const switchPreview = async (view) => {
   if (view === leftView.value) return
   if (view === 'markdown') {
+    clearPdf()
     leftView.value = 'markdown'
     return
   }
   await loadPdfByView(view)
 }
 
-const fetchMarkdown = async () => {
+const fetchMarkdown = async (session) => {
   if (!props.fileRecordId) {
-    recognitionMdContent.value = ''
+    if (session === loadSession) recognitionMdContent.value = ''
     return
   }
   mdLoading.value = true
@@ -341,13 +327,14 @@ const fetchMarkdown = async () => {
       sortDirection: 'desc',
       loadGridFsPayload: true,
     })
+    if (session !== loadSession) return
     const hit = res.data?.data?.records?.[0]
     recognitionMdContent.value = hit?.markdownContent || ''
   } catch (error) {
     console.error('加载容量指标核查 MD 失败:', error)
-    recognitionMdContent.value = ''
+    if (session === loadSession) recognitionMdContent.value = ''
   } finally {
-    mdLoading.value = false
+    if (session === loadSession) mdLoading.value = false
   }
 }
 
@@ -373,21 +360,25 @@ const downloadSourceFile = async () => {
   }
 }
 
-const loadDialogData = async () => {
+const loadDialogData = async (session) => {
   if (props.mainFormDraft) {
+    if (session !== loadSession) return
     assignMainFormFromDraft(props.mainFormDraft)
   } else {
     const row = await fetchCapacityFormRow()
+    if (session !== loadSession) return
     assignMainFormFromDraft(row)
   }
-  await fetchFileMeta()
-  await Promise.all([loadPdfByView('original'), fetchMarkdown()])
+  await fetchFileMeta(session)
+  if (session !== loadSession) return
+  await Promise.all([loadPdfByView('original'), fetchMarkdown(session)])
 }
 
 const handleClosed = () => {
+  if (dialogVisible.value) return
   leftView.value = 'original'
   recognitionMdContent.value = ''
-  clearPdfUrl()
+  clearPdf()
   resetMainFormEdit()
   mainFormSaveLoading.value = false
 }
@@ -423,7 +414,14 @@ const submitMainFormEdit = async () => {
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) loadDialogData()
+    loadSession += 1
+    clearPdf()
+    if (!open) {
+      metaLoading.value = false
+      mdLoading.value = false
+      return
+    }
+    loadDialogData(loadSession)
   }
 )
 </script>
