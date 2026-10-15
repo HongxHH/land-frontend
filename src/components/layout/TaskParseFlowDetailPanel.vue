@@ -3,28 +3,38 @@
     <template v-if="detail">
       <div class="detail-top">
         <div class="detail-top-main">
-          <div class="detail-name">{{ detail.taskName || '文件解析任务' }}</div>
-          <div class="detail-id">{{ detail.fileName || '未命名文件' }}</div>
-          <div class="detail-meta">
-            <span v-if="detail.fileContextType" class="detail-ctx"
-              >类型 {{ detail.fileContextType }}</span
-            >
-            <el-tag v-if="detail.status" size="small" effect="plain">{{ detail.status }}</el-tag>
+          <div class="detail-title-row">
+            <div class="detail-name">{{ detail.fileName || detail.taskName || '未命名文件' }}</div>
+            <el-tag v-if="contextLabel" size="small" effect="plain" type="info">{{
+              contextLabel
+            }}</el-tag>
+            <el-tag v-if="statusLabel" size="small" :type="statusTagType" effect="light">{{
+              statusLabel
+            }}</el-tag>
+          </div>
+          <div class="detail-subline">
+            <span class="detail-stage">
+              当前阶段
+              <span class="detail-stage-name">{{
+                detail.currentStageName || detail.currentStageCode || '-'
+              }}</span>
+            </span>
             <span v-if="retryMetaText" class="detail-ctx">{{ retryMetaText }}</span>
             <span v-if="detail.retryReason" class="detail-ctx" :title="detail.retryReason">
               原因 {{ shortError(detail.retryReason, 48) }}
             </span>
-          </div>
-          <div class="detail-stage">
-            当前阶段：{{ detail.currentStageName || detail.currentStageCode || '-' }}
+            <span v-if="syncPillVisible" class="sync-pill">同步中</span>
           </div>
         </div>
-        <div class="detail-actions">
-          <span v-if="syncPillVisible" class="sync-pill">同步中</span>
-          <el-button v-if="showRefresh" size="small" type="primary" plain @click="emit('refresh')"
-            >刷新</el-button
-          >
-        </div>
+        <el-button
+          v-if="showRefresh"
+          class="detail-refresh"
+          size="small"
+          plain
+          :icon="Refresh"
+          @click="emit('refresh')"
+          >刷新</el-button
+        >
       </div>
 
       <div v-if="detail.pipelineSteps?.length" class="detail-pipeline">
@@ -54,7 +64,7 @@
               <span v-else class="pipeline-idx-dot" aria-hidden="true" />
             </span>
           </span>
-          <div class="pipeline-chip">
+          <div class="pipeline-chip" :title="step.message || undefined">
             <span class="pipeline-name">{{ step.stageName }}</span>
             <span class="pipeline-sub">{{ formatDuration(pipelineDurationMs(step)) }}</span>
           </div>
@@ -64,28 +74,6 @@
       <div class="detail-progress">
         <el-progress :percentage="Number(detail.progress || 0)" :stroke-width="8" />
       </div>
-
-      <div class="detail-trace-list">
-        <div
-          v-for="trace in detail.stageTraces || []"
-          :key="`tpfd-${trace.stageCode}`"
-          class="detail-trace-item"
-          :class="traceItemClass(trace)"
-        >
-          <div class="detail-trace-item-left">
-            <strong>{{ trace.stageName || trace.stageCode }}</strong>
-            <el-tag size="small" :type="stageStatusTagType(trace.status)" effect="light">
-              {{ trace.status || 'PENDING' }}
-            </el-tag>
-          </div>
-          <div class="detail-trace-item-right">
-            <span>耗时 {{ formatDuration(traceDurationMs(trace)) }}</span>
-            <span v-if="trace.message" :title="trace.message"
-              >说明：{{ shortError(trace.message, 80) }}</span
-            >
-          </div>
-        </div>
-      </div>
     </template>
     <el-empty v-else-if="!loading" description="暂无任务详情" />
   </div>
@@ -93,7 +81,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { CircleCheckFilled, CircleCloseFilled, RemoveFilled } from '@element-plus/icons-vue'
+import { CircleCheckFilled, CircleCloseFilled, Refresh, RemoveFilled } from '@element-plus/icons-vue'
+import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
 
 const props = defineProps({
   detail: {
@@ -123,6 +112,34 @@ const isRunningStatus = (status) => String(status || '').toUpperCase() === 'RUNN
 const isSuccess = (status) => String(status || '').toUpperCase() === 'SUCCESS'
 const isFailed = (status) => String(status || '').toUpperCase() === 'FAILED'
 const isSkipped = (status) => String(status || '').toUpperCase() === 'SKIPPED'
+
+const STATUS_LABELS = {
+  SUCCESS: '已完成',
+  RUNNING: '进行中',
+  FAILED: '失败',
+  PENDING: '等待中',
+  CANCELLED: '已取消',
+  SKIPPED: '已跳过',
+}
+
+const contextLabel = computed(() =>
+  props.detail?.fileContextType ? getFileContextLabel(props.detail.fileContextType) : ''
+)
+
+const statusLabel = computed(() => {
+  const status = String(props.detail?.status || '').toUpperCase()
+  if (!status) return ''
+  return STATUS_LABELS[status] || status
+})
+
+const statusTagType = computed(() => {
+  const status = String(props.detail?.status || '').toUpperCase()
+  if (status === 'SUCCESS') return 'success'
+  if (status === 'RUNNING') return 'primary'
+  if (status === 'FAILED') return 'danger'
+  if (status === 'CANCELLED') return 'warning'
+  return 'info'
+})
 
 const retryMetaText = computed(() => {
   const attempt = Number(props.detail?.attemptCount || 0)
@@ -181,7 +198,6 @@ onBeforeUnmount(() => {
 })
 
 const pipelineDurationMs = (step) => Math.max(0, Number(step?.durationMs) || 0)
-const traceDurationMs = (trace) => Math.max(0, Number(trace?.durationMs) || 0)
 
 const formatDuration = (ms) => {
   const val = Number(ms)
@@ -204,17 +220,6 @@ const shortError = (text, limit = 56) => {
   return `${val.slice(0, limit)}...`
 }
 
-const stageStatusTagType = (status) => {
-  const s = String(status || '').toUpperCase()
-  if (s === 'SUCCESS') return 'success'
-  if (s === 'RUNNING') return 'primary'
-  if (s === 'FAILED') return 'danger'
-  if (s === 'CANCELLED') return 'warning'
-  if (s === 'SKIPPED') return 'info'
-  if (s === 'PENDING') return 'info'
-  return 'warning'
-}
-
 const pipelineStepClass = (step) => {
   const s = String(step?.status || '').toUpperCase()
   return {
@@ -226,16 +231,6 @@ const pipelineStepClass = (step) => {
     'is-pending': s === 'PENDING' || !s,
   }
 }
-
-const traceItemClass = (trace) => {
-  const s = String(trace?.status || '').toUpperCase()
-  return {
-    'is-success': s === 'SUCCESS',
-    'is-running': s === 'RUNNING',
-    'is-failed': s === 'FAILED',
-    'is-cancelled': s === 'CANCELLED',
-  }
-}
 </script>
 
 <style scoped>
@@ -245,64 +240,63 @@ const traceItemClass = (trace) => {
 
 .detail-top {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-}
-
-.detail-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .detail-top-main {
   min-width: 0;
 }
 
-.detail-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.detail-id {
-  margin-top: 2px;
-  font-size: 12px;
-  color: #64748b;
-  word-break: break-all;
-}
-
-.detail-stage {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #475569;
-}
-
-.sync-pill {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  color: #64748b;
-}
-
-.detail-meta {
-  margin-top: 4px;
+.detail-title-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.detail-name {
+  max-width: 100%;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+  word-break: break-all;
+}
+
+.detail-subline {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.detail-stage-name {
+  margin-left: 6px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.detail-refresh {
+  flex-shrink: 0;
+}
+
+.sync-pill {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
 }
 
 .detail-ctx {
-  font-size: 11px;
   color: #64748b;
 }
 
@@ -452,58 +446,6 @@ const traceItemClass = (trace) => {
 
 .detail-progress {
   margin-top: 2px;
-}
-
-.detail-trace-list {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 360px;
-  overflow-y: auto;
-}
-
-.detail-trace-item {
-  border: 1px solid #e2e8f0;
-  border-left: 3px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 8px 10px;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  background: #fff;
-}
-
-.detail-trace-item.is-running {
-  border-left-color: #2563eb;
-}
-
-.detail-trace-item.is-success {
-  border-left-color: #16a34a;
-}
-
-.detail-trace-item.is-failed {
-  border-left-color: #b42318;
-}
-
-.detail-trace-item.is-cancelled {
-  border-left-color: #d97706;
-}
-
-.detail-trace-item-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.detail-trace-item-right {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 12px;
-  color: #64748b;
-  text-align: right;
 }
 
 @media (prefers-reduced-motion: reduce) {

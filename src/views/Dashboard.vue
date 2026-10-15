@@ -6,12 +6,7 @@
           <div class="brand-icon-wrap">
             <el-icon class="brand-icon"><DataAnalysis /></el-icon>
           </div>
-          <div class="brand-copy">
-            <div class="brand-title-row">
-              <span class="brand-title">项目列表</span>
-              <span class="brand-pill">当前 {{ total }}</span>
-            </div>
-          </div>
+          <span class="brand-title">项目列表</span>
         </div>
         <div class="filter-row-wrap">
           <div class="filter-row">
@@ -69,8 +64,6 @@
       <div class="table-toolbar">
         <div class="table-toolbar-left">
           <div class="table-title">项目清单</div>
-          <div class="project-count">共有项目：{{ total }} 个</div>
-          <div class="selected-count">已勾选：{{ selectedRows.length }} 个</div>
         </div>
         <div class="table-actions">
           <el-button
@@ -95,9 +88,32 @@
         class="project-table admin-mgmt-table"
         height="calc(100vh - 300px)"
         :row-class-name="getRowClassName"
-        @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="48" align="center" />
+        <el-table-column
+          width="48"
+          align="center"
+          class-name="col-select"
+          label-class-name="col-select"
+        >
+          <template #header>
+            <el-checkbox
+              :model-value="currentPageAllSelected"
+              :indeterminate="currentPageSomeSelected"
+              :disabled="tableData.length === 0"
+              aria-label="选择本页项目"
+              @change="handleHeaderSelectionChange"
+              @click.stop
+            />
+          </template>
+          <template #default="{ row }">
+            <el-checkbox
+              :model-value="isProjectSelected(row)"
+              :aria-label="`选择项目 ${row.projectName || ''}`"
+              @change="(checked) => setProjectSelected(row, checked)"
+              @click.stop
+            />
+          </template>
+        </el-table-column>
         <el-table-column
           prop="projectName"
           label="项目名称"
@@ -146,12 +162,19 @@
       </el-table>
 
       <div class="pager-wrap admin-mgmt-pager">
+        <span class="project-count">
+          共 {{ total }} 个项目，已选 {{ selectedRows.length }} 个<span
+            v-if="hasCrossPageSelection"
+            class="project-count-cross-page"
+            >（跨页）</span
+          >
+        </span>
         <el-pagination
           v-model:current-page="queryForm.pageNum"
           v-model:page-size="queryForm.pageSize"
           :total="total"
           :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
+          layout="sizes, prev, pager, next, jumper"
           background
           @size-change="handlePageSizeChange"
           @current-change="fetchList"
@@ -193,7 +216,25 @@ const queryForm = reactive({
 const tableLoading = ref(false)
 const tableData = ref([])
 const total = ref(0)
-const selectedRows = ref([])
+const selectedRowMap = ref(new Map())
+const selectedRows = computed(() => Array.from(selectedRowMap.value.values()))
+const currentPageSelectedCount = computed(
+  () => tableData.value.filter((row) => selectedRowMap.value.has(projectRowId(row))).length
+)
+const currentPageAllSelected = computed(
+  () => tableData.value.length > 0 && currentPageSelectedCount.value === tableData.value.length
+)
+const currentPageSomeSelected = computed(
+  () => currentPageSelectedCount.value > 0 && !currentPageAllSelected.value
+)
+const hasCrossPageSelection = computed(() => {
+  if (!selectedRowMap.value.size) return false
+  const pageIds = new Set(tableData.value.map((row) => projectRowId(row)).filter(Boolean))
+  for (const id of selectedRowMap.value.keys()) {
+    if (!pageIds.has(id)) return true
+  }
+  return false
+})
 
 let listAbortController = null
 
@@ -228,6 +269,7 @@ const fetchList = async () => {
     const data = res.data?.data || {}
     tableData.value = Array.isArray(data.records) ? data.records : []
     total.value = Number(data.total || 0)
+    refreshSelectedSnapshots()
   } catch (error) {
     if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') return
     console.error('查询项目详情失败:', error)
@@ -240,6 +282,7 @@ const fetchList = async () => {
 }
 
 const handleSearch = async () => {
+  clearSelection()
   queryForm.pageNum = 1
   await fetchList()
 }
@@ -250,6 +293,7 @@ const handlePageSizeChange = async () => {
 }
 
 const handleReset = async () => {
+  clearSelection()
   queryForm.projectName = ''
   queryForm.projectTimeRange = []
   queryForm.pageNum = 1
@@ -284,15 +328,52 @@ const handlePrintSelected = () => {
   triggerPrint()
 }
 
-const handleSelectionChange = (rows) => {
-  selectedRows.value = Array.isArray(rows) ? rows : []
+const projectRowId = (row) => {
+  const id = row?.id
+  if (id == null || id === '') return ''
+  return String(id)
 }
 
-const getRowClassName = ({ row }) => {
-  const id = row?.id
-  if (!id) return ''
-  return selectedRows.value.some((item) => item?.id === id) ? 'row-selected' : ''
+const clearSelection = () => {
+  selectedRowMap.value = new Map()
 }
+
+const refreshSelectedSnapshots = () => {
+  if (!selectedRowMap.value.size) return
+  const next = new Map(selectedRowMap.value)
+  let changed = false
+  for (const row of tableData.value) {
+    const id = projectRowId(row)
+    if (!id || !next.has(id)) continue
+    next.set(id, row)
+    changed = true
+  }
+  if (changed) selectedRowMap.value = next
+}
+
+const isProjectSelected = (row) => selectedRowMap.value.has(projectRowId(row))
+
+const setProjectSelected = (row, checked) => {
+  const id = projectRowId(row)
+  if (!id) return
+  const next = new Map(selectedRowMap.value)
+  if (checked) next.set(id, row)
+  else next.delete(id)
+  selectedRowMap.value = next
+}
+
+const handleHeaderSelectionChange = (checked) => {
+  const next = new Map(selectedRowMap.value)
+  for (const row of tableData.value) {
+    const id = projectRowId(row)
+    if (!id) continue
+    if (checked) next.set(id, row)
+    else next.delete(id)
+  }
+  selectedRowMap.value = next
+}
+
+const getRowClassName = ({ row }) => (isProjectSelected(row) ? 'row-selected' : '')
 
 const handleDeleteProject = async (row) => {
   const projectId = row?.id
@@ -312,6 +393,7 @@ const handleDeleteProject = async (row) => {
     )
     const res = await deleteProjectById(projectId)
     if (res.data?.code === 200) {
+      setProjectSelected({ id: projectId }, false)
       ElMessage.success(res.data?.msg || '项目删除成功')
       if (tableData.value.length <= 1 && queryForm.pageNum > 1) {
         queryForm.pageNum -= 1
@@ -374,8 +456,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 200px;
-  max-width: 340px;
+  flex: 0 0 auto;
 }
 
 .brand-icon-wrap {
@@ -395,34 +476,13 @@ onMounted(() => {
   font-size: 18px;
 }
 
-.brand-copy {
-  min-width: 0;
-}
-
-.brand-title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  line-height: 1.25;
-}
-
 .brand-title {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.01em;
+  line-height: 1.25;
   color: #1e293b;
-}
-
-.brand-pill {
-  font-size: 11px;
-  font-weight: 600;
-  color: #1e40af;
-  padding: 1px 8px;
-  line-height: 1.5;
-  border-radius: 999px;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
+  white-space: nowrap;
 }
 
 .brand-desc {
@@ -587,21 +647,6 @@ onMounted(() => {
   gap: 12px;
 }
 
-.project-count {
-  font-size: 14px;
-  font-weight: 600;
-  color: #5f6f87;
-}
-
-.selected-count {
-  font-size: 14px;
-  color: #516173;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid #dbe4ef;
-  background: #fff;
-}
-
 .table-actions {
   display: flex;
   align-items: center;
@@ -623,6 +668,15 @@ onMounted(() => {
 
 :deep(.project-table-actions .el-button + .el-button) {
   margin-left: 0;
+}
+
+:deep(.project-table th.col-select .cell),
+:deep(.project-table td.col-select .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 :deep(.project-table th.col-actions .cell),
@@ -702,17 +756,25 @@ onMounted(() => {
 
 .pager-wrap {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding-top: 10px;
+}
+
+.project-count {
+  flex-shrink: 0;
+  color: #607286;
+  font-size: 14px;
+}
+
+.project-count-cross-page {
+  color: #1f4e79;
 }
 
 @media (max-width: 1400px) {
   .filter-panel {
     align-items: stretch;
-  }
-
-  .filter-brand {
-    max-width: none;
   }
 
   .filter-row-wrap {

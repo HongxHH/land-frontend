@@ -3,6 +3,7 @@
     :model-value="modelValue"
     title="任务阶段详情"
     width="680px"
+    align-center
     destroy-on-close
     append-to-body
     class="parse-flow-archive-dialog"

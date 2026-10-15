@@ -45,7 +45,7 @@
         :loading="batchDownloadLoading"
         @click="emit('batch-download')"
       >
-        下载源文件
+        下载文件
       </el-button>
       <span class="query-bar-divider" aria-hidden="true" />
       <el-input
