@@ -30,7 +30,7 @@
         <el-button
           type="primary"
           plain
-          :disabled="scanLoading || uploadLoading"
+          :disabled="scanLoading || uploadLoading || scanLocked"
           @click="pickFolder"
         >
           选择项目文件夹
@@ -40,7 +40,9 @@
       <div v-else class="smart-folder-import__drop-compact">
         <el-icon><FolderOpened /></el-icon>
         <span>重新选择文件夹</span>
-        <el-button link type="primary" @click="pickFolder">更换文件夹</el-button>
+        <el-button link type="primary" :disabled="uploadLoading || scanLocked" @click="pickFolder"
+          >更换文件夹</el-button
+        >
         <el-button link type="primary" @click.stop="openRuleGuide">查看自动归类规则</el-button>
       </div>
     </div>
@@ -136,7 +138,7 @@
                       </div>
                     </div>
                     <span
-                      v-if="uploadLoading && uploadItemMap[entry.id]"
+                      v-if="shouldShowUploadStatus(entry.id)"
                       class="smart-folder-import__row-status"
                       :class="`is-${resolveUploadState(entry.id)?.status ?? 'pending'}`"
                       :title="uploadStatusTitle(entry.id)"
@@ -259,7 +261,7 @@
                     />
                   </el-select>
                   <span
-                    v-if="uploadLoading && uploadItemMap[entry.id]"
+                    v-if="shouldShowUploadStatus(entry.id)"
                     class="smart-folder-import__row-status"
                     :class="`is-${resolveUploadState(entry.id)?.status ?? 'pending'}`"
                     :title="uploadStatusTitle(entry.id)"
@@ -281,6 +283,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { FolderOpened } from '@element-plus/icons-vue'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
 import SmartImportRuleDialog from '@/components/project-list/SmartImportRuleDialog.vue'
@@ -300,6 +303,8 @@ const props = defineProps({
   hasScanResult: { type: Boolean, default: false },
   uploadLoading: { type: Boolean, default: false },
   scanLoading: { type: Boolean, default: false },
+  /** 项目已创建且仍有待处理结果时锁定换文件夹，避免清空失败列表 */
+  scanLocked: { type: Boolean, default: false },
   uploadProgress: { type: Number, default: 0 },
   getFileUploadState: { type: Function, default: () => null },
   uploadItems: { type: Array, default: () => [] },
@@ -391,16 +396,33 @@ const uploadItemMap = computed(() => {
   return map
 })
 
+const warnScanLocked = () => {
+  ElMessage.warning('项目已创建。请重试失败项或进入项目后再补传，勿更换文件夹')
+}
+
 const pickFolder = () => {
+  if (props.scanLocked || props.uploadLoading) {
+    if (props.scanLocked) warnScanLocked()
+    return
+  }
   folderInputRef.value?.click()
 }
 
 const onInputChange = (event) => {
+  if (props.scanLocked) {
+    warnScanLocked()
+    if (event?.target) event.target.value = ''
+    return
+  }
   emit('folder-input-change', event)
 }
 
 const onDrop = (event) => {
   dragOver.value = false
+  if (props.scanLocked || props.uploadLoading) {
+    if (props.scanLocked) warnScanLocked()
+    return
+  }
   emit('folder-drop', event)
 }
 
@@ -410,9 +432,16 @@ const resolveUploadState = (entryId) => {
   return props.getFileUploadState?.(item) ?? null
 }
 
+/** 上传中或已有结果（含失败）时都展示，避免结束后失败原因消失 */
+const shouldShowUploadStatus = (entryId) => {
+  if (!uploadItemMap.value[entryId]) return false
+  const state = resolveUploadState(entryId)
+  return Boolean(state?.status)
+}
+
 const UPLOAD_STATUS_LABELS = {
   pending: '等待',
-  uploading: '上传中',
+  uploading: '传输中',
   processing: '入库中',
   done: '已完成',
   error: '失败',
@@ -425,6 +454,10 @@ const uploadStatusLabel = (entryId) => {
   if (status === 'error' && state?.error) {
     return state.error
   }
+  if (status === 'uploading') {
+    const pct = Number(state?.progress || 0)
+    return pct > 0 ? `传输中 ${pct}%` : '传输中'
+  }
   return UPLOAD_STATUS_LABELS[status] || status
 }
 
@@ -432,6 +465,13 @@ const uploadStatusTitle = (entryId) => {
   const state = resolveUploadState(entryId)
   if (state?.status === 'error' && state?.error) {
     return state.error
+  }
+  if (state?.status === 'uploading') {
+    const pct = Number(state?.progress || 0)
+    return pct > 0 ? `文件传输中 ${pct}%` : '文件传输中'
+  }
+  if (state?.status === 'processing') {
+    return '文件已传输，正在服务端入库'
   }
   return UPLOAD_STATUS_LABELS[state?.status ?? 'pending'] || state?.status || ''
 }

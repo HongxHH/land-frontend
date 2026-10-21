@@ -16,7 +16,11 @@
           class="upload-file-row-progress"
         />
         <span class="upload-file-row-muted">{{
-          status === 'processing' ? '入库中' : '传输中'
+          status === 'processing'
+            ? '入库中'
+            : progress > 0
+              ? `传输中 ${progress}%`
+              : '传输中'
         }}</span>
       </template>
       <template v-else-if="status === 'done'">

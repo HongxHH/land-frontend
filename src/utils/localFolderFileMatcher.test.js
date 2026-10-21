@@ -4,6 +4,7 @@ import {
   getSmartImportRuleGuide,
   groupScannedEntries,
   matchFileContextType,
+  sortEntriesByFileSizeAsc,
 } from '@/utils/localFolderFileMatcher.js'
 
 describe('groupScannedEntries', () => {
@@ -59,5 +60,18 @@ describe('getSmartImportRuleGuide', () => {
         expect(matchFileContextType(example)).toBe(item.type)
       }
     }
+  })
+})
+
+describe('sortEntriesByFileSizeAsc', () => {
+  it('orders selected upload entries by ascending file size without mutating input', () => {
+    const entries = [
+      { id: 'big', file: { size: 40_000_000 } },
+      { id: 'tiny', file: { size: 1_000 } },
+      { id: 'mid', file: { size: 8_000_000 } },
+    ]
+    const sorted = sortEntriesByFileSizeAsc(entries)
+    expect(sorted.map((e) => e.id)).toEqual(['tiny', 'mid', 'big'])
+    expect(entries.map((e) => e.id)).toEqual(['big', 'tiny', 'mid'])
   })
 })

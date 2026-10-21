@@ -40,12 +40,11 @@
         size="small"
         type="primary"
         plain
-        :icon="Download"
         :disabled="!canBatchDownload"
         :loading="batchDownloadLoading"
         @click="emit('batch-download')"
       >
-        下载文件
+        批量下载
       </el-button>
       <span class="query-bar-divider" aria-hidden="true" />
       <el-input
@@ -212,6 +211,7 @@
                   :type="getArchiveStateTagType(row.fileState)"
                   size="small"
                   effect="light"
+                  :title="archiveFileStateTitle(row)"
                 >
                   {{ getArchiveFileStateLabel(row.fileState, row) }}
                 </el-tag>
@@ -406,7 +406,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { Download, Picture, Refresh, UploadFilled } from '@element-plus/icons-vue'
+import { Picture, Refresh, UploadFilled } from '@element-plus/icons-vue'
 import { createFormFieldPatcher } from '@/utils/propFormBridge.js'
 import {
   ARCHIVE_FILE_STATE_OPTIONS,
@@ -421,6 +421,7 @@ import {
 } from '@/composables/project-list/archiveFolderPresent.js'
 import {
   archiveSupportsParseAndAudit,
+  archiveFileStateTitle,
   resolveArchiveRowActions,
   getArchiveFileStateLabel,
 } from '@/composables/project-list/archiveFileRowPresent.js'

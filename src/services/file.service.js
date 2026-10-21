@@ -2,6 +2,12 @@ import axios from 'axios'
 
 export const getFilesByProject = (projectId) => axios.get(`/api/file/project/${projectId}`)
 
+export const getSourceBundleManifest = (projectId) =>
+  axios.get(`/api/file/project/${projectId}/source-bundle/manifest`)
+
+export const createSourceBundleTicket = (projectId) =>
+  axios.post(`/api/file/project/${projectId}/source-bundle/ticket`)
+
 export const queryFiles = (payload, config = {}) => axios.post('/api/file/query', payload, config)
 
 export const deleteFileById = (fileId) => axios.delete(`/api/file/${fileId}`)

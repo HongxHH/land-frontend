@@ -375,3 +375,10 @@ export function groupScannedEntries(entries) {
 export function getSelectedUploadEntries(entries) {
   return entries.filter((entry) => entry.selected && entry.fileContextType)
 }
+
+/** 上传队列：按文件体积升序（小文件优先），不修改原数组 */
+export function sortEntriesByFileSizeAsc(entries) {
+  return (entries || [])
+    .slice()
+    .sort((a, b) => Number(a?.file?.size || 0) - Number(b?.file?.size || 0))
+}

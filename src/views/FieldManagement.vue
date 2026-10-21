@@ -24,6 +24,7 @@
       </div>
       <div class="table-container">
         <el-table
+          ref="knownTableRef"
           class="admin-mgmt-table"
           :data="filteredStandardFields"
           border
@@ -31,6 +32,7 @@
           table-layout="fixed"
           :height="knownTableHeight"
           v-loading="knownLoading"
+          @header-dragend="onKnownHeaderDragend"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
           <el-table-column
@@ -55,7 +57,7 @@
             <template #default="{ row }">{{ Number(row.status) === 1 ? '启用' : '禁用' }}</template>
           </el-table-column>
           <el-table-column prop="remark" label="备注" min-width="140" align="center" show-overflow-tooltip />
-          <el-table-column label="操作" width="320" align="center" fixed="right">
+          <el-table-column label="操作" width="320" min-width="320" align="center" fixed="right">
             <template #default="{ row }">
               <span class="field-table-actions">
                 <el-button
@@ -112,6 +114,7 @@
       </div>
       <div class="table-container">
         <el-table
+          ref="unknownTableRef"
           class="admin-mgmt-table"
           :data="filteredSpecialFields"
           border
@@ -119,6 +122,7 @@
           table-layout="fixed"
           :height="unknownTableHeight"
           v-loading="unknownLoading"
+          @header-dragend="onUnknownHeaderDragend"
         >
           <el-table-column type="index" label="序号" width="60" align="center" />
           <el-table-column
@@ -152,9 +156,15 @@
           <el-table-column label="归属类别" min-width="200">
             <template #default="{ row }">
               <el-select
-                v-model="row.targetCategory"
+                v-if="editingUnknownId === row.id"
+                ref="unknownCategorySelectRef"
+                class="unknown-category-select"
+                :model-value="row.targetCategory"
                 placeholder="请选择归属类别"
+                automatic-dropdown
                 style="width: 100%"
+                @change="(value) => commitUnknownCategory(row, value)"
+                @visible-change="(visible) => onUnknownCategoryVisible(row, visible)"
               >
                 <el-option-group label="计容面积">
                   <el-option label="商业" value="calcCommercial" />
@@ -167,12 +177,22 @@
                   <el-option label="其他公用" value="nonCalcOther" />
                 </el-option-group>
               </el-select>
+              <button
+                v-else
+                type="button"
+                class="unknown-category-trigger"
+                :class="{ 'is-empty': !row.targetCategory }"
+                @click="startEditUnknownCategory(row)"
+              >
+                <span class="unknown-category-trigger__text">{{ unknownCategoryText(row) }}</span>
+                <el-icon class="unknown-category-trigger__arrow"><ArrowDown /></el-icon>
+              </button>
             </template>
           </el-table-column>
           <el-table-column prop="updateTime" label="更新时间" width="170" align="center">
             <template #default="{ row }">{{ formatTime(row.updateTime) }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="240" align="center" fixed="right">
+          <el-table-column label="操作" width="240" min-width="240" align="center" fixed="right">
             <template #default="{ row }">
               <span class="field-table-actions">
                 <el-button
@@ -314,10 +334,11 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onActivated, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useSectionCardTableHeight } from '@/composables/field-management/useSectionCardTableHeight.js'
+import { useAdminTableColumnResize } from '@/composables/field-management/useAdminTableColumnResize.js'
 import { useRouter } from 'vue-router'
-import { Check, Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
+import { ArrowDown, Check, Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
 import { ElLoading, ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import UsageConfigRelatedFilesDrawer from '@/components/field-management/UsageConfigRelatedFilesDrawer.vue'
@@ -368,6 +389,17 @@ const addDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const addFormRef = ref(null)
 const editFormRef = ref(null)
+
+const knownTableRef = ref(null)
+const unknownTableRef = ref(null)
+const { onHeaderDragend: onKnownHeaderDragend } = useAdminTableColumnResize(
+  knownTableRef,
+  'usagePattern'
+)
+const { onHeaderDragend: onUnknownHeaderDragend } = useAdminTableColumnResize(
+  unknownTableRef,
+  'usageName'
+)
 
 const {
   cardRef: knownCardRef,
@@ -678,6 +710,42 @@ const handleDelete = async (row) => {
   }
 }
 
+const editingUnknownId = ref(null)
+const unknownCategorySelectRef = ref(null)
+
+const unknownCategoryText = (row) => {
+  const value = row?.targetCategory
+  if (!value) return '请选择归属类别'
+  return TARGET_CATEGORY_LABEL_MAP[value] || String(value)
+}
+
+const startEditUnknownCategory = (row) => {
+  editingUnknownId.value = row.id
+  nextTick(() => {
+    unknownCategorySelectRef.value?.toggleMenu?.()
+  })
+}
+
+const commitUnknownCategory = (row, value) => {
+  row.targetCategory = value ?? ''
+  if (editingUnknownId.value === row.id) {
+    editingUnknownId.value = null
+  }
+}
+
+const onUnknownCategoryVisible = (row, visible) => {
+  if (visible || editingUnknownId.value !== row.id) return
+  nextTick(() => {
+    if (editingUnknownId.value === row.id) {
+      editingUnknownId.value = null
+    }
+  })
+}
+
+watch(unknownList, () => {
+  editingUnknownId.value = null
+})
+
 const saveSpecialConfig = async (row) => {
   if (!row.targetCategory) {
     ElMessage.warning('请先选择归属类别')
@@ -829,10 +897,15 @@ onActivated(() => {
   overflow-y: auto;
 }
 
-:deep(.el-table__cell) {
+:deep(.admin-mgmt-table th.el-table__cell > .cell) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+:deep(.admin-mgmt-table td.el-table__cell > .cell.el-tooltip) {
+  width: auto !important;
+  max-width: 100%;
 }
 
 .unknown-source-cell {
@@ -854,5 +927,49 @@ onActivated(() => {
 .unknown-source-empty {
   color: #94a3b8;
   font-size: 15px;
+}
+
+.unknown-category-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  background: var(--el-fill-color-blank);
+  color: var(--el-text-color-regular);
+  font: inherit;
+  font-size: var(--admin-ui-font-size, 14px);
+  text-align: left;
+  cursor: pointer;
+}
+
+.unknown-category-trigger.is-empty {
+  color: var(--el-text-color-placeholder);
+}
+
+.unknown-category-trigger:hover {
+  border-color: var(--el-border-color-hover);
+}
+
+.unknown-category-trigger:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 1px;
+}
+
+.unknown-category-trigger__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unknown-category-trigger__arrow {
+  flex-shrink: 0;
+  color: var(--el-text-color-placeholder);
+  font-size: 14px;
 }
 </style>

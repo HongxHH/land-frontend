@@ -103,7 +103,14 @@ export function getParseButtonText(row) {
 
 export function getFileStateTagType(state) {
   if (state === 'PARSE_COMPLETE' || state === 'AUDIT_PASS') return 'success'
-  if (state === 'PARSE_FAIL' || state === 'AUDIT_FAIL' || state === 'UNPARSEABLE') return 'danger'
+  if (
+    state === 'PARSE_FAIL' ||
+    state === 'AUDIT_FAIL' ||
+    state === 'UNPARSEABLE' ||
+    state === 'UPLOAD_FAIL'
+  ) {
+    return 'danger'
+  }
   if (state === 'PARSING' || state === 'AUDITING') return 'warning'
   if (state === 'WAITING_POST_PROCESS' || state === 'UPLOADING') return 'info'
   if (state === 'WAITING_PARSE' || state === 'PENDING') return ''

@@ -132,74 +132,86 @@
             class="running-item"
             :class="`is-${String(task.status || 'unknown').toLowerCase()}`"
           >
-            <div class="running-item__main">
-              <div class="running-item__title-row">
-                <span class="task-name" :title="task.taskName || ''">{{
-                  task.taskName || '-'
-                }}</span>
-                <span class="task-status" :class="taskStatusPillClass(task.status)">{{
-                  task.status || '-'
-                }}</span>
+            <div class="running-item__head">
+              <div class="running-item__identity">
+                <div class="running-item__title-row">
+                  <span class="task-name" :title="taskTitle(task)">{{ taskTitle(task) }}</span>
+                  <span class="task-status" :class="taskStatusPillClass(task.status)">{{
+                    formatTaskStatus(task.status)
+                  }}</span>
+                </div>
+                <div
+                  v-if="taskSubtitle(task)"
+                  class="running-item__sub"
+                  :title="taskSubtitle(task)"
+                >
+                  {{ taskSubtitle(task) }}
+                </div>
               </div>
-              <div v-if="task.taskType === 'FILE_PARSE'" class="running-item__progress">
+              <div class="running-item__actions">
+                <el-button size="small" text type="primary" @click="openTaskDetail(task)"
+                  >详情</el-button
+                >
+                <el-button
+                  v-if="task.cancellable"
+                  size="small"
+                  text
+                  type="danger"
+                  @click.stop="handleCancelTask(task)"
+                >
+                  取消
+                </el-button>
+              </div>
+            </div>
+            <div v-if="task.taskType === 'FILE_PARSE'" class="running-item__progress">
+              <div class="progress-label">
                 <span class="stage-name">{{
                   task.currentStageName || task.currentStageCode || '等待开始'
                 }}</span>
-                <el-progress
-                  :percentage="Number(task.progress || 0)"
-                  :stroke-width="6"
-                  :show-text="false"
-                  striped
-                  striped-flow
-                />
                 <span class="stage-percent">{{ Number(task.progress || 0) }}%</span>
               </div>
-              <div
-                v-if="task.taskType === 'FILE_PARSE' && task.stageTraces?.length"
-                class="stage-traces"
-              >
-                <span
-                  v-for="trace in task.stageTraces"
-                  :key="`${task.taskId}-${trace.stageCode}`"
-                  class="stage-trace"
-                  :class="`is-${String(trace.status || 'PENDING').toLowerCase()}`"
-                >
-                  {{ trace.stageName || trace.stageCode }} · {{ formatStageTraceDuration(trace) }}
-                </span>
-              </div>
-              <el-tooltip
-                v-if="task.taskType === 'FILE_PARSE' && task.errorMessage"
-                effect="dark"
-                placement="top-start"
-                :content="task.errorMessage"
-                :show-after="150"
-              >
-                <div class="task-error">{{ shortError(task.errorMessage) }}</div>
-              </el-tooltip>
-              <div class="running-item__meta">
-                <span>项目 {{ task.projectId ?? '-' }}</span>
-                <span v-if="task.fileName || task.fileId != null"
-                  >文件 {{ task.fileName || task.fileId }}</span
-                >
-                <span>{{ task.priority || '-' }}</span>
-                <span>等待 {{ formatDuration(task.waitingDurationMs) }}</span>
-                <span>运行 {{ formatDuration(task.runningDurationMs) }}</span>
-                <span>CPU {{ formatDuration(task.threadCpuTimeMs) }}</span>
-              </div>
+              <el-progress
+                :percentage="Number(task.progress || 0)"
+                :stroke-width="8"
+                :show-text="false"
+                :color="progressColor(task)"
+                :striped="isTaskRunning(task)"
+                :striped-flow="isTaskRunning(task)"
+              />
             </div>
-            <div class="running-item__actions">
-              <el-button size="small" text type="primary" @click="openTaskDetail(task)"
-                >详情</el-button
+            <div
+              v-if="visibleStageTraces(task).length"
+              class="stage-traces"
+            >
+              <span
+                v-for="trace in visibleStageTraces(task)"
+                :key="`${task.taskId}-${trace.stageCode}`"
+                class="stage-trace"
+                :class="`is-${String(trace.status || 'PENDING').toLowerCase()}`"
               >
-              <el-button
-                v-if="task.cancellable"
-                size="small"
-                text
-                type="danger"
-                @click.stop="handleCancelTask(task)"
+                {{ trace.stageName || trace.stageCode }} · {{ formatStageTraceDuration(trace) }}
+              </span>
+            </div>
+            <el-tooltip
+              v-if="task.taskType === 'FILE_PARSE' && task.errorMessage"
+              effect="dark"
+              placement="top-start"
+              :content="task.errorMessage"
+              :show-after="150"
+            >
+              <div class="task-error">{{ shortError(task.errorMessage) }}</div>
+            </el-tooltip>
+            <div class="running-item__meta">
+              <span>{{ formatPriority(task.priority) }}</span>
+              <span v-if="Number(task.waitingDurationMs)"
+                >等待 {{ formatDuration(task.waitingDurationMs) }}</span
               >
-                取消
-              </el-button>
+              <span v-if="Number(task.runningDurationMs)"
+                >运行 {{ formatDuration(task.runningDurationMs) }}</span
+              >
+              <span v-if="Number(task.threadCpuTimeMs)"
+                >CPU {{ formatDuration(task.threadCpuTimeMs) }}</span
+              >
             </div>
           </article>
         </div>
@@ -386,6 +398,58 @@ const taskStatusPillClass = (status) => {
   if (s === 'FAILED' || s === 'ERROR') return 'is-bad'
   if (s === 'SUCCESS') return 'is-done'
   return 'is-na'
+}
+
+const formatTaskStatus = (status) => {
+  const s = String(status || '').toUpperCase()
+  const labels = {
+    RUNNING: '运行中',
+    QUEUED: '排队中',
+    PENDING: '等待中',
+    FAILED: '失败',
+    ERROR: '失败',
+    SUCCESS: '完成',
+    CANCELLED: '已取消',
+    CANCELED: '已取消',
+  }
+  return labels[s] || status || '-'
+}
+
+const formatPriority = (priority) => {
+  const p = String(priority || '').toUpperCase()
+  const labels = { HIGH: '高优先级', NORMAL: '普通', MEDIUM: '普通', LOW: '低优先级' }
+  return labels[p] || priority || '-'
+}
+
+const taskTitle = (task) =>
+  task?.fileName || task?.taskName || (task?.fileId != null ? `文件 ${task.fileId}` : '-')
+
+const taskSubtitle = (task) => {
+  const parts = []
+  if (task?.fileName && task?.taskName) parts.push(task.taskName)
+  if (task?.projectId != null) parts.push(`项目 ${task.projectId}`)
+  else if (!task?.fileName && task?.fileId != null) parts.push(`文件 ${task.fileId}`)
+  return parts.join(' · ')
+}
+
+const isTaskRunning = (task) => String(task?.status || '').toUpperCase() === 'RUNNING'
+
+const progressColor = (task) => {
+  const s = String(task?.status || '').toUpperCase()
+  if (s === 'FAILED' || s === 'ERROR') return '#b42318'
+  if (s === 'QUEUED' || s === 'PENDING') return '#d97706'
+  return '#0d9488'
+}
+
+const visibleStageTraces = (task) => {
+  const traces = Array.isArray(task?.stageTraces) ? task.stageTraces : []
+  if (traces.length !== 1) return traces
+  const only = traces[0]
+  const name = only?.stageName || only?.stageCode
+  const current = task?.currentStageName || task?.currentStageCode
+  const status = String(only?.status || '').toUpperCase()
+  if (name && name === current && (status === 'RUNNING' || status === 'PENDING')) return []
+  return traces
 }
 
 const fetchStatus = async () => {
@@ -907,35 +971,45 @@ onBeforeUnmount(() => {
 
 .running-item {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-left: 3px solid #94a3b8;
-  border-radius: 6px;
-  background: #fafbfc;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .running-item.is-running {
   border-left-color: #0d9488;
+  background: #f7fdfb;
 }
 
 .running-item.is-queued,
 .running-item.is-pending {
   border-left-color: #d97706;
+  background: #fffdf8;
 }
 
 .running-item.is-error,
 .running-item.is-failed {
   border-left-color: #b42318;
+  background: #fffafa;
 }
 
-.running-item__main {
+.running-item__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.running-item__identity {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .running-item__title-row {
@@ -945,8 +1019,15 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
+.running-item__sub {
+  font-size: 12px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .task-name {
-  flex: 1;
   min-width: 0;
   font-size: 13px;
   font-weight: 600;
@@ -984,13 +1065,21 @@ onBeforeUnmount(() => {
 }
 
 .running-item__progress {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(80px, 2fr) auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-label {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .stage-name {
+  min-width: 0;
   font-size: 12px;
   color: #475569;
   overflow: hidden;
@@ -999,10 +1088,25 @@ onBeforeUnmount(() => {
 }
 
 .stage-percent {
+  flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: #0f766e;
-  white-space: nowrap;
+}
+
+.running-item.is-queued .stage-percent,
+.running-item.is-pending .stage-percent {
+  color: #92400e;
+}
+
+.running-item.is-error .stage-percent,
+.running-item.is-failed .stage-percent {
+  color: #991b1b;
+}
+
+.running-item__progress :deep(.el-progress-bar__outer) {
+  background: #e8eef4;
 }
 
 .stage-traces {
@@ -1044,8 +1148,8 @@ onBeforeUnmount(() => {
 .running-item__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
-  font-size: 11px;
+  align-items: center;
+  font-size: 12px;
   color: #64748b;
 }
 
@@ -1053,11 +1157,18 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.running-item__meta span + span::before {
+  content: '·';
+  margin: 0 8px;
+  color: #cbd5e1;
+}
+
 .running-item__actions {
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 2px;
+  margin-top: -2px;
 }
 
 .system-card__title {

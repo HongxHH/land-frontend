@@ -55,13 +55,31 @@
       </el-tree>
       <el-empty v-else description="暂无归档夹" />
     </div>
+    <div class="tree-panel-download">
+      <el-tooltip :content="bundleTooltip" placement="top">
+        <span class="tree-download-wrap">
+          <el-button
+            class="tree-download-btn"
+            size="small"
+            :icon="bundleLoading ? undefined : Download"
+            :disabled="!projectId || bundleLoading"
+            :loading="bundleLoading"
+            @click="downloadSourceBundle"
+          >
+            下载项目
+          </el-button>
+        </span>
+      </el-tooltip>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { Delete, Folder, FolderAdd, FolderOpened } from '@element-plus/icons-vue'
+import { computed } from 'vue'
+import { Delete, Download, Folder, FolderAdd, FolderOpened } from '@element-plus/icons-vue'
+import { useProjectSourceBundleDownload } from '@/composables/project-list/useProjectSourceBundleDownload'
 
-defineProps({
+const props = defineProps({
   projectId: { type: [String, Number], default: '' },
   archiveLoading: { type: Boolean, default: false },
   treePanelWidth: { type: Number, default: 340 },
@@ -72,6 +90,14 @@ defineProps({
 })
 
 const emit = defineEmits(['create', 'delete-selected', 'node-click'])
+
+const { bundleLoading, downloadSourceBundle } = useProjectSourceBundleDownload(() => props.projectId)
+
+const bundleTooltip = computed(() => {
+  if (!props.projectId) return '请先查询档案'
+  if (bundleLoading.value) return '正在准备'
+  return '下载当前项目的全部原件'
+})
 </script>
 
 <style scoped>
@@ -80,8 +106,10 @@ const emit = defineEmits(['create', 'delete-selected', 'node-click'])
   border-radius: var(--home-card-radius);
   background: #fff;
   padding: 14px;
+  box-sizing: border-box;
   height: 100%;
   min-height: 0;
+  align-self: stretch;
   flex: 0 0 400px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   overflow: hidden;
@@ -107,6 +135,24 @@ const emit = defineEmits(['create', 'delete-selected', 'node-click'])
   overflow-y: auto;
   overflow-x: hidden;
   padding: 4px 2px 4px 0;
+}
+
+.tree-panel-download {
+  flex-shrink: 0;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(219, 228, 239, 0.95);
+}
+
+.tree-download-wrap {
+  display: flex;
+}
+
+.tree-download-btn {
+  width: 100%;
+  height: 32px;
+  border-radius: 8px;
+  font-weight: 600;
 }
 
 .tree-action-btn {

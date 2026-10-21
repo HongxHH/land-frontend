@@ -8,7 +8,8 @@ export const OPERATION_LABELS = {
   MOVE: '移动',
   PARSE: '提交解析',
   PARSE_COMPLETE: '解析完成',
-  PARSE_CANCEL: '取消解析'
+  PARSE_CANCEL: '取消解析',
+  DOWNLOAD: '下载原件'
 }
 
 export const TARGET_TYPE_LABELS = {

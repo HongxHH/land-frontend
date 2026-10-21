@@ -315,21 +315,22 @@
             :has-scan-result="hasScanResult"
             :upload-loading="smartFolderUploadLoading"
             :scan-loading="smartFolderScanLoading"
+            :scan-locked="Boolean(pendingCreatedProject)"
             :upload-progress="smartFolderUploadProgress"
             :get-file-upload-state="getSmartFolderUploadState"
             :upload-items="smartFolderUploadItems"
             :active-upload-entry-id="activeUploadEntryId"
             :scroll-container="createProjectWizardBodyRef"
             @update:survey-phase="(val) => (surveyPhase = val)"
-            @folder-input-change="handleFolderInputChange"
-            @folder-drop="handleFolderDrop"
+            @folder-input-change="onSmartFolderInputChange"
+            @folder-drop="onSmartFolderDrop"
             @toggle-selected="setEntrySelected"
             @toggle-directory-selected="setDirectoryEntriesSelected"
             @change-context-type="setEntryContextType"
             @change-directory-context-type="setDirectoryContextType"
           />
         </div>
-        <div v-if="smartFolderUploadLoading" class="create-project-upload-bar">
+        <div v-if="showSmartFolderUploadBar" class="create-project-upload-bar">
           <div class="create-project-upload-bar__meta">
             <span class="create-project-upload-bar__label">上传进度</span>
             <span>
@@ -343,11 +344,36 @@
               失败 {{ smartFolderUploadStats.failed }}
             </span>
           </div>
-          <el-progress :percentage="smartFolderUploadProgress" :stroke-width="8" />
+          <el-progress
+            v-if="smartFolderUploadLoading"
+            :percentage="smartFolderUploadProgress"
+            :stroke-width="8"
+          />
+          <div
+            v-if="!smartFolderUploadLoading && smartFolderFailedUploads.length"
+            class="create-project-upload-bar__failed-list"
+          >
+            <div class="create-project-upload-bar__failed-title">失败文件（可点「重试失败项」）</div>
+            <div
+              v-for="item in smartFolderFailedUploads"
+              :key="item.uid"
+              class="create-project-upload-bar__failed-item"
+              :title="item.error"
+            >
+              {{ item.fileName }} — {{ item.error }}
+            </div>
+          </div>
         </div>
         <template #footer>
+          <el-button
+            v-if="pendingCreatedProject && !smartFolderUploadLoading"
+            :disabled="isCreateProjectBusy"
+            @click="enterPendingCreatedProject"
+          >
+            进入项目
+          </el-button>
           <el-button :disabled="isCreateProjectBusy" @click="handleCreateProjectCancel">
-            取消
+            {{ pendingCreatedProject ? '关闭' : '取消' }}
           </el-button>
           <el-button type="primary" :loading="isCreateProjectBusy" @click="handleCreateProjectSubmit">
             {{ createSubmitLabel }}
@@ -492,15 +518,27 @@ const {
   setDirectoryContextType,
   getFileUploadState: getSmartFolderUploadState,
   uploadToProject,
+  retryFailedUploads: retrySmartFolderFailedUploads,
+  failedUploadEntries: smartFolderFailedUploads,
   buildUploadItems
 } = useSmartFolderImport()
 const smartFolderUploadItems = computed(() => buildUploadItems())
+const pendingCreatedProject = ref(null)
 const isCreateProjectBusy = computed(() => createProjectLoading.value || smartFolderUploadLoading.value)
 const createSubmitLabel = computed(() => {
   if (smartFolderUploadLoading.value) return '上传中…'
   if (createProjectLoading.value) return '创建中…'
+  if (pendingCreatedProject.value) {
+    return smartFolderFailedUploads.value.length ? '重试失败项' : '进入项目'
+  }
   return selectedCount.value > 0 ? '创建并上传' : '立即创建'
 })
+const showSmartFolderUploadBar = computed(
+  () =>
+    smartFolderUploadLoading.value ||
+    (smartFolderUploadStats.value?.failed ?? 0) > 0 ||
+    (smartFolderUploadStats.value?.done ?? 0) > 0
+)
 const newProjectForm = ref({
   projectName: '',
   projectTime: ''
@@ -782,7 +820,30 @@ const {
 
 const resetCreateProjectWizard = () => {
   newProjectForm.value = { projectName: '', projectTime: '' }
+  pendingCreatedProject.value = null
   resetSmartFolderScan()
+}
+
+const warnPendingProjectScanLocked = () => {
+  ElMessage.warning('项目已创建。请重试失败项或进入项目后再补传，勿更换文件夹')
+}
+
+const onSmartFolderInputChange = (event) => {
+  if (pendingCreatedProject.value) {
+    warnPendingProjectScanLocked()
+    if (event?.target) event.target.value = ''
+    return
+  }
+  handleFolderInputChange(event)
+}
+
+const onSmartFolderDrop = async (event) => {
+  if (pendingCreatedProject.value) {
+    event?.preventDefault?.()
+    warnPendingProjectScanLocked()
+    return
+  }
+  await handleFolderDrop(event)
 }
 
 const enterCreatedProject = async (projectId, projectName) => {
@@ -798,12 +859,89 @@ const enterCreatedProject = async (projectId, projectName) => {
   }
 }
 
+const enterPendingCreatedProject = async () => {
+  const pending = pendingCreatedProject.value
+  if (!pending?.projectId) return
+  await enterCreatedProject(pending.projectId, pending.projectName)
+}
+
 const handleCreateProjectCancel = () => {
   if (isCreateProjectBusy.value) return
   showCreateProjectDialog.value = false
 }
 
+const formatFailedUploadSummary = (failedFiles) => {
+  const list = failedFiles || []
+  if (!list.length) return ''
+  const lines = list.slice(0, 8).map((item) => `· ${item.fileName}（${item.error || '失败'}）`)
+  const more = list.length > 8 ? `\n· …另有 ${list.length - 8} 个` : ''
+  return `${lines.join('\n')}${more}`
+}
+
+const handlePartialUploadFailure = async (projectId, projectName, result) => {
+  const cumulativeSuccess = Number(result.successCount) || 0
+  pendingCreatedProject.value = {
+    projectId,
+    projectName,
+    successCount: cumulativeSuccess,
+  }
+  const detail = formatFailedUploadSummary(result.failedFiles)
+  try {
+    await ElMessageBox.confirm(
+      `项目已创建。成功 ${cumulativeSuccess} 个，失败 ${result.errorCount} 个。\n\n${detail}\n\n可留在本页查看/重试失败项，或直接进入项目稍后补传。`,
+      '部分文件上传失败',
+      {
+        confirmButtonText: '重试失败项',
+        cancelButtonText: '进入项目',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+    const retryResult = await retrySmartFolderFailedUploads(projectId)
+    if (retryResult.cancelled) return
+    if (retryResult.errorCount > 0) {
+      await handlePartialUploadFailure(projectId, projectName, {
+        successCount: cumulativeSuccess + (retryResult.successCount || 0),
+        errorCount: retryResult.errorCount,
+        failedFiles: retryResult.failedFiles,
+      })
+      return
+    }
+    await enterCreatedProject(projectId, projectName)
+  } catch (action) {
+    if (action === 'cancel') {
+      await enterCreatedProject(projectId, projectName)
+    }
+    // close：留在弹窗，失败列表仍可见
+  }
+}
+
 const handleCreateProjectSubmit = async () => {
+  // 项目已创建过：禁止再次 createProject，避免重复建项
+  if (pendingCreatedProject.value) {
+    const {
+      projectId,
+      projectName,
+      successCount: priorSuccess = 0,
+    } = pendingCreatedProject.value
+    if (!smartFolderFailedUploads.value.length) {
+      await enterCreatedProject(projectId, projectName)
+      return
+    }
+    const retryResult = await retrySmartFolderFailedUploads(projectId)
+    if (retryResult.cancelled) return
+    if (retryResult.errorCount > 0) {
+      await handlePartialUploadFailure(projectId, projectName, {
+        successCount: priorSuccess + (retryResult.successCount || 0),
+        errorCount: retryResult.errorCount,
+        failedFiles: retryResult.failedFiles,
+      })
+      return
+    }
+    await enterCreatedProject(projectId, projectName)
+    return
+  }
+
   const projectName = (newProjectForm.value.projectName || '').trim()
   const projectTime = (newProjectForm.value.projectTime || '').trim()
   if (!projectName) {
@@ -833,6 +971,10 @@ const handleCreateProjectSubmit = async () => {
       if (result.cancelled) {
         ElMessage.info('项目已创建，上传已取消')
         await enterCreatedProject(projectId, projectName)
+        return
+      }
+      if (result.errorCount > 0) {
+        await handlePartialUploadFailure(projectId, projectName, result)
         return
       }
       if (result.successCount === 0) {
@@ -1016,6 +1158,30 @@ const handleCreateProjectSubmit = async () => {
 .create-project-upload-bar__error {
   color: #dc2626;
   font-weight: 600;
+}
+
+.create-project-upload-bar__failed-list {
+  margin-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.create-project-upload-bar__failed-title {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.create-project-upload-bar__failed-item {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #7f1d1d;
+  word-break: break-all;
 }
 
 .create-project-wizard-form {

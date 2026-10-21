@@ -60,6 +60,8 @@ export default defineConfig({
         // target: 'http://10.123.69.140:8082',
         changeOrigin: true,
         ws: true,
+        timeout: 30 * 60 * 1000,
+        proxyTimeout: 30 * 60 * 1000,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },

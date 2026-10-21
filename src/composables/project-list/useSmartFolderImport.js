@@ -16,6 +16,7 @@ import {
   getSelectedUploadEntries,
   groupScannedEntries,
   scanLocalFolderFiles,
+  sortEntriesByFileSizeAsc,
 } from '@/utils/localFolderFileMatcher.js'
 import { getFileContextLabel } from '@/utils/fileContextTypeRegistry.js'
 import {
@@ -44,17 +45,19 @@ export function useSmartFolderImport() {
   const selectedCount = computed(() => getSelectedUploadEntries(scannedEntries.value).length)
 
   const uploadStats = computed(() => {
-    if (!uploadLoading.value) return null
     const entries = getSelectedUploadEntries(scannedEntries.value)
-    if (!entries.length) return null
+    if (!entries.length || fileUploadStates.size === 0) return null
 
     let done = 0
     let failed = 0
     let cancelled = 0
     let running = 0
     let waiting = 0
+    let tracked = 0
     for (const entry of entries) {
-      const status = fileUploadStates.get(entry.id)?.status ?? UPLOAD_FILE_STATUS.PENDING
+      const status = fileUploadStates.get(entry.id)?.status
+      if (!status) continue
+      tracked += 1
       switch (status) {
         case UPLOAD_FILE_STATUS.DONE:
           done += 1
@@ -73,7 +76,23 @@ export function useSmartFolderImport() {
           waiting += 1
       }
     }
-    return { total: entries.length, done, failed, cancelled, running, waiting }
+    if (!tracked) return null
+    return { total: tracked, done, failed, cancelled, running, waiting }
+  })
+
+  const failedUploadEntries = computed(() => {
+    const failed = []
+    for (const entry of getSelectedUploadEntries(scannedEntries.value)) {
+      const state = fileUploadStates.get(entry.id)
+      if (state?.status !== UPLOAD_FILE_STATUS.ERROR) continue
+      failed.push({
+        uid: entry.id,
+        fileName: entry.displayName,
+        error: state.error || '文件上传失败',
+        entry,
+      })
+    }
+    return failed
   })
 
   const hasScanResult = computed(() => scannedEntries.value.length > 0)
@@ -190,33 +209,50 @@ export function useSmartFolderImport() {
     return fileUploadStates.get(uid) || null
   }
 
+  const toUploadItem = (entry) => ({
+    uid: entry.id,
+    name: entry.displayName,
+    raw: entry.file,
+    fileContextType: entry.fileContextType,
+    relativePath: entry.relativePath,
+  })
+
   const buildUploadItems = () => {
-    return getSelectedUploadEntries(scannedEntries.value).map((entry) => ({
-      uid: entry.id,
-      name: entry.displayName,
-      raw: entry.file,
-      fileContextType: entry.fileContextType,
-      relativePath: entry.relativePath,
-    }))
+    // 小文件优先：先快速出 ✓，大 PDF 放后，减轻「整组卡在入库中」的观感
+    return sortEntriesByFileSizeAsc(getSelectedUploadEntries(scannedEntries.value)).map(toUploadItem)
   }
 
-  const uploadToProject = async (projectId) => {
-    const numericProjectId = Number(projectId)
-    if (!numericProjectId) {
-      ElMessage.warning('缺少项目 ID，无法上传')
-      return { success: false, successCount: 0, errorCount: 0 }
-    }
-
-    const uploadItems = buildUploadItems()
+  const runUploadItems = async (numericProjectId, uploadItems, { resetStates = true } = {}) => {
     if (!uploadItems.length) {
-      ElMessage.warning('请至少选择一个要上传的文件')
-      return { success: false, successCount: 0, errorCount: 0 }
+      return { success: false, successCount: 0, errorCount: 0, failedFiles: [] }
     }
 
     const batchCheck = validateUploadBatchSize(uploadItems)
     if (!batchCheck.ok) {
       ElMessage.error(batchCheck.message)
-      return { success: false, successCount: 0, errorCount: uploadItems.length }
+      // 写入 error 状态，便于失败列表与「重试失败项」识别
+      for (const item of uploadItems) {
+        const uid = resolveUploadFileUid(item)
+        fileUploadStates.set(uid, {
+          status: UPLOAD_FILE_STATUS.ERROR,
+          progress: 0,
+          loaded: 0,
+          total: Number(item.raw?.size || 0),
+          fileId: null,
+          error: batchCheck.message,
+        })
+      }
+      return {
+        success: false,
+        successCount: 0,
+        errorCount: uploadItems.length,
+        failedFiles: uploadItems.map((item) => ({
+          uid: resolveUploadFileUid(item),
+          fileName: item.name,
+          error: batchCheck.message,
+          fileItem: item,
+        })),
+      }
     }
     if (batchCheck.warning) {
       ElMessage.warning(batchCheck.warning)
@@ -231,6 +267,9 @@ export function useSmartFolderImport() {
     uploadTotalBytes.value = 0
     activeUploadEntryId.value = null
 
+    if (resetStates) {
+      fileUploadStates.clear()
+    }
     for (const item of uploadItems) {
       const uid = resolveUploadFileUid(item)
       fileUploadStates.set(uid, {
@@ -269,6 +308,7 @@ export function useSmartFolderImport() {
           successCount: result.successCount,
           errorCount: result.errorCount,
           cancelled: true,
+          failedFiles: result.failedFiles || [],
         }
       }
 
@@ -286,18 +326,60 @@ export function useSmartFolderImport() {
         success: result.successCount > 0 && result.errorCount === 0,
         successCount: result.successCount,
         errorCount: result.errorCount,
+        failedFiles: result.failedFiles || [],
       }
     } catch (error) {
       if (!isUploadAbortError(error)) {
         console.error('智能文件夹上传失败:', error)
         ElMessage.error(resolveUploadHttpError(error, '文件上传失败'))
       }
-      return { success: false, successCount: 0, errorCount: uploadItems.length }
+      return {
+        success: false,
+        successCount: 0,
+        errorCount: uploadItems.length,
+        failedFiles: uploadItems.map((item) => ({
+          uid: resolveUploadFileUid(item),
+          fileName: item.name,
+          error: resolveUploadHttpError(error, '文件上传失败'),
+        })),
+      }
     } finally {
       uploadLoading.value = false
       uploadAbortController.value = null
       activeUploadEntryId.value = null
     }
+  }
+
+  const uploadToProject = async (projectId) => {
+    const numericProjectId = Number(projectId)
+    if (!numericProjectId) {
+      ElMessage.warning('缺少项目 ID，无法上传')
+      return { success: false, successCount: 0, errorCount: 0, failedFiles: [] }
+    }
+
+    const uploadItems = buildUploadItems()
+    if (!uploadItems.length) {
+      ElMessage.warning('请至少选择一个要上传的文件')
+      return { success: false, successCount: 0, errorCount: 0, failedFiles: [] }
+    }
+    return runUploadItems(numericProjectId, uploadItems, { resetStates: true })
+  }
+
+  /** 仅重试上次失败的条目（状态仍为 error 的选中文件） */
+  const retryFailedUploads = async (projectId) => {
+    const numericProjectId = Number(projectId)
+    if (!numericProjectId) {
+      ElMessage.warning('缺少项目 ID，无法重试')
+      return { success: false, successCount: 0, errorCount: 0, failedFiles: [] }
+    }
+    const failedItems = sortEntriesByFileSizeAsc(
+      failedUploadEntries.value.map((item) => item.entry)
+    ).map(toUploadItem)
+    if (!failedItems.length) {
+      ElMessage.info('没有可重试的失败文件')
+      return { success: true, successCount: 0, errorCount: 0, failedFiles: [] }
+    }
+    return runUploadItems(numericProjectId, failedItems, { resetStates: false })
   }
 
   const cancelUpload = () => {
@@ -332,6 +414,8 @@ export function useSmartFolderImport() {
     setDirectoryContextType,
     getFileUploadState,
     uploadToProject,
+    retryFailedUploads,
+    failedUploadEntries,
     cancelUpload,
     getGroupLabel,
     buildUploadItems,

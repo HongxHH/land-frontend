@@ -29,6 +29,14 @@ export function getArchiveFileStateLabel(state, row) {
   return getSharedFileStateLabel(state, context)
 }
 
+/** 状态标签 title：上传失败时展示后端 parseMessage，引导删除重传 */
+export function archiveFileStateTitle(row) {
+  if (row?.fileState === 'UPLOAD_FAIL') {
+    return row.parseMessage || '上传失败，请删除后重新上传'
+  }
+  return ''
+}
+
 export function showArchiveParseButton(row) {
   return ['WAITING_PARSE', 'PARSE_FAIL', 'PARSE_COMPLETE'].includes(row?.fileState)
 }
@@ -177,7 +185,11 @@ export function resolveArchiveRowActions(row, selectedArchiveKind = '') {
   const deleteAction = {
     label: '删除',
     enabled: deleteEnabled,
-    tooltip: deleteEnabled ? '' : getArchiveFileDeleteDisabledReason(row),
+    tooltip: deleteEnabled
+      ? row?.fileState === 'UPLOAD_FAIL'
+        ? '上传失败，可删除后重新上传'
+        : ''
+      : getArchiveFileDeleteDisabledReason(row),
     action: 'delete',
     buttonType: 'danger',
     plain: true,
