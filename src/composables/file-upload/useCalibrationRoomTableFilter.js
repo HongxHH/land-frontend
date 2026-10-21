@@ -433,6 +433,8 @@ export function useCalibrationRoomTableFilter(options) {
 
     filteredRoomInfoData,
 
+    allFilteredRows: resolvedSearchMatches,
+
     filteredCount,
 
     searchableTotal: computed(() => Number(getTotal() || 0)),

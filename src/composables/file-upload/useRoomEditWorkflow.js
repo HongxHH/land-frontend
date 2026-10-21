@@ -5,7 +5,7 @@ import {
   isAuditSummaryFieldDerivedFromVerificationReason,
   OCR_SUM_FIELD_KEYS,
 } from '@/composables/file-upload/auditSummaryMetrics'
-import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
+import { resolveRoomUsageForUpdate } from '@/composables/file-upload/surveyUsagePending'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { queryRoomInfos, updateSurveyReportInfo } from '@/services/project.service'
 import {
@@ -129,9 +129,6 @@ export function useRoomEditWorkflow(options = {}) {
 
   const buildRoomInfoUpdateDTO = (row) => {
     const preset = resolveUsagePresetByCategory(row.usageCategory)
-    const roomUsage = isBlankRoomUsage(row.roomUsage)
-      ? preset.roomUsage || ''
-      : String(row.roomUsage).trim()
 
     return {
       id: Number(row.id),
@@ -141,7 +138,7 @@ export function useRoomEditWorkflow(options = {}) {
       innerArea: Number(row.innerArea || 0),
       balconyArea: Number(row.balconyArea || 0),
       sharedArea: Number(row.sharedArea || 0),
-      roomUsage,
+      roomUsage: resolveRoomUsageForUpdate(row.roomUsage),
       remark: normalizeRoomField(row.remark),
       isCalculate: Number(row.isCalculate || 0),
       usageCategory: preset.usageCategory,
@@ -350,7 +347,14 @@ export function useRoomEditWorkflow(options = {}) {
         if (result.records.length === 0) return false
 
         const existingIds = new Set(roomInfoData.value.map((row) => String(row.id)))
-        const appendRows = result.records.filter((row) => !existingIds.has(String(row.id)))
+        const appendRows = result.records
+          .filter((row) => !existingIds.has(String(row.id)))
+          .map((row) => {
+            const edited = offPageRowEdits.get(String(row.id))
+            if (!edited) return row
+            offPageRowEdits.delete(String(row.id))
+            return edited
+          })
 
         if (roomInfoPageNum) roomInfoPageNum.value = nextPage
 
@@ -426,7 +430,35 @@ export function useRoomEditWorkflow(options = {}) {
     }
   }
 
-  const triggerSurveyReportRefresh = async ({ silent = false } = {}) => {
+  const SURVEY_REFRESH_RETRY_DELAY_MS = 5000
+
+  const isSurveyRefreshRateLimited = (errorOrBody, status) =>
+    Number(status) === 429 || Number(errorOrBody?.code) === 429
+
+  const requestSurveyReportRefresh = async (surveyReportId) => {
+    try {
+      const res = await axios.post(`/api/project/survey-report/${surveyReportId}/refresh`)
+      if (res.data?.code !== 200) {
+        return {
+          ok: false,
+          rateLimited: isSurveyRefreshRateLimited(res.data, res.status),
+          thrown: false,
+          message: res.data?.msg || '刷新失败',
+        }
+      }
+      return { ok: true, rateLimited: false, thrown: false, message: res.data?.msg || '刷新成功' }
+    } catch (error) {
+      return {
+        ok: false,
+        rateLimited: isSurveyRefreshRateLimited(error?.response?.data, error?.response?.status),
+        thrown: true,
+        message: error?.response?.data?.msg || '刷新实测报告失败',
+        error,
+      }
+    }
+  }
+
+  const triggerSurveyReportRefresh = async ({ silent = false, retryOnRateLimit = false } = {}) => {
     const surveyReportId = Number(realSurveyReportId?.value || 0)
     if (!surveyReportId) {
       if (!silent) ElMessage.warning('缺少实测报告ID，无法刷新')
@@ -435,17 +467,21 @@ export function useRoomEditWorkflow(options = {}) {
 
     reportRefreshLoading.value = true
     try {
-      const res = await axios.post(`/api/project/survey-report/${surveyReportId}/refresh`)
-      if (res.data?.code !== 200) {
-        if (!silent) ElMessage.warning(res.data?.msg || '刷新失败')
+      let result = await requestSurveyReportRefresh(surveyReportId)
+      if (!result.ok && result.rateLimited && retryOnRateLimit) {
+        await new Promise((resolve) => setTimeout(resolve, SURVEY_REFRESH_RETRY_DELAY_MS))
+        result = await requestSurveyReportRefresh(surveyReportId)
+      }
+      if (!result.ok) {
+        if (result.error) console.error('刷新实测报告失败:', result.error)
+        if (!silent) {
+          if (result.thrown && !result.rateLimited) ElMessage.error(result.message)
+          else ElMessage.warning(result.message)
+        }
         return false
       }
-      if (!silent) ElMessage.success(res.data?.msg || '刷新成功')
+      if (!silent) ElMessage.success(result.message)
       return true
-    } catch (error) {
-      console.error('刷新实测报告失败:', error)
-      if (!silent) ElMessage.error(error?.response?.data?.msg || '刷新实测报告失败')
-      return false
     } finally {
       reportRefreshLoading.value = false
     }
@@ -455,9 +491,13 @@ export function useRoomEditWorkflow(options = {}) {
     refreshReport = false,
     silentRefresh = true,
     resetToFirstPage = false,
+    retryRefreshOnRateLimit = false,
   } = {}) => {
     if (refreshReport) {
-      const refreshOk = await triggerSurveyReportRefresh({ silent: silentRefresh })
+      const refreshOk = await triggerSurveyReportRefresh({
+        silent: silentRefresh,
+        retryOnRateLimit: retryRefreshOnRateLimit,
+      })
       if (!refreshOk) return false
     }
 
@@ -744,18 +784,7 @@ export function useRoomEditWorkflow(options = {}) {
     })
   }
 
-  const handleSaveDirtyRows = async () => {
-    commitActiveCell()
-    const dirtyIds = getDirtyRowIds()
-    if (!dirtyIds.length) {
-      ElMessage.info('无修改')
-      return false
-    }
-    if (dirtyIds.length > MAX_DIRTY_ROWS) {
-      ElMessage.warning(`单次最多保存 ${MAX_DIRTY_ROWS} 条，请分批操作`)
-      return false
-    }
-
+  const validateDirtyRowsForSave = (dirtyIds) => {
     for (const id of dirtyIds) {
       const row = findRoomRowById(id)
       const snapshot = originalByRowId.get(id)
@@ -787,6 +816,76 @@ export function useRoomEditWorkflow(options = {}) {
         }
         row[field] = normalized
       }
+    }
+    return true
+  }
+
+  const persistDirtyChunk = async (chunk) =>
+    runPool(chunk, SAVE_CONCURRENCY, async (id) => {
+      const row = findRoomRowById(id)
+      if (!row) return { ok: false, message: '户室数据不存在' }
+      return persistRoomRow(row, {
+        refreshReport: false,
+        skipReload: true,
+        silentError: true,
+      })
+    })
+
+  const saveDirtyRowsInChunks = async (dirtyIds) => {
+    localBatchUpdateLoading.value = true
+    let persistedCount = 0
+    try {
+      for (let offset = 0; offset < dirtyIds.length; offset += MAX_DIRTY_ROWS) {
+        const chunk = dirtyIds.slice(offset, offset + MAX_DIRTY_ROWS)
+        const results = await persistDirtyChunk(chunk)
+        const failures = results.filter((result) => !result?.ok)
+        if (failures.length > 0) {
+          const okIds = chunk.filter((id, index) => results[index]?.ok)
+          markRowsPersisted(okIds)
+          persistedCount += okIds.length
+          const remaining = dirtyIds.length - persistedCount
+          const reasons = [...new Set(failures.map((item) => item.message).filter(Boolean))]
+          const detail = reasons.slice(0, 3).join('；')
+          ElMessage.error(
+            detail
+              ? `已写入 ${persistedCount} 条，报告尚未重算。剩余 ${remaining} 条未保存，请再次保存。失败原因：${detail}${reasons.length > 3 ? '…' : ''}`
+              : `已写入 ${persistedCount} 条，报告尚未重算。剩余 ${remaining} 条未保存，请再次保存。`
+          )
+          return false
+        }
+        markRowsPersisted(chunk)
+        persistedCount += chunk.length
+      }
+
+      const reloadOk = await reloadRoomAndSummaryData({
+        refreshReport: true,
+        silentRefresh: true,
+        resetToFirstPage: true,
+        retryRefreshOnRateLimit: true,
+      })
+      if (!reloadOk) {
+        ElMessage.error('已保存但刷新列表失败，请点击「重新计算」同步数据')
+        return false
+      }
+
+      clearDirtyState()
+      ElMessage.success(`已保存 ${dirtyIds.length} 条，已刷新实测报告`)
+      return true
+    } finally {
+      localBatchUpdateLoading.value = false
+    }
+  }
+
+  const handleSaveDirtyRows = async () => {
+    commitActiveCell()
+    const dirtyIds = getDirtyRowIds()
+    if (!dirtyIds.length) {
+      ElMessage.info('无修改')
+      return false
+    }
+    if (!validateDirtyRowsForSave(dirtyIds)) return false
+    if (dirtyIds.length > MAX_DIRTY_ROWS) {
+      return saveDirtyRowsInChunks(dirtyIds)
     }
 
     localBatchUpdateLoading.value = true
@@ -824,6 +923,7 @@ export function useRoomEditWorkflow(options = {}) {
         refreshReport: true,
         silentRefresh: true,
         resetToFirstPage: true,
+        retryRefreshOnRateLimit: true,
       })
       if (!reloadOk) {
         ElMessage.error('已保存但刷新列表失败，请点击「重新计算」同步数据')

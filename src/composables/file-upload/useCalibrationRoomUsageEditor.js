@@ -16,6 +16,7 @@ import {
 } from '@/composables/usage-config/useUsageConfigPageCache.js'
 import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 import { validateRoomAreaFields, normalizeRoomAreaForCommit, ROOM_AREA_FIELDS } from '@/utils/roomInfoValidation.js'
+import { matchUsageConfig } from '@/utils/usageConfigMatch.js'
 
 const usagePresetMap = {
   RESIDENTIAL: { roomUsage: '住宅', floorAreaType: 'BUILDABLE', floorAreaTypeText: '计容' },
@@ -144,14 +145,45 @@ export function useCalibrationRoomUsageEditor({
 
   const usageEditorVisibleRowId = ref('')
   const usageEditorFilterQuery = ref('')
-  const usageEditorDraft = reactive({ roomUsage: '' })
+  const usageEditorDraft = reactive({ usageConfigId: '' })
+  const usageApplyTargetRows = ref([])
+  const batchUsageDialogVisible = ref(false)
+  const batchUsageFilterQuery = ref('')
+  const batchUsageDraft = reactive({ usageConfigId: '' })
 
   const usageEditorDisplayOptions = computed(() =>
     filterAndRankUsageOptions(usagePickerOptions.value, usageEditorFilterQuery.value)
   )
 
+  const batchUsageDisplayOptions = computed(() =>
+    filterAndRankUsageOptions(usagePickerOptions.value, batchUsageFilterQuery.value)
+  )
+
+  const findUsageOptionById = (configId) =>
+    usagePickerOptions.value.find((item) => String(item.id) === String(configId ?? '')) || null
+
+  const resolveUsageMatchPreview = (configId) => {
+    const selected = findUsageOptionById(configId)
+    if (!selected) return null
+    const winner = matchUsageConfig(selected.usagePattern, usagePickerOptions.value)
+    if (!winner || String(winner.id) === String(selected.id)) return null
+    return winner
+  }
+
+  const usageEditorMatchPreview = computed(() =>
+    resolveUsageMatchPreview(usageEditorDraft.usageConfigId)
+  )
+
+  const batchUsageMatchPreview = computed(() =>
+    resolveUsageMatchPreview(batchUsageDraft.usageConfigId)
+  )
+
   const onUsageEditorFilter = (query) => {
     usageEditorFilterQuery.value = query
+  }
+
+  const onBatchUsageFilter = (query) => {
+    batchUsageFilterQuery.value = query
   }
 
   const openUsageEditor = async (row) => {
@@ -160,11 +192,20 @@ export function useCalibrationRoomUsageEditor({
       closeUsageEditor()
       return
     }
+    batchUsageDialogVisible.value = false
     usagePickerTargetRow.value = row
     usageEditorVisibleRowId.value = rowId
     usageEditorFilterQuery.value = ''
-    usageEditorDraft.roomUsage = String(row?.roomUsage || '').trim()
+    usageEditorDraft.usageConfigId = ''
     await ensureUsageOptionsLoaded()
+    if (usageEditorVisibleRowId.value !== rowId) return
+    const currentUsage = String(row?.roomUsage || '').trim()
+    const initial = isBlankRoomUsage(currentUsage)
+      ? null
+      : usagePickerOptions.value.find(
+          (item) => String(item.usagePattern || '').trim() === currentUsage
+        )
+    usageEditorDraft.usageConfigId = initial ? String(initial.id) : ''
   }
 
   const handleUsageEditorVisibleChange = (visible, row) => {
@@ -179,6 +220,20 @@ export function useCalibrationRoomUsageEditor({
     usageEditorFilterQuery.value = ''
   }
 
+  const closeBatchUsageDialog = () => {
+    batchUsageDialogVisible.value = false
+    batchUsageFilterQuery.value = ''
+    batchUsageDraft.usageConfigId = ''
+  }
+
+  const openBatchUsageDialog = async () => {
+    closeUsageEditor()
+    batchUsageFilterQuery.value = ''
+    batchUsageDraft.usageConfigId = ''
+    batchUsageDialogVisible.value = true
+    await ensureUsageOptionsLoaded()
+  }
+
   const stageUsageOnRow = (row, matched) => {
     let target = typeof syncRoomRow === 'function' ? syncRoomRow(row) : row
     if (typeof prepareRowForEdit === 'function') {
@@ -191,22 +246,63 @@ export function useCalibrationRoomUsageEditor({
     return target
   }
 
+  const applyUsageToRows = (rows, matched) => {
+    const pattern = String(matched?.usagePattern || '').trim()
+    let updated = 0
+    let skipped = 0
+    for (const row of rows || []) {
+      if (!row?.id || !matched) continue
+      const current = String(row.roomUsage || '').trim()
+      if (pattern && current === pattern) {
+        skipped += 1
+        continue
+      }
+      stageUsageOnRow(row, matched)
+      updated += 1
+    }
+    return { updated, skipped }
+  }
+
+  const formatUsageApplyMessage = ({ updated, skipped }, rowCount) => {
+    if (rowCount <= 1) {
+      return updated === 0 ? '用途未变化' : '用途已更新，请点击「保存修改」提交'
+    }
+    return `已更新 ${updated} 户，跳过 ${skipped} 户，请点击「保存修改」提交`
+  }
+
   const confirmUsageEditor = (row) => {
-    if (!usageEditorDraft.roomUsage) {
+    if (!usageEditorDraft.usageConfigId) {
       ElMessage.warning('请选择用途')
       return
     }
-    const matched = usagePickerOptions.value.find(
-      (item) =>
-        String(item.usagePattern || '').trim() === String(usageEditorDraft.roomUsage || '').trim()
-    )
+    const matched = findUsageOptionById(usageEditorDraft.usageConfigId)
     if (!matched) {
       ElMessage.warning('未找到对应用途配置，请先新增用途')
       return
     }
-    stageUsageOnRow(row, matched)
+    const result = applyUsageToRows([row], matched)
     closeUsageEditor()
-    ElMessage.info('用途已更新，请点击「保存修改」提交')
+    ElMessage.info(formatUsageApplyMessage(result, 1))
+  }
+
+  const confirmBatchUsage = (rows) => {
+    const list = Array.isArray(rows) ? rows.filter((row) => row?.id) : []
+    if (!list.length) {
+      ElMessage.warning('请先选择户室')
+      return
+    }
+    if (!batchUsageDraft.usageConfigId) {
+      ElMessage.warning('请选择用途')
+      return
+    }
+    const matched = findUsageOptionById(batchUsageDraft.usageConfigId)
+    if (!matched) {
+      ElMessage.warning('未找到对应用途配置，请先新增用途')
+      return
+    }
+    const result = applyUsageToRows(list, matched)
+    closeBatchUsageDialog()
+    ElMessage.info(formatUsageApplyMessage(result, list.length))
   }
 
   const filteredUsagePickerOptions = computed(() =>
@@ -254,12 +350,14 @@ export function useCalibrationRoomUsageEditor({
   const resolveUsageEditorCreatePatternSeed = () => {
     const filterQuery = String(usageEditorFilterQuery.value || '').trim()
     if (filterQuery) return filterQuery
-    const draftUsage = String(usageEditorDraft.roomUsage || '').trim()
-    if (draftUsage && !isBlankRoomUsage(draftUsage)) return draftUsage
+    const selected = findUsageOptionById(usageEditorDraft.usageConfigId)
+    const pattern = String(selected?.usagePattern || '').trim()
+    if (pattern && !isBlankRoomUsage(pattern)) return pattern
     return ''
   }
 
   const openCreateUsageDialog = () => {
+    usageApplyTargetRows.value = []
     resetCreateUsageForm()
     const keyword = String(usagePickerKeyword.value || '').trim()
     if (keyword) {
@@ -270,6 +368,7 @@ export function useCalibrationRoomUsageEditor({
 
   const openCreateUsageDialogForRow = async (row) => {
     usagePickerTargetRow.value = row
+    usageApplyTargetRows.value = row?.id ? [row] : []
     await ensureUsageOptionsLoaded()
     resetCreateUsageForm()
     createUsageForm.usagePattern =
@@ -278,6 +377,35 @@ export function useCalibrationRoomUsageEditor({
       normalizeUsageCategoryCode(row?.usageCategory) === 'UNKNOWN'
         ? ''
         : normalizeUsageCategoryCode(row?.usageCategory)
+    createUsageDialogVisible.value = true
+  }
+
+  const openCreateUsageDialogForRows = async (rows) => {
+    const list = Array.isArray(rows) ? rows.filter((row) => row?.id) : []
+    if (!list.length) {
+      ElMessage.warning('请先选择户室')
+      return
+    }
+    usageApplyTargetRows.value = list
+    await ensureUsageOptionsLoaded()
+    resetCreateUsageForm()
+    const filterQuery = String(batchUsageFilterQuery.value || '').trim()
+    const selected = findUsageOptionById(batchUsageDraft.usageConfigId)
+    const selectedPattern = String(selected?.usagePattern || '').trim()
+    if (filterQuery) {
+      createUsageForm.usagePattern = filterQuery
+    } else if (selectedPattern && !isBlankRoomUsage(selectedPattern)) {
+      createUsageForm.usagePattern = selectedPattern
+    } else {
+      const names = [
+        ...new Set(
+          list
+            .map((row) => String(row?.roomUsage || '').trim())
+            .filter((name) => name && !isBlankRoomUsage(name))
+        ),
+      ]
+      if (names.length === 1) createUsageForm.usagePattern = names[0]
+    }
     createUsageDialogVisible.value = true
   }
 
@@ -324,10 +452,19 @@ export function useCalibrationRoomUsageEditor({
             .trim()
             .toUpperCase() === usageCategory
       )
-      if (created) {
-        applyUsagePicker(created)
-        ElMessage.info('已选用新用途，请点击「保存修改」提交')
+      if (!created) return
+      const targets = usageApplyTargetRows.value
+      if (targets.length) {
+        const result = applyUsageToRows(targets, created)
+        const rowCount = targets.length
+        usageApplyTargetRows.value = []
+        closeUsageEditor()
+        closeBatchUsageDialog()
+        ElMessage.info(formatUsageApplyMessage(result, rowCount))
+        return
       }
+      applyUsagePicker(created)
+      ElMessage.info('已选用新用途，请点击「保存修改」提交')
     } catch (error) {
       console.error('新增用途失败:', error)
       ElMessage.error('新增用途失败，请稍后重试')
@@ -338,6 +475,8 @@ export function useCalibrationRoomUsageEditor({
 
   const resetUsageEditorState = () => {
     closeUsageEditor()
+    closeBatchUsageDialog()
+    usageApplyTargetRows.value = []
     usagePickerVisible.value = false
     createRoomDialogVisible.value = false
     createUsageDialogVisible.value = false
@@ -373,12 +512,22 @@ export function useCalibrationRoomUsageEditor({
     usageEditorVisibleRowId,
     usageEditorDraft,
     usageEditorDisplayOptions,
+    usageEditorMatchPreview,
     onUsageEditorFilter,
     openUsageEditor,
     handleUsageEditorVisibleChange,
     closeUsageEditor,
     confirmUsageEditor,
     openCreateUsageDialogForRow,
+    openCreateUsageDialogForRows,
+    batchUsageDialogVisible,
+    batchUsageDraft,
+    batchUsageDisplayOptions,
+    batchUsageMatchPreview,
+    onBatchUsageFilter,
+    openBatchUsageDialog,
+    closeBatchUsageDialog,
+    confirmBatchUsage,
     resetUsageEditorState,
   }
 }

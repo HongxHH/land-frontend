@@ -21,6 +21,14 @@ export function isBlankRoomUsage(roomUsage) {
   return !text || text === '-'
 }
 
+/**
+ * 保存户室时的用途原文。空白不补类别默认词，传空字符串以便后端跳过该字段。
+ */
+export function resolveRoomUsageForUpdate(roomUsage) {
+  if (isBlankRoomUsage(roomUsage)) return ''
+  return String(roomUsage).trim()
+}
+
 export function parsePendingUsageMap(unknownUsagesJson) {
   if (!unknownUsagesJson) return {}
   try {
@@ -92,13 +100,24 @@ export function formatPendingUsageDisplay(raw) {
   return joined.length > 80 ? `${joined.slice(0, 80)}…` : joined
 }
 
+/** 待确认名单键：`楼层|房号` 展示为 `楼层 / 房号`；旧数据只有房号时原样显示。 */
+export function formatPendingRoomLabel(roomKey) {
+  const text = String(roomKey ?? '').trim()
+  const sep = text.indexOf('|')
+  if (sep <= 0 || sep >= text.length - 1) return text
+  const level = text.slice(0, sep).trim()
+  const number = text.slice(sep + 1).trim()
+  if (!level || !number) return text
+  return `${level} / ${number}`
+}
+
 export function pendingUsageTooltip(raw) {
   if (!raw) return ''
   const map = parsePendingUsageMap(raw)
   const lines = Object.entries(map).map(([room, usage]) => {
     const label =
       String(usage ?? '').trim() === MISSING_USAGE_LABEL ? '用途缺失' : String(usage ?? '').trim()
-    return `${room}：${label}`
+    return `${formatPendingRoomLabel(room)}：${label}`
   })
   return lines.length ? lines.join('\n') : formatPendingUsageDisplay(raw)
 }
@@ -166,13 +185,17 @@ export function groupRoomNumbersByUsageName(unknownUsagesJson) {
 }
 
 export function formatRoomNumbersInline(roomNumbers = []) {
-  const list = (roomNumbers || []).map((item) => String(item ?? '').trim()).filter(Boolean)
+  const list = (roomNumbers || [])
+    .map((item) => formatPendingRoomLabel(item))
+    .filter(Boolean)
   return list.length ? list.join('、') : ''
 }
 
 /** 户号列表摘要：前 max 个 + 「…等 N 户」 */
 export function formatRoomNumbersPreview(roomNumbers = [], max = 8) {
-  const list = (roomNumbers || []).map((item) => String(item ?? '').trim()).filter(Boolean)
+  const list = (roomNumbers || [])
+    .map((item) => formatPendingRoomLabel(item))
+    .filter(Boolean)
   if (!list.length) return ''
   if (list.length <= max) return list.join('、')
   return `${list.slice(0, max).join('、')}…等 ${list.length} 户`

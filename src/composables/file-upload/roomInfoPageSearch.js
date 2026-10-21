@@ -66,8 +66,7 @@ export async function searchRoomInfosByPages({
     totalPages = Math.max(1, Math.ceil(total / ROOM_SEARCH_PAGE_SIZE))
 
     const mapped = mapRoomInfoList(records)
-    const batchMatches = filterAndRankRoomRows(mapped, kw, ROOM_SEARCH_FIELDS)
-    rawMatches.push(...batchMatches)
+    rawMatches.push(...filterAndRankRoomRows(mapped, kw, ROOM_SEARCH_FIELDS))
 
     onProgress?.({
       scannedPages: pageNum,

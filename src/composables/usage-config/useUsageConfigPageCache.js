@@ -148,6 +148,8 @@ export function mapUsageConfigToPickerOptions(items) {
     floorAreaType: String(item.floorAreaType || '').toUpperCase(),
     usageCategoryText: usageCategoryLabel(item.usageCategory, '未知'),
     floorAreaTypeText: floorAreaTypeLabel(item.floorAreaType, '未知'),
+    priority: item.priority == null || item.priority === '' ? null : Number(item.priority),
+    isRegex: Number(item.isRegex || 0),
   }))
 }
 

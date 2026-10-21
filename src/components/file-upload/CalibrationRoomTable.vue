@@ -42,7 +42,7 @@
           size="small"
           type="danger"
           plain
-          @click="discardAllChanges"
+          @click="handleDiscardRoomEdits"
         >
           放弃修改
         </el-button>
@@ -51,11 +51,30 @@
           size="small"
           type="primary"
           :loading="batchUpdateLoading"
-          @click="handleSaveDirtyRows"
+          @click="handleSaveRoomEdits"
         >
           保存修改
         </el-button>
       </div>
+    </div>
+
+    <div v-if="selectedRoomCount > 0" class="room-usage-batch-bar">
+      <span class="room-usage-batch-bar__summary">
+        已选 {{ selectedRoomCount }} 户（用途缺失 {{ selectedMissingCount }}，建筑面积为空
+        {{ selectedEmptyAreaCount }}）
+      </span>
+      <el-button
+        v-if="roomTableIsFiltering"
+        size="small"
+        plain
+        @click="selectAllFilteredRows"
+      >
+        全选当前筛选的 {{ allFilteredRows.length }} 户
+      </el-button>
+      <el-button size="small" type="primary" plain @click="handleOpenBatchUsageDialog">
+        批量更换用途
+      </el-button>
+      <el-button size="small" plain @click="clearRoomSelection">清除选择</el-button>
     </div>
 
     <el-table
@@ -72,6 +91,30 @@
       :header-cell-style="ROOM_TABLE_HEADER_STYLE"
       :cell-style="ROOM_TABLE_CELL_STYLE"
     >
+      <el-table-column
+        class-name="room-check-col"
+        label-class-name="room-check-col"
+        width="46"
+        align="center"
+      >
+        <template #header>
+          <el-checkbox
+            :model-value="pageAllSelected"
+            :indeterminate="pageSomeSelected"
+            :disabled="!filteredRoomInfoData.length || batchUpdateLoading"
+            @click.stop
+            @change="togglePageSelection"
+          />
+        </template>
+        <template #default="{ row }">
+          <el-checkbox
+            :model-value="isRoomSelected(row)"
+            :disabled="batchUpdateLoading"
+            @click.stop
+            @change="(checked) => toggleRowSelection(row, checked)"
+          />
+        </template>
+      </el-table-column>
       <el-table-column
         prop="roomLevel"
         label="楼层"
@@ -218,13 +261,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column
-        prop="roomUsage"
-        label="用途"
-        min-width="132"
-        show-overflow-tooltip
-        align="center"
-      >
+      <el-table-column prop="roomUsage" label="用途" min-width="148" align="center">
         <template #default="{ row }">
           <div class="usage-edit-inline">
             <el-tag
@@ -259,7 +296,7 @@
                 <el-form label-position="top" class="usage-editor-form">
                   <el-form-item label="用途">
                     <el-select
-                      v-model="usageEditorDraft.roomUsage"
+                      v-model="usageEditorDraft.usageConfigId"
                       filterable
                       clearable
                       :teleported="false"
@@ -272,11 +309,17 @@
                         v-for="item in usageEditorDisplayOptions"
                         :key="item.id || `${item.usageCategory}-${item.usagePattern}`"
                         :label="`${item.usagePattern}（${item.usageCategoryText} / ${item.floorAreaTypeText}）`"
-                        :value="item.usagePattern"
+                        :value="String(item.id)"
                       />
                     </el-select>
                   </el-form-item>
                 </el-form>
+                <p v-if="usageEditorMatchPreview" class="usage-editor-warning">
+                  保存后会归到「{{ usageEditorMatchPreview.usagePattern }}」（{{
+                    usageEditorMatchPreview.usageCategoryText
+                  }}
+                  / {{ usageEditorMatchPreview.floorAreaTypeText }}），更高优先级的模式会先命中。
+                </p>
                 <div class="usage-editor-actions">
                   <el-button
                     text
@@ -644,12 +687,68 @@
       >
     </template>
   </el-dialog>
+
+  <el-dialog
+    v-model="batchUsageDialogVisible"
+    title="批量更换用途"
+    width="520px"
+    append-to-body
+    :close-on-click-modal="false"
+  >
+    <p class="usage-editor-current">
+      将 <strong>{{ selectedRoomCount }}</strong> 户改为同一用途。
+      <template v-if="selectedUsageSummary">当前：{{ selectedUsageSummary }}。</template>
+    </p>
+    <p v-if="selectedEmptyAreaCount > 0" class="usage-editor-warning">
+      其中 {{ selectedEmptyAreaCount }} 户建筑面积为空，保存重算后仍为未知，不计入面积。
+    </p>
+    <el-form label-position="top" class="usage-editor-form" @submit.prevent>
+      <el-form-item label="用途">
+        <el-select
+          v-model="batchUsageDraft.usageConfigId"
+          filterable
+          clearable
+          :filter-method="onBatchUsageFilter"
+          placeholder="请选择用途"
+          class="usage-editor-field"
+        >
+          <el-option
+            v-for="item in batchUsageDisplayOptions"
+            :key="item.id || `${item.usageCategory}-${item.usagePattern}`"
+            :label="`${item.usagePattern}（${item.usageCategoryText} / ${item.floorAreaTypeText}）`"
+            :value="String(item.id)"
+          />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <p v-if="batchUsageMatchPreview" class="usage-editor-warning">
+      保存后会归到「{{ batchUsageMatchPreview.usagePattern }}」（{{
+        batchUsageMatchPreview.usageCategoryText
+      }}
+      / {{ batchUsageMatchPreview.floorAreaTypeText }}），更高优先级的模式会先命中。
+    </p>
+    <div class="usage-batch-create">
+      <el-button text type="primary" @click="handleCreateUsageForSelection">
+        新增用途
+      </el-button>
+      <p class="usage-batch-create__hint">
+        新增会立刻写入全局配置，仅超级管理员或开发者可以成功。名称须与未知用途原文完全一致，才会关掉待处理记录。
+      </p>
+    </div>
+    <template #footer>
+      <el-button @click="closeBatchUsageDialog">取消</el-button>
+      <el-button type="primary" @click="handleConfirmBatchUsage">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch, toRef } from 'vue'
 import { useCalibrationRoomTableFilter } from '@/composables/file-upload/useCalibrationRoomTableFilter'
-import { FILTER_PRESET_MISSING_USAGE } from '@/composables/file-upload/surveyUsagePending'
+import {
+  FILTER_PRESET_MISSING_USAGE,
+  isBlankRoomUsage,
+} from '@/composables/file-upload/surveyUsagePending'
 import { useRoomTableInfiniteScroll } from '@/composables/file-upload/useRoomTableInfiniteScroll'
 import { useCalibrationRoomUsageEditor } from '@/composables/file-upload/useCalibrationRoomUsageEditor'
 import {
@@ -660,7 +759,6 @@ import {
   OCR_SUM_FIELD_BY_METRIC_KEY,
   isAuditSummaryFieldDerivedFromVerificationReason,
 } from '@/composables/file-upload/auditSummaryMetrics'
-import { isBlankRoomUsage } from '@/composables/file-upload/surveyUsagePending'
 import RoomTableEditableCell from '@/components/file-upload/RoomTableEditableCell.vue'
 import {
   clampRoomAreaInput,
@@ -729,6 +827,7 @@ const {
   searchDisplayPageNum: roomTableSearchDisplayPageNum,
   showSearchPagination: roomTableShowSearchPagination,
   filteredRoomInfoData,
+  allFilteredRows,
   searchableTotal: roomTableSearchableTotal,
   clearKeyword: clearRoomTableKeyword,
   setKeyword: setRoomTableKeyword,
@@ -897,14 +996,150 @@ const {
   usageEditorVisibleRowId,
   usageEditorDraft,
   usageEditorDisplayOptions,
+  usageEditorMatchPreview,
   onUsageEditorFilter,
   openUsageEditor,
   handleUsageEditorVisibleChange,
   closeUsageEditor,
   confirmUsageEditor,
   openCreateUsageDialogForRow,
+  openCreateUsageDialogForRows,
+  batchUsageDialogVisible,
+  batchUsageDraft,
+  batchUsageDisplayOptions,
+  batchUsageMatchPreview,
+  onBatchUsageFilter,
+  openBatchUsageDialog,
+  closeBatchUsageDialog,
+  confirmBatchUsage,
   resetUsageEditorState,
 } = usageEditor
+
+const selectedRoomMap = ref(new Map())
+
+const selectedRoomRows = computed(() => {
+  const rows = []
+  for (const stored of selectedRoomMap.value.values()) {
+    const live = props.getRoomRowById?.(stored?.id)
+    if (live) rows.push(live)
+  }
+  return rows
+})
+const selectedRoomCount = computed(() => selectedRoomRows.value.length)
+const selectedMissingCount = computed(
+  () => selectedRoomRows.value.filter((row) => isBlankRoomUsage(row?.roomUsage)).length
+)
+const selectedEmptyAreaCount = computed(
+  () => selectedRoomRows.value.filter((row) => !String(row?.buildingArea ?? '').trim()).length
+)
+const selectedUsageSummary = computed(() => {
+  const counts = new Map()
+  for (const row of selectedRoomRows.value) {
+    const label = isBlankRoomUsage(row?.roomUsage) ? '用途缺失' : String(row.roomUsage).trim()
+    counts.set(label, (counts.get(label) || 0) + 1)
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), 'zh'))
+    .map(([name, count]) => `${name} ${count} 户`)
+    .join('、')
+})
+
+const pageRoomIds = computed(() =>
+  filteredRoomInfoData.value.map((row) => String(row?.id ?? '')).filter(Boolean)
+)
+const pageSelectedCount = computed(
+  () => pageRoomIds.value.filter((id) => selectedRoomMap.value.has(id)).length
+)
+const pageAllSelected = computed(
+  () => pageRoomIds.value.length > 0 && pageSelectedCount.value === pageRoomIds.value.length
+)
+const pageSomeSelected = computed(
+  () => pageSelectedCount.value > 0 && pageSelectedCount.value < pageRoomIds.value.length
+)
+
+const isRoomSelected = (row) => selectedRoomMap.value.has(String(row?.id ?? ''))
+
+const addRoomSelection = (rows) => {
+  const next = new Map(selectedRoomMap.value)
+  for (const row of rows || []) {
+    if (!row?.id) continue
+    next.set(String(row.id), props.getRoomRowById?.(row.id) ?? row)
+  }
+  selectedRoomMap.value = next
+}
+
+const removeRoomSelection = (rows) => {
+  const next = new Map(selectedRoomMap.value)
+  for (const row of rows || []) {
+    next.delete(String(row?.id ?? ''))
+  }
+  selectedRoomMap.value = next
+}
+
+const clearRoomSelection = () => {
+  selectedRoomMap.value = new Map()
+}
+
+const dropUnresolvedSelection = () => {
+  const next = new Map()
+  let missing = 0
+  for (const [id, stored] of selectedRoomMap.value) {
+    const live = props.getRoomRowById?.(stored?.id)
+    if (live) next.set(id, live)
+    else missing += 1
+  }
+  if (missing > 0) {
+    selectedRoomMap.value = next
+    ElMessage.warning(`有 ${missing} 户已不在当前列表，请重新选择`)
+  }
+  return missing
+}
+
+const handleDiscardRoomEdits = () => {
+  props.discardAllChanges?.()
+  clearRoomSelection()
+}
+
+const handleSaveRoomEdits = async () => {
+  const ok = await props.handleSaveDirtyRows?.()
+  if (ok) clearRoomSelection()
+}
+
+const handleOpenBatchUsageDialog = async () => {
+  const missing = dropUnresolvedSelection()
+  if (!selectedRoomRows.value.length) {
+    if (!missing) ElMessage.warning('请先选择户室')
+    return
+  }
+  await openBatchUsageDialog()
+}
+
+const handleConfirmBatchUsage = () => {
+  dropUnresolvedSelection()
+  if (!selectedRoomRows.value.length) return
+  confirmBatchUsage(selectedRoomRows.value)
+}
+
+const handleCreateUsageForSelection = () => {
+  dropUnresolvedSelection()
+  if (!selectedRoomRows.value.length) return
+  openCreateUsageDialogForRows(selectedRoomRows.value)
+}
+
+const toggleRowSelection = (row, checked) => {
+  if (checked) addRoomSelection([resolveEditRow(row)])
+  else removeRoomSelection([row])
+}
+
+const togglePageSelection = (checked) => {
+  const rows = filteredRoomInfoData.value.map((row) => resolveEditRow(row))
+  if (checked) addRoomSelection(rows)
+  else removeRoomSelection(rows)
+}
+
+const selectAllFilteredRows = () => {
+  addRoomSelection(allFilteredRows.value.map((row) => resolveEditRow(row)))
+}
 
 const onCreateRoomAreaInput = (field, value) => {
   createRoomForm[field] = clampRoomAreaInput(value)
@@ -987,6 +1222,7 @@ const commitOcrCellEdit = async () => {
 watch(openRef, (open) => {
   if (!open) {
     clearRoomTableKeyword()
+    clearRoomSelection()
     clearRoomToolbarRefreshCooldownTimer()
     roomToolbarRefreshCooldown.value = false
     resetUsageEditorState()
